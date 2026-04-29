@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>KEVSEC // CREDENTIAL RECOVERY</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#050805;color:#39ff14;font-family:'Share Tech Mono',monospace;min-height:100vh;
+  display:flex;align-items:center;justify-content:center}
+.box{width:440px;border:1px solid #39ff14;padding:36px;background:#060d06}
+h1{font-size:16px;letter-spacing:4px;margin-bottom:24px;color:#ffb700}
+.msg{padding:12px;border:1px solid #39ff14;margin-bottom:20px;font-size:12px;letter-spacing:2px;color:#ffb700}
+label{display:block;font-size:11px;letter-spacing:3px;color:#1a8c07;margin-bottom:6px}
+input{width:100%;background:transparent;border:none;border-bottom:1px solid #1a8c07;
+  color:#39ff14;font-family:'Share Tech Mono',monospace;font-size:14px;padding:8px 4px;outline:none}
+button{width:100%;background:transparent;border:1px solid #39ff14;color:#39ff14;
+  font-family:'Share Tech Mono',monospace;font-size:13px;letter-spacing:4px;padding:12px;
+  cursor:pointer;margin-top:16px}
+button:hover{background:rgba(57,255,20,.1)}
+a{color:#1a8c07;text-decoration:none;font-size:11px;letter-spacing:2px;display:block;text-align:center;margin-top:16px}
+</style>
+</head>
+<body>
+<div class="box">
+  <h1>⚠ CREDENTIAL RECOVERY PROTOCOL</h1>
+  {% if msg %}
+  <div class="msg">{{ msg }}</div>
+  {% endif %}
+  <form method="POST">
+    <label>OPERATIVE DESIGNATION</label>
+    <input type="text" name="username" placeholder="ENTER CODENAME" autofocus>
+    <button type="submit">[ INITIATE RECOVERY ]</button>
+  </form>
+  <a href="/">← RETURN TO ACCESS TERMINAL</a>
+</div>
+</body>
+</html>

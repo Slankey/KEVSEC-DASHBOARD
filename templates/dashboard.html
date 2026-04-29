@@ -1,0 +1,1575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta id="viewport-meta" name="viewport" content="width=device-width,initial-scale=1">
+<meta name="csrf-token" content="{{ csrf_token }}">
+<title>KEVSEC // EXECUTIVE INTELLIGENCE PORTAL</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦅</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/style.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+</head>
+<body class="theme-presidential" id="body">
+
+<!-- ═══ HEADER ═══════════════════════════════════════════════════════════ -->
+<header>
+  <div class="clf-banner">
+    ★ TOP SECRET // CODEWORD: BIG POOPS // SCI // NOFORN // HANDLE VIA ACCREDITED CHANNELS ONLY ★
+  </div>
+  <div class="header-main">
+    <div class="header-left">
+      <div>
+        <div class="portal-title">🦅 Executive Intelligence Portal</div>
+        <div class="portal-sub">KEVSEC OPERATIONS CENTER</div>
+      </div>
+      <div class="clearance-badge">CLEARANCE: TS/SCI</div>
+    </div>
+    <div class="header-right">
+      <div id="clock-bar" class="clock-bar"></div>
+      <div class="theme-switcher">
+        <label>THEME</label>
+        <div class="theme-dot t-presidential active" title="Presidential" onclick="setTheme('presidential',this)"></div>
+        <div class="theme-dot t-phantom" title="Phantom" onclick="setTheme('phantom',this)"></div>
+        <div class="theme-dot t-agency" title="Agency" onclick="setTheme('agency',this)"></div>
+        <div class="theme-dot t-midnight" title="Midnight" onclick="setTheme('midnight',this)"></div>
+      </div>
+      <span class="operative-tag">OPERATIVE: <span>{{ user|upper }}</span></span>
+      <a href="/logout" class="logout-btn">⬡ TERMINATE SESSION</a>
+    </div>
+  </div>
+  <div class="clf-banner bottom">
+    KEVSEC EXECUTIVE INTELLIGENCE PORTAL — ALL ACCESS IS LOGGED AND AUDITED — CLASSIFIED MATERIAL — PROTECT ACCORDINGLY
+  </div>
+</header>
+
+<!-- ═══ TABS ══════════════════════════════════════════════════════════════ -->
+<nav class="tabs">
+  <button class="tab active"  data-tab="intel">   📡 Intel Feed</button>
+  <button class="tab"         data-tab="command">  🖥 Command Center</button>
+  <button class="tab"         data-tab="cyber">    🛡 Cyber Ops</button>
+  <button class="tab"         data-tab="weather">  🌩 Weather Ops</button>
+  <button class="tab"         data-tab="comms">    📋 Comms</button>
+  <button class="tab desktop-mode-btn" id="desktop-mode-btn" onclick="toggleDesktopMode()" title="Switch between mobile and desktop layout">📱 Mobile</button>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════ INTEL FEED ═══ -->
+<div id="tab-intel" class="tab-content active">
+
+  <!-- Ozaukee County Alert Banner (shown only when active alerts exist) -->
+  <div id="ozaukee-alert-banner" style="display:none;background:linear-gradient(90deg,#7a0000,#550000,#7a0000);
+       border:1px solid #cc0000;padding:10px 18px;margin-bottom:10px;
+       font-family:var(--font-m);font-size:11px;letter-spacing:2px;color:#ff9999;text-align:center">
+  </div>
+
+  <!-- Market Ticker strip -->
+  <div class="panel" style="margin-bottom:12px">
+    <div class="panel-header">
+      <span>📈 Market Intelligence</span>
+      <span id="stock-ts-intel" class="ts"></span>
+      <button class="refresh-btn" onclick="loadStocks(true,'intel')">⟳ Refresh</button>
+    </div>
+    <div id="stocks-grid-intel" class="stocks-grid"></div>
+  </div>
+
+  <!-- Quick Links -->
+  <div class="panel">
+    <div class="panel-header">🔗 Quick Links</div>
+    <div class="quick-access-grid">
+      <a href="https://tv.kevsec.com" target="_blank" class="qa-btn">
+        <div class="qa-icon">🎬</div>Jellyfin<span>tv.kevsec.com</span>
+      </a>
+      <a href="https://seed.kevsec.com/rutorrent" target="_blank" class="qa-btn">
+        <div class="qa-icon">🌱</div>ruTorrent<span>seed.kevsec.com</span>
+      </a>
+      <a href="https://www.iptorrents.com/t" target="_blank" class="qa-btn">
+        <div class="qa-icon">🧲</div>IPTorrents<span>iptorrents.com</span>
+      </a>
+      <a href="http://69.30.236.220:7474" target="_blank" class="qa-btn">
+        <div class="qa-icon">⚙</div>Autobrr<span>:7474</span>
+      </a>
+      <a href="https://server.kevsec.com" target="_blank" class="qa-btn">
+        <div class="qa-icon">🖥</div>Server Portal<span>server.kevsec.com</span>
+      </a>
+      <a href="https://69.30.236.218:8006" target="_blank" class="qa-btn">
+        <div class="qa-icon">🏗</div>Proxmox<span>69.30.236.218:8006</span>
+      </a>
+      <div class="qa-btn" onclick="copySSH()">
+        <div class="qa-icon">🔐</div>SSH Swizzin<span id="ssh-btn-sub2">Click to copy</span>
+      </div>
+      <a href="https://www.cisa.gov/news-events/cybersecurity-advisories" target="_blank" class="qa-btn">
+        <div class="qa-icon">🛡</div>CISA Advisories<span>cisa.gov</span>
+      </a>
+      <a href="https://isc.sans.edu/" target="_blank" class="qa-btn">
+        <div class="qa-icon">🌩</div>SANS ISC<span>isc.sans.edu</span>
+      </a>
+      <a href="https://www.shodan.io/" target="_blank" class="qa-btn">
+        <div class="qa-icon">🔍</div>Shodan<span>shodan.io</span>
+      </a>
+      <a href="https://www.virustotal.com/" target="_blank" class="qa-btn">
+        <div class="qa-icon">🧬</div>VirusTotal<span>virustotal.com</span>
+      </a>
+      <a href="https://urlscan.io/" target="_blank" class="qa-btn">
+        <div class="qa-icon">🔭</div>URLScan<span>link sandbox</span>
+      </a>
+      <a href="https://app.any.run/" target="_blank" class="qa-btn">
+        <div class="qa-icon">🧪</div>Any.run<span>malware sandbox</span>
+      </a>
+      <a href="https://www.exploit-db.com/" target="_blank" class="qa-btn">
+        <div class="qa-icon">💣</div>Exploit-DB<span>CVE exploits</span>
+      </a>
+      <a href="https://gchq.github.io/CyberChef/" target="_blank" class="qa-btn">
+        <div class="qa-icon">🔧</div>CyberChef<span>GCHQ encoder/decoder</span>
+      </a>
+      <a href="https://osintframework.com/" target="_blank" class="qa-btn">
+        <div class="qa-icon">🕸</div>OSINT Framework<span>osintframework.com</span>
+      </a>
+      <a href="https://archive.ph" target="_blank" class="qa-btn">
+        <div class="qa-icon">📦</div>Archive.ph<span>Page archiver</span>
+      </a>
+      <a href="https://bgp.tools/" target="_blank" class="qa-btn">
+        <div class="qa-icon">🌐</div>BGP Tools<span>bgp.tools</span>
+      </a>
+      <a href="https://www.wigle.net/" target="_blank" class="qa-btn">
+        <div class="qa-icon">📶</div>WiGLE<span>Wireless network map</span>
+      </a>
+      <a href="https://liveuamap.com/" target="_blank" class="qa-btn">
+        <div class="qa-icon">🗺</div>Live UA Map<span>Live conflict map</span>
+      </a>
+      <a href="https://explainshell.com/" target="_blank" class="qa-btn">
+        <div class="qa-icon">🐚</div>ExplainShell<span>decode any command</span>
+      </a>
+      <a href="https://hemingwayapp.com/" target="_blank" class="qa-btn">
+        <div class="qa-icon">✍️</div>Hemingway<span>writing clarity</span>
+      </a>
+      <a href="https://www.mybib.com/#/" target="_blank" class="qa-btn">
+        <div class="qa-icon">📚</div>MyBib<span>Citation generator</span>
+      </a>
+      <a href="https://chucksguides.com/" target="_blank" class="qa-btn">
+        <div class="qa-icon">📖</div>Chuck's Guides<span>chucksguides.com</span>
+      </a>
+      <a href="https://portal.csuglobal.edu/" target="_blank" class="qa-btn">
+        <div class="qa-icon">🎓</div>CSU Global<span>Student portal</span>
+      </a>
+      <a href="https://www.rottentomatoes.com/" target="_blank" class="qa-btn">
+        <div class="qa-icon">🍅</div>Rotten Tomatoes<span>rottentomatoes.com</span>
+      </a>
+      <a href="https://apod.nasa.gov/apod/astropix.html" target="_blank" class="qa-btn">
+        <div class="qa-icon">🔭</div>NASA APOD<span>Astronomy pic</span>
+      </a>
+      <a href="https://downdetector.com/" target="_blank" class="qa-btn">
+        <div class="qa-icon">📡</div>Downdetector<span>Service outages</span>
+      </a>
+      <a href="https://www.ndbc.noaa.gov/station_page.php?station=pwaw3" target="_blank" class="qa-btn">
+        <div class="qa-icon">🌊</div>NDBC PWAW3<span>Port Washington buoy</span>
+      </a>
+      <a href="https://livewell.aah.org/" target="_blank" class="qa-btn">
+        <div class="qa-icon">❤</div>LiveWell<span>AAH patient portal</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- ── Presidential Intelligence ───────────────────────────────────── -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>🦅 Presidential Intelligence</span>
+      <span id="president-ts" class="ts"></span>
+      <a href="https://rollcall.com/factbase/trump/calendar/" target="_blank"
+         class="refresh-btn" style="text-decoration:none">📅 Factbase ↗</a>
+      <a href="https://www.whitehouse.gov/briefing-room/" target="_blank"
+         class="refresh-btn" style="text-decoration:none">WH ↗</a>
+      <button class="refresh-btn" onclick="loadPresidentIntel(true)">⟳</button>
+    </div>
+    <div class="panel-sub-header">President's Schedule — Next 10 Days (via Factbase/WHPO)</div>
+    <div id="president-schedule" class="loading" style="max-height:260px;overflow-y:auto">Loading schedule...</div>
+    <div class="panel-sub-header">White House Press Releases</div>
+    <div id="president-feed" class="loading">Loading press releases...</div>
+  </div>
+
+  <!-- ── Congress Status ──────────────────────────────────────────────── -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>🏛 Congress Status — 119th</span>
+      <span id="congress-ts" class="ts"></span>
+      <a href="https://www.congress.gov/" target="_blank" class="refresh-btn" style="text-decoration:none">congress.gov ↗</a>
+      <button class="refresh-btn" onclick="loadCongressStatus(true)">⟳</button>
+    </div>
+    <!-- Session badge -->
+    <div id="congress-session-badge" style="padding:12px 16px;border-bottom:1px solid var(--border)"></div>
+    <!-- Seat composition bars -->
+    <div id="congress-seats" style="padding:12px 16px;border-bottom:1px solid var(--border)"></div>
+    <!-- Seat map SVG dot plot -->
+    <div id="congress-seatmap" style="padding:10px 16px;border-bottom:1px solid var(--border)"></div>
+    <div class="panel-sub-header" style="display:flex;justify-content:space-between;align-items:center">
+      <span>Recent Legislation — sorted by latest action</span>
+    </div>
+    <div id="congress-bills" class="loading" style="max-height:340px;overflow-y:auto">Loading bills...</div>
+  </div>
+
+  <!-- ── NATO Status ──────────────────────────────────────────────────── -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>🌍 NATO Status &amp; Alerts</span>
+      <a href="https://www.nato.int/cps/en/natohq/news.htm" target="_blank"
+         class="refresh-btn" style="text-decoration:none">nato.int ↗</a>
+      <a href="https://www.nato.int/cps/en/natohq/topics_52044.htm" target="_blank"
+         class="refresh-btn" style="text-decoration:none">Deployments ↗</a>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;padding:12px 16px">
+      <div class="stat-box">
+        <div class="stat-label">Allied Nations</div>
+        <div class="stat-value">32</div>
+        <div class="stat-sub">Sweden joined Mar 2024</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Article 5 Status</div>
+        <div class="stat-value" style="color:#4a9c4a;font-size:14px">INTACT</div>
+        <div class="stat-sub">Collective defense active</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">DEFCON Equivalent</div>
+        <div class="stat-value" style="color:#cc7700">DEFCON 3</div>
+        <div class="stat-sub">Heightened readiness</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Ukraine Aid (US)</div>
+        <div class="stat-value">$175B+</div>
+        <div class="stat-sub">Total committed since 2022</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px;padding:0 14px 12px">
+      <a href="https://www.nato.int/cps/en/natohq/news.htm" target="_blank" class="qa-btn" style="padding:10px">
+        <div class="qa-icon" style="font-size:16px">📰</div>NATO News<span>Latest releases</span>
+      </a>
+      <a href="https://www.nato.int/cps/en/natohq/topics_110496.htm" target="_blank" class="qa-btn" style="padding:10px">
+        <div class="qa-icon" style="font-size:16px">🛡</div>eFP Battlegroups<span>Eastern flank</span>
+      </a>
+      <a href="https://www.understandingwar.org/" target="_blank" class="qa-btn" style="padding:10px">
+        <div class="qa-icon" style="font-size:16px">🗺</div>ISW<span>War maps + analysis</span>
+      </a>
+      <a href="https://liveuamap.com/" target="_blank" class="qa-btn" style="padding:10px">
+        <div class="qa-icon" style="font-size:16px">📡</div>Live UA Map<span>Real-time conflict</span>
+      </a>
+      <a href="https://www.oryx.com/" target="_blank" class="qa-btn" style="padding:10px">
+        <div class="qa-icon" style="font-size:16px">⚙</div>Oryx<span>Equipment losses</span>
+      </a>
+      <a href="https://www.defense.gov/News/" target="_blank" class="qa-btn" style="padding:10px">
+        <div class="qa-icon" style="font-size:16px">⭐</div>DoD News<span>defense.gov</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- ── Government Agency Intelligence ───────────────────────────── -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>🏛 Government Agency Intelligence</span>
+      <span id="govt-intel-ts" class="ts"></span>
+      <button class="refresh-btn" onclick="loadGovtIntel(true)">⟳ Refresh</button>
+    </div>
+    <div style="background:linear-gradient(90deg,#0a0d1a,#0d1020,#0a0d1a);border-bottom:1px solid var(--border);
+         padding:8px 16px;font-family:var(--font-m);font-size:9px;letter-spacing:3px;color:var(--accent);text-align:center">
+      FBI // CENTCOM // DOJ // STATE DEPT // PENTAGON // DHS — LIVE AGENCY FEEDS
+    </div>
+    <div id="govt-intel-feed" class="loading" style="max-height:380px;overflow-y:auto">Loading agency feeds...</div>
+  </div>
+
+  <!-- ── 2026 Midterm Intelligence ──────────────────────────────────── -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>🗳 2026 Midterm Intelligence Dashboard</span>
+      <span id="midterm-ts" class="ts"></span>
+      <button class="refresh-btn" onclick="loadMidtermIntel(true)">⟳ Refresh</button>
+    </div>
+
+    <!-- Status bar -->
+    <div style="background:linear-gradient(90deg,#0a0d1a,#0d1020,#0a0d1a);border-bottom:1px solid var(--border);
+         padding:8px 16px;font-family:var(--font-m);font-size:9px;letter-spacing:3px;
+         color:var(--accent);text-align:center">
+      119TH CONGRESS // STATUS: MID-CYCLE REDISTRICTING ACTIVE // D +11.5 OVERPERFORM IN SPECIALS
+    </div>
+
+    <!-- Macro indicators -->
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+      <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:10px">MACRO INDICATORS</div>
+      <div id="midterm-macros" class="stats-grid"></div>
+    </div>
+
+    <!-- Key Races + Primary Calendar side by side -->
+    <div class="panel-row" style="margin:0;gap:0;border-bottom:1px solid var(--border)">
+      <div style="flex:1;padding:12px 16px">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">KEY BATTLEGROUND RACES</div>
+        <div id="midterm-races"></div>
+      </div>
+      <div style="flex:1;padding:12px 16px;border-left:1px solid var(--border)">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">PRIMARY CALENDAR</div>
+        <div id="midterm-primaries"></div>
+      </div>
+    </div>
+
+    <!-- Congress seat map + links -->
+    <div style="padding:12px 16px;border-top:1px solid var(--border)">
+      <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">INTELLIGENCE SOURCES</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
+        <a href="https://www.cookpolitical.com/ratings/house-race-ratings" target="_blank" class="qa-btn" style="padding:8px">
+          <div class="qa-icon" style="font-size:13px">🍳</div>Cook Political<span>House ratings</span>
+        </a>
+        <a href="https://ballotpedia.org/United_States_Congress_elections,_2026" target="_blank" class="qa-btn" style="padding:8px">
+          <div class="qa-icon" style="font-size:13px">📊</div>Ballotpedia<span>2026 elections</span>
+        </a>
+        <a href="https://projects.fivethirtyeight.com/2026-election-forecast/" target="_blank" class="qa-btn" style="padding:8px">
+          <div class="qa-icon" style="font-size:13px">🎲</div>FiveThirtyEight<span>Forecasts</span>
+        </a>
+        <a href="https://kalshi.com/markets/elections" target="_blank" class="qa-btn" style="padding:8px">
+          <div class="qa-icon" style="font-size:13px">📈</div>Kalshi<span>Prediction markets</span>
+        </a>
+        <a href="https://www.polymarket.com/elections" target="_blank" class="qa-btn" style="padding:8px">
+          <div class="qa-icon" style="font-size:13px">🔮</div>Polymarket<span>Prediction market</span>
+        </a>
+        <a href="https://www.opensecrets.org/elections" target="_blank" class="qa-btn" style="padding:8px">
+          <div class="qa-icon" style="font-size:13px">💰</div>OpenSecrets<span>Money tracker</span>
+        </a>
+        <a href="https://www.fec.gov/data/" target="_blank" class="qa-btn" style="padding:8px">
+          <div class="qa-icon" style="font-size:13px">📋</div>FEC Data<span>Official filings</span>
+        </a>
+        <a href="https://centerforpolitics.org/crystalball/" target="_blank" class="qa-btn" style="padding:8px">
+          <div class="qa-icon" style="font-size:13px">🔭</div>Crystal Ball<span>Sabato ratings</span>
+        </a>
+        <a href="https://www.realclearpolitics.com/epolls/latest_polls/" target="_blank" class="qa-btn" style="padding:8px">
+          <div class="qa-icon" style="font-size:13px">📉</div>RealClear<span>Polling avg</span>
+        </a>
+        <a href="https://dailykos.com/tags/elections" target="_blank" class="qa-btn" style="padding:8px">
+          <div class="qa-icon" style="font-size:13px">📰</div>Daily Kos<span>PVI + district data</span>
+        </a>
+        <a href="https://www.congress.gov/roll-call-votes" target="_blank" class="qa-btn" style="padding:8px">
+          <div class="qa-icon" style="font-size:13px">🗳</div>Roll Call Votes<span>congress.gov</span>
+        </a>
+        <a href="https://www.govtrack.us/congress/bills" target="_blank" class="qa-btn" style="padding:8px">
+          <div class="qa-icon" style="font-size:13px">📜</div>GovTrack<span>Bill tracker</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── OpenSecrets Campaign Finance Intelligence ──────────────────── -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>💰 OpenSecrets — Campaign Finance Intelligence</span>
+      <a href="https://www.opensecrets.org/" target="_blank" class="refresh-btn" style="text-decoration:none">opensecrets.org ↗</a>
+    </div>
+    <div style="background:linear-gradient(90deg,#0a1000,#0d1400,#0a1000);border-bottom:1px solid var(--border);
+         padding:8px 16px;font-family:var(--font-m);font-size:9px;letter-spacing:3px;color:#6a9c4a;text-align:center">
+      MONEY IN POLITICS // DARK MONEY TRACKING // LOBBYING // CANDIDATE FINANCE // 2026 CYCLE
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;padding:12px 16px;border-bottom:1px solid var(--border)">
+      <a href="https://www.opensecrets.org/elections" target="_blank" class="qa-btn" style="padding:12px">
+        <div class="qa-icon">🗳</div>2026 Overview<span>All races + money raised</span>
+      </a>
+      <a href="https://www.opensecrets.org/elections-overview?cycle=2026&display=T&type=G" target="_blank" class="qa-btn" style="padding:12px">
+        <div class="qa-icon">🏦</div>Top Donors<span>2026 cycle dark money</span>
+      </a>
+      <a href="https://www.opensecrets.org/outside-spending" target="_blank" class="qa-btn" style="padding:12px">
+        <div class="qa-icon">🌑</div>Outside Spending<span>Super PAC + dark money</span>
+      </a>
+      <a href="https://www.opensecrets.org/political-action-committees" target="_blank" class="qa-btn" style="padding:12px">
+        <div class="qa-icon">🏛</div>PAC Tracker<span>All political action committees</span>
+      </a>
+      <a href="https://www.opensecrets.org/news/category/dark-money/" target="_blank" class="qa-btn" style="padding:12px">
+        <div class="qa-icon">🕵</div>Dark Money Reports<span>Investigative coverage</span>
+      </a>
+      <a href="https://www.opensecrets.org/races/summary?cycle=2026" target="_blank" class="qa-btn" style="padding:12px">
+        <div class="qa-icon">📊</div>Race Summaries<span>Finance by district</span>
+      </a>
+      <a href="https://www.opensecrets.org/orgs/summary" target="_blank" class="qa-btn" style="padding:12px">
+        <div class="qa-icon">🏢</div>Top Organizations<span>Biggest political spenders</span>
+      </a>
+      <a href="https://www.opensecrets.org/industries" target="_blank" class="qa-btn" style="padding:12px">
+        <div class="qa-icon">⚙</div>Industry Tracker<span>Who buys what party</span>
+      </a>
+      <a href="https://www.opensecrets.org/lobby" target="_blank" class="qa-btn" style="padding:12px">
+        <div class="qa-icon">🤝</div>Lobbying Data<span>Who's lobbying whom</span>
+      </a>
+      <a href="https://www.opensecrets.org/members-of-congress" target="_blank" class="qa-btn" style="padding:12px">
+        <div class="qa-icon">👤</div>Member Profiles<span>Every congressman's finance</span>
+      </a>
+      <a href="https://www.opensecrets.org/news/category/redistricting/" target="_blank" class="qa-btn" style="padding:12px">
+        <div class="qa-icon">🗺</div>Redistricting Watch<span>TX, CA, NC, MO tracking</span>
+      </a>
+      <a href="https://www.fec.gov/data/raising-bythenumbers/" target="_blank" class="qa-btn" style="padding:12px">
+        <div class="qa-icon">📋</div>FEC By The Numbers<span>Official Q1 2026 filings</span>
+      </a>
+    </div>
+    <!-- Key states spotlight -->
+    <div style="padding:12px 16px">
+      <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:10px">REDISTRICTING DARK MONEY WATCH — NC · MO · TX · CA</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px">
+        <a href="https://www.opensecrets.org/races/summary?cycle=2026&id=NCS1" target="_blank" class="qa-btn" style="padding:8px">
+          <div class="qa-icon" style="font-size:14px">🌊</div>NC Senate<span>Redistricted zone</span>
+        </a>
+        <a href="https://www.opensecrets.org/races/summary?cycle=2026&id=MOS1" target="_blank" class="qa-btn" style="padding:8px">
+          <div class="qa-icon" style="font-size:14px">🌊</div>MO Senate<span>Redistricted zone</span>
+        </a>
+        <a href="https://www.opensecrets.org/states/summary?state=WI" target="_blank" class="qa-btn" style="padding:8px">
+          <div class="qa-icon" style="font-size:14px">🧀</div>Wisconsin<span>Blue wall finance</span>
+        </a>
+        <a href="https://www.opensecrets.org/states/summary?state=PA" target="_blank" class="qa-btn" style="padding:8px">
+          <div class="qa-icon" style="font-size:14px">🔔</div>Pennsylvania<span>Blue wall finance</span>
+        </a>
+        <a href="https://www.opensecrets.org/states/summary?state=MI" target="_blank" class="qa-btn" style="padding:8px">
+          <div class="qa-icon" style="font-size:14px">🚗</div>Michigan<span>Blue wall finance</span>
+        </a>
+        <a href="https://www.opensecrets.org/states/summary?state=GA" target="_blank" class="qa-btn" style="padding:8px">
+          <div class="qa-icon" style="font-size:14px">🍑</div>Georgia<span>Ossoff battleground</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Recent Polls ─────────────────────────────────────────────────── -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>📊 Recent Polling — 2026 Midterms</span>
+      <span id="polls-ts" class="ts"></span>
+      <a href="https://projects.fivethirtyeight.com/polls/" target="_blank" class="refresh-btn" style="text-decoration:none">538 ↗</a>
+      <a href="https://www.realclearpolitics.com/epolls/latest_polls/" target="_blank" class="refresh-btn" style="text-decoration:none">RCP ↗</a>
+      <button class="refresh-btn" onclick="loadPolls(true)">⟳</button>
+    </div>
+    <div class="panel-row" style="margin:0;gap:0">
+      <div style="flex:1;padding:12px 16px;border-right:1px solid var(--border)">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">RECENT POLL HEADLINES</div>
+        <div id="polls-news" class="loading">Loading polls...</div>
+      </div>
+      <div style="flex:0 0 220px;padding:12px 16px">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">AGGREGATORS</div>
+        <div id="polls-aggregators"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Formula 1 ────────────────────────────────────────────────── -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>🏎 Formula 1 — ${new Date().getFullYear()} Season</span>
+      <span id="f1-ts" class="ts"></span>
+      <button class="refresh-btn" onclick="loadF1(true)">⟳</button>
+    </div>
+    <div style="background:linear-gradient(90deg,#1a0000,#200000,#1a0000);border-bottom:1px solid var(--border);
+         padding:8px 16px;font-family:var(--font-m);font-size:9px;letter-spacing:3px;color:#e8002d;text-align:center">
+      CONSTRUCTOR STANDINGS · DRIVER STANDINGS · RACE CALENDAR · LAST PODIUM
+    </div>
+    <div id="f1-panel" class="loading">Loading F1 data...</div>
+  </div>
+
+  <!-- ── Politician Twitter Feed ───────────────────────────────────── -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>🐦 Key 2026 Politicians — Recent Posts</span>
+      <span id="pol-tweets-ts" class="ts"></span>
+      <span id="pol-tweets-age" style="font-size:9px;color:var(--text-dim)"></span>
+      <button class="refresh-btn" onclick="loadPolTweets(true)">⟳ Refresh</button>
+    </div>
+    <div style="background:linear-gradient(90deg,#0a0d1a,#0d1020,#0a0d1a);border-bottom:1px solid var(--border);
+         padding:8px 16px;font-family:var(--font-m);font-size:9px;letter-spacing:3px;
+         color:var(--accent);text-align:center">
+      SENATE BATTLEGROUNDS // HOUSE LEADERSHIP // CAMPAIGN COMMITTEES // REFRESHED DAILY VIA CRON
+    </div>
+    <div id="pol-tweets-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+         gap:10px;padding:12px 16px" class="loading">
+      Loading politician feeds...
+    </div>
+  </div>
+
+  <div class="panel-row">
+    <!-- Threat Level + CISA KEV -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>🇺🇸 U.S. Homeland Security</span>
+        <button class="refresh-btn" onclick="loadThreatLevel(true)">⟳ Refresh</button>
+      </div>
+      <div class="threat-wrap">
+        <div id="threat-level-badge" class="threat-badge">
+          <div class="threat-label">CURRENT ADVISORY</div>
+          <span id="threat-level-text">LOADING</span>
+        </div>
+        <div id="threat-alerts" class="threat-alerts"></div>
+      </div>
+      <div class="panel-sub-header">🛡 CISA — Known Exploited Vulnerabilities (Latest)</div>
+      <div id="cisa-kev-list" class="loading" style="padding:4px 0">Loading...</div>
+    </div>
+
+    <!-- On This Day — Wikipedia -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>📅 On This Day — <span id="wiki-date" class="accent"></span></span>
+        <button class="refresh-btn" onclick="loadWikipedia(true)">⟳ Refresh</button>
+      </div>
+      <div id="wiki-otd" class="loading">Loading...</div>
+    </div>
+  </div>
+
+  <div class="panel-row">
+    <!-- Wikipedia Featured Article + DYK -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>📖 Wikipedia — Today's Featured Article</span>
+        <button class="refresh-btn" onclick="loadWikipedia(true)">⟳ Refresh</button>
+      </div>
+      <div id="wiki-tfa" class="loading">Loading...</div>
+      <div class="panel-sub-header">Did You Know?</div>
+      <div id="wiki-dyk" class="loading" style="padding:10px 16px"></div>
+    </div>
+
+    <!-- Wikipedia In the News -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>🗞 In the News — Wikipedia</span>
+        <button class="refresh-btn" onclick="loadWikipedia(true)">⟳ Refresh</button>
+      </div>
+      <div id="wiki-news" class="loading">Loading...</div>
+    </div>
+  </div>
+
+  <!-- APOD -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>🔭 NASA Astronomy Picture of the Day — <span id="apod-date" class="accent"></span></span>
+      <button class="refresh-btn" onclick="loadAPOD(true)">⟳ Refresh</button>
+    </div>
+    <div id="apod-panel" class="loading">Loading APOD...</div>
+  </div>
+
+  <!-- News Feed -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>📰 Intelligence Feed</span>
+      <button class="refresh-btn" onclick="loadNews(true)">⟳ Refresh</button>
+    </div>
+    <div style="padding:8px 14px 0;border-bottom:1px solid var(--border)">
+      <div class="source-filters" id="source-filters"></div>
+    </div>
+    <div id="news-feed"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ COMMAND CENTER ═══ -->
+<div id="tab-command" class="tab-content">
+  <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+    <button class="refresh-btn" onclick="refreshAllCommand()" style="padding:6px 14px;font-size:11px;letter-spacing:1px">⟳ REFRESH ALL</button>
+  </div>
+  <div class="panel-row">
+
+    <!-- Local Server -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>🖥 Swizzin — Local Server</span>
+        <span id="server-ts" class="ts"></span>
+        <button class="refresh-btn" onclick="loadServerStats(true)">⟳</button>
+      </div>
+      <div id="server-stats" class="stats-grid"></div>
+      <div class="panel-sub-header">Service Status</div>
+      <div id="services-grid" class="services-grid"></div>
+    </div>
+
+    <!-- Proxmox -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>🏗 Proxmox — Hypervisor</span>
+        <span id="pve-ts" class="ts"></span>
+        <button class="refresh-btn" onclick="loadProxmox(true)">⟳</button>
+      </div>
+      <div id="proxmox-nodes" class="pve-grid"></div>
+      <div class="panel-sub-header">Virtual Machines</div>
+      <div id="proxmox-vms" class="pve-vms"></div>
+    </div>
+  </div>
+
+  <!-- ⚡ Server Control -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>⚡ Server Control</span>
+      <span id="svc-feedback" class="ts" style="color:var(--accent)"></span>
+    </div>
+
+    <!-- Server-level actions -->
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+      <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:10px">SYSTEM</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button class="svc-btn svc-btn-warn" onclick="serverAction('restart',0)">🔁 Restart Now</button>
+        <button class="svc-btn svc-btn-warn" onclick="serverAction('shutdown',0)">⏹ Shutdown</button>
+        <button class="svc-btn" onclick="serverAction('cancel',0)" style="color:var(--text-dim)">✕ Cancel Scheduled</button>
+        <span style="font-size:10px;color:var(--text-dim);margin-left:8px">Restart in</span>
+        <input id="restart-delay" type="number" min="1" max="1440" value="5"
+               style="width:52px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);
+                      font-family:var(--font-m);font-size:11px;padding:4px 6px;text-align:center">
+        <span style="font-size:10px;color:var(--text-dim)">min</span>
+        <button class="svc-btn svc-btn-warn" onclick="serverAction('restart', parseInt(document.getElementById('restart-delay').value)||5)">🕐 Schedule</button>
+        <button class="svc-btn svc-btn-warn" onclick="serverAction('update-restart',0)" style="margin-left:8px">📦 Update + Restart</button>
+      </div>
+    </div>
+
+    <!-- Service grid -->
+    <div style="padding:12px 16px">
+      <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:10px">SERVICES</div>
+      <div id="svc-control-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px"></div>
+    </div>
+  </div>
+
+  <!-- DJ Atticus -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>🎵 DJ Atticus — Spotify Connect Bridge</span>
+      <span id="dja-ts" class="ts"></span>
+      <button class="refresh-btn" onclick="loadDjStatus()">⟳</button>
+    </div>
+    <div style="padding:12px 16px;display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+      <a href="/spotify-auth" class="svc-btn" style="text-decoration:none" id="dja-auth-btn">🔗 Authorize Spotify</a>
+      <button class="svc-btn" onclick="djSpotifyRefresh()">🔄 Refresh Token</button>
+      <span id="dja-spotify-status" style="font-size:11px;color:var(--text-dim)">checking...</span>
+    </div>
+    <div style="padding:0 16px 12px;font-size:11px;color:var(--text-dim);line-height:1.6" id="dja-status-text">
+      Waiting for status...
+    </div>
+  </div>
+
+  <!-- Tarpit & Honeypot Stats -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>🕳 SSH Tarpit &amp; Honeypot — Active Defense</span>
+      <span id="tarpit-ts" class="ts"></span>
+      <button class="refresh-btn" onclick="loadTarpitStats(true)">⟳ Refresh</button>
+    </div>
+    <div class="panel-row" style="margin:0;gap:0;border-bottom:1px solid var(--border)">
+      <div style="flex:1;padding:12px 16px">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--accent);margin-bottom:10px">🐢 ENDLESSH — SSH TARPIT</div>
+        <div id="tarpit-ssh-stats" class="stats-grid" style="margin-bottom:8px"></div>
+        <div style="font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:6px">RECENT CATCHES</div>
+        <div id="tarpit-recent-ips" style="font-family:var(--font-m);font-size:11px;line-height:1.8"></div>
+      </div>
+      <div style="flex:1;padding:12px 16px;border-left:1px solid var(--border)">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--accent);margin-bottom:10px">🍯 HONEYPOT — WEB TRAPS</div>
+        <div id="tarpit-honeypot-stats" class="stats-grid" style="margin-bottom:8px"></div>
+        <div style="font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:6px">RECENT PROBES</div>
+        <div id="tarpit-honeypot-log"></div>
+      </div>
+    </div>
+    <div id="tarpit-error" style="display:none;padding:10px 16px;color:var(--red2);font-size:11px;font-family:var(--font-m)"></div>
+  </div>
+
+  <div class="panel-row">
+    <!-- Pending Updates -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>📦 Pending System Updates</span>
+        <button class="refresh-btn" onclick="loadUpdates()">⟳ Check Now</button>
+      </div>
+      <div id="updates-list" class="updates-list">
+        <div class="loading">Click "Check Now" to scan for updates</div>
+      </div>
+    </div>
+
+    <!-- Big Files -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>🗂 Large Files (&gt;100 MB)</span>
+        <span class="ts" id="bigfiles-ts"></span>
+        <button class="refresh-btn" onclick="loadBigFiles(true)">⟳</button>
+      </div>
+      <div id="bigfiles-list" class="loading">Loading scan results...</div>
+    </div>
+  </div>
+
+  <!-- Local Service Uptime Monitor -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>🚦 Local Service Uptime Monitor</span>
+      <span class="ts" id="local-svc-ts"></span>
+      <button class="refresh-btn" onclick="loadExtServices(true)">⟳</button>
+    </div>
+    <div id="local-services-grid" class="loading">Loading...</div>
+  </div>
+
+  <!-- External Service Status -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>🌐 Internet Service Status</span>
+      <span class="ts" id="ext-svc-ts"></span>
+      <button class="refresh-btn" onclick="loadExtServices(true)">⟳</button>
+    </div>
+    <div id="ext-services-grid" class="loading">Loading service status...</div>
+  </div>
+
+  <!-- Daily Goals -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>🎯 Today's Objectives</span>
+      <span class="ts" id="goals-ts"></span>
+      <button class="refresh-btn" onclick="loadGoals()">⟳ Refresh</button>
+      <button class="refresh-btn" onclick="toggleGoalsEdit()" id="goals-edit-btn">✏ Edit</button>
+    </div>
+    <div id="goals-view" style="padding:12px 16px"></div>
+    <div id="goals-editor" style="display:none;padding:12px 16px">
+      <textarea id="goals-textarea" style="width:100%;min-height:160px;background:var(--bg3);
+        border:1px solid var(--border2);color:var(--text);font-family:var(--font-m);
+        font-size:12px;padding:10px;border-radius:3px;resize:vertical"></textarea>
+      <div style="margin-top:8px;display:flex;gap:8px">
+        <button class="refresh-btn" onclick="saveGoals()">💾 Save</button>
+        <button class="refresh-btn" onclick="toggleGoalsEdit()">✕ Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- NUKE AUTHORITY -->
+  <div class="panel" style="border:2px solid #7a0000;background:linear-gradient(135deg,#0d0000 0%,#1a0000 100%)">
+    <div class="panel-header" style="border-bottom:1px solid #7a0000;background:transparent">
+      <span style="color:#ff2200;letter-spacing:4px;font-size:11px">⚛ NUKE AUTHORITY // TIER-OMEGA PROTOCOL</span>
+      <span style="color:#7a0000;font-size:9px;letter-spacing:2px">KEVSEC STRATEGIC COMMAND</span>
+    </div>
+    <div style="padding:20px 24px;text-align:center">
+      <div style="font-size:9px;letter-spacing:3px;color:#7a0000;margin-bottom:12px">
+        ⚠ AUTHORIZED PERSONNEL ONLY — IRREVERSIBLE — TOTAL SYSTEM DESTRUCTION ⚠
+      </div>
+      <div style="font-size:10px;color:#550000;font-family:var(--font-m);margin-bottom:20px;line-height:1.8">
+        INITIATES SECURE MULTI-PHASE WIPE PROTOCOL · DESTROYS ALL CREDENTIALS, KEYS, APPLICATION DATA, AND MEDIA<br>
+        SYSTEM WILL NOT RECOVER · REQUIRES AUTHENTICATION + CONFIRMATION + 30-SECOND ARMING SEQUENCE
+      </div>
+      <button onclick="openNukeModal()"
+              style="background:linear-gradient(180deg,#3a0000,#1a0000);border:2px solid #cc0000;color:#ff2200;
+                     font-family:var(--font-m);font-size:13px;letter-spacing:6px;padding:16px 40px;
+                     cursor:pointer;text-transform:uppercase;box-shadow:0 0 20px #cc000055;
+                     transition:all 0.3s"
+              onmouseover="this.style.boxShadow='0 0 40px #cc0000aa';this.style.borderColor='#ff2200'"
+              onmouseout="this.style.boxShadow='0 0 20px #cc000055';this.style.borderColor='#cc0000'">
+        ☢ INITIATE NUKE AUTHORITY
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ════════════════════════════════════════════════ CYBER OPS ═══ -->
+<div id="tab-cyber" class="tab-content">
+
+  <!-- CVE + Firewall — two-column row -->
+  <div class="panel-row" style="margin-bottom:16px;align-items:start">
+
+    <!-- CVE Feed -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>🔴 Live CVE Intelligence</span>
+        <span id="cve-ts" class="ts"></span>
+        <button class="refresh-btn" onclick="loadCVEs(true)">⟳ Refresh</button>
+      </div>
+      <div id="cve-list" class="cve-list"></div>
+    </div>
+
+    <!-- Firewall Drops + Fail2Ban -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>🧱 Firewall &amp; Fail2Ban — Blocked Connections</span>
+        <span id="fw-ts" class="ts"></span>
+        <button class="refresh-btn" onclick="loadFirewallDrops()">⟳ Refresh</button>
+      </div>
+    <div class="panel-sub-header">Honeypot — Recent Probe Catches</div>
+    <div class="fw-table-wrap">
+      <table class="fw-table">
+        <thead><tr><th>Time</th><th>Source IP</th><th>Port</th><th>Type</th></tr></thead>
+        <tbody id="fw-tbody"></tbody>
+      </table>
+    </div>
+    <div class="panel-sub-header">Fail2Ban — Automated Bans</div>
+    <div class="fw-table-wrap">
+      <table class="fw-table">
+        <thead><tr><th>Time</th><th>Banned IP</th><th>Jail (Source)</th></tr></thead>
+        <tbody id="f2b-tbody"></tbody>
+      </table>
+    </div>
+    </div><!-- end firewall panel -->
+  </div><!-- end panel-row -->
+
+  <!-- IP Management + Network Stats — two-column row -->
+  <div class="panel-row" style="margin-bottom:16px;align-items:start">
+
+    <!-- IP Management Panel -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>🚫 IP Management — Ban / Unban</span>
+        <span id="banip-feedback" class="ts" style="color:var(--accent)"></span>
+        <button class="refresh-btn" onclick="loadFirewallDrops()">⟳ Refresh</button>
+      </div>
+      <!-- Manual Ban -->
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">MANUAL BAN</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <input id="ban-ip-input" type="text" placeholder="1.2.3.4 or 1.2.3.0/24"
+                 style="flex:1;min-width:160px;background:var(--bg3);border:1px solid var(--border2);
+                        color:var(--text);font-family:var(--font-m);font-size:11px;padding:6px 10px">
+          <input id="ban-reason-input" type="text" placeholder="Reason (optional)"
+                 style="flex:1;min-width:140px;background:var(--bg3);border:1px solid var(--border2);
+                        color:var(--text);font-family:var(--font-m);font-size:11px;padding:6px 10px">
+          <button class="svc-btn svc-btn-warn" onclick="banIP()">🚫 BAN IP</button>
+        </div>
+      </div>
+      <!-- Unban -->
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">UNBAN FROM ALL JAILS</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <input id="unban-ip-input" type="text" placeholder="1.2.3.4"
+                 style="flex:1;min-width:160px;background:var(--bg3);border:1px solid var(--border2);
+                        color:var(--text);font-family:var(--font-m);font-size:11px;padding:6px 10px">
+          <button class="svc-btn" onclick="unbanIP()" style="color:var(--accent)">✓ UNBAN IP</button>
+        </div>
+      </div>
+      <!-- Blacklist Update -->
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">BLACKLIST SYNC</div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <button class="svc-btn" onclick="runBlacklistUpdate()" style="color:var(--accent)">⟳ Run Blacklist Update Now</button>
+          <span style="font-size:10px;color:var(--text-dim)">Collects IPs from all sources → nftables</span>
+        </div>
+        <pre id="blacklist-output" style="display:none;margin-top:8px;font-size:10px;color:var(--text-dim);
+             background:var(--bg3);padding:8px;max-height:120px;overflow-y:auto;white-space:pre-wrap"></pre>
+      </div>
+      <!-- Jail Summary -->
+      <div style="padding:12px 16px">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">JAIL SUMMARY</div>
+        <div id="jail-summary" style="font-family:var(--font-m);font-size:11px;line-height:1.8"></div>
+      </div>
+    </div>
+
+    <!-- Server Health + Network Panel -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>💻 Server Health &amp; Network</span>
+        <span id="health-ts" class="ts"></span>
+        <button class="refresh-btn" onclick="loadServerHealth(true)">⟳ Refresh</button>
+      </div>
+      <!-- System stats -->
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">SYSTEM</div>
+        <div id="health-stats" class="stats-grid"></div>
+      </div>
+      <!-- Network interfaces -->
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">NETWORK I/O</div>
+        <div id="health-net" style="font-family:var(--font-m);font-size:11px;line-height:1.8"></div>
+      </div>
+      <!-- Top processes -->
+      <div style="padding:12px 16px">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">TOP PROCESSES BY MEM</div>
+        <div class="fw-table-wrap">
+          <table class="fw-table">
+            <thead><tr><th>User</th><th>PID</th><th>CPU%</th><th>MEM%</th><th>Command</th></tr></thead>
+            <tbody id="health-procs"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end ip+health row -->
+
+  <!-- Threat Maps -->
+  <div class="panel">
+    <div class="panel-header">🌐 Global Cyber Threat Intelligence Maps</div>
+    <div class="threatmap-tabs">
+      <button class="threatmap-tab active" onclick="switchMap('kaspersky',this)">Kaspersky</button>
+      <button class="threatmap-tab" onclick="switchMap('fortinet',this)">FortiGuard</button>
+      <button class="threatmap-tab" onclick="switchMap('bitdefender',this)">Bitdefender</button>
+    </div>
+    <div id="map-kaspersky" class="threatmap-frame active">
+      <iframe src="https://cybermap.kaspersky.com/en/widget/dynamic/dark"
+              style="width:100%;height:520px;border:none;background:#000"
+              allowfullscreen title="Kaspersky Cyber Threat Map"></iframe>
+      <div class="dim" style="text-align:center;padding:6px;font-size:10px;letter-spacing:2px">
+        SOURCE: KASPERSKY SECURITY NETWORK — LIVE GLOBAL ATTACK VECTORS
+      </div>
+    </div>
+    <div id="map-fortinet" class="threatmap-frame">
+      <iframe src="https://threatmap.fortiguard.com/"
+              style="width:100%;height:520px;border:none;background:#000"
+              allowfullscreen title="FortiGuard Threat Map"></iframe>
+      <div class="dim" style="text-align:center;padding:6px;font-size:10px;letter-spacing:2px">
+        SOURCE: FORTIGUARD LABS — REAL-TIME THREAT INTELLIGENCE NETWORK
+      </div>
+    </div>
+    <div id="map-bitdefender" class="threatmap-frame">
+      <iframe src="https://threatmap.bitdefender.com/"
+              style="width:100%;height:520px;border:none;background:#000"
+              allowfullscreen title="Bitdefender Threat Map"></iframe>
+      <div class="dim" style="text-align:center;padding:6px;font-size:10px;letter-spacing:2px">
+        SOURCE: BITDEFENDER THREAT INTELLIGENCE — LIVE ATTACK FEED
+      </div>
+    </div>
+  </div>
+
+  <!-- 0-day feeds: BleepingComputer + THN -->
+  <div class="panel-row" style="margin-bottom:16px;align-items:start">
+    <div class="panel">
+      <div class="panel-header">
+        <span>🩸 BleepingComputer — Exploits &amp; 0-Days</span>
+        <button class="refresh-btn" onclick="loadSWPC()">⟳</button>
+      </div>
+      <div id="bleeping-feed" class="loading">Loading...</div>
+    </div>
+    <div class="panel">
+      <div class="panel-header">
+        <span>🕵 The Hacker News — Latest Threats</span>
+        <button class="refresh-btn" onclick="loadSWPC()">⟳</button>
+      </div>
+      <div id="thn-feed" class="loading">Loading...</div>
+    </div>
+  </div>
+
+  <!-- Downdetector + SANS ISC + Krebs -->
+  <div class="panel-row-3">
+    <div class="panel">
+      <div class="panel-header">📡 Downdetector — Service Outage Monitor</div>
+      <div style="padding:24px 16px;text-align:center">
+        <div style="font-size:12px;color:var(--text-dim);margin-bottom:18px;letter-spacing:1px">Downdetector does not allow embedding. Open directly:</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;max-width:600px;margin:0 auto">
+          <a href="https://downdetector.com/" target="_blank" class="qa-btn" style="padding:14px">
+            <div class="qa-icon">📡</div>Downdetector<span>All services</span>
+          </a>
+          <a href="https://downdetector.com/status/google/" target="_blank" class="qa-btn" style="padding:14px">
+            <div class="qa-icon">🔍</div>Google<span>status</span>
+          </a>
+          <a href="https://downdetector.com/status/cloudflare/" target="_blank" class="qa-btn" style="padding:14px">
+            <div class="qa-icon">🌐</div>Cloudflare<span>status</span>
+          </a>
+          <a href="https://downdetector.com/status/discord/" target="_blank" class="qa-btn" style="padding:14px">
+            <div class="qa-icon">💬</div>Discord<span>status</span>
+          </a>
+          <a href="https://downdetector.com/status/steam/" target="_blank" class="qa-btn" style="padding:14px">
+            <div class="qa-icon">🎮</div>Steam<span>status</span>
+          </a>
+          <a href="https://downdetector.com/status/amazon-web-services/" target="_blank" class="qa-btn" style="padding:14px">
+            <div class="qa-icon">☁</div>AWS<span>status</span>
+          </a>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-header">🌩 SANS Internet Storm Center — Daily Diary
+        <button class="refresh-btn" onclick="loadSWPC()">⟳</button>
+      </div>
+      <div id="sans-isc-feed" class="loading">Loading SANS ISC...</div>
+    </div>
+    <div class="panel">
+      <div class="panel-header">
+        <span>🔐 Krebs on Security</span>
+        <button class="refresh-btn" onclick="loadSWPC()">⟳</button>
+      </div>
+      <div id="krebs-feed" class="loading">Loading Krebs...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ WEATHER OPS ═══ -->
+<div id="tab-weather" class="tab-content">
+  <div id="wx-alert-banner" class="wx-alert-banner" style="display:none"></div>
+
+  <!-- ── Garden & Lawn Care ─────────────────────────────────────────── -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>🌱 Garden &amp; Lawn Care — Port Washington 53074</span>
+      <span id="garden-ts" class="ts"></span>
+      <button class="refresh-btn" onclick="loadGarden(true)">⟳ Refresh</button>
+    </div>
+    <div style="background:linear-gradient(90deg,#071007,#0a140a,#071007);border-bottom:1px solid var(--border);
+         padding:8px 16px;font-family:var(--font-m);font-size:9px;letter-spacing:3px;color:#6a9c4a;text-align:center">
+      AZALEAS · WILDFLOWERS · LAWN // ZONE 5b // WATERING INTELLIGENCE // FROST TRACKING
+    </div>
+    <div id="garden-panel" class="loading">Calculating garden conditions...</div>
+  </div>
+
+  <!-- ── Wisconsin Fire & Burn Ban ──────────────────────────────────── -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>🔥 Wisconsin Fire &amp; Burn Status</span>
+      <span id="burnban-ts" class="ts"></span>
+      <a href="https://apps.dnr.wi.gov/forestryapps/burnrestriction/" target="_blank"
+         class="refresh-btn" style="text-decoration:none">WI DNR ↗</a>
+      <button class="refresh-btn" onclick="loadBurnBan(true)">⟳</button>
+    </div>
+    <div id="burnban-ozaukee" style="padding:12px 16px;border-bottom:1px solid var(--border)"></div>
+    <div class="panel-sub-header">High Danger Counties</div>
+    <div id="burnban-counties" class="loading">Loading burn status...</div>
+  </div>
+
+  <!-- METAR Ticker -->
+  <div class="panel" style="margin-bottom:12px">
+    <div class="panel-header">
+      📻 METAR — KMKE / KETB / KMWC / KSBM
+      <button class="refresh-btn" onclick="loadMETAR()">⟳ Refresh</button>
+      <span id="metar-ts" class="ts"></span>
+    </div>
+    <div id="metar-panel" class="loading">Loading METAR data...</div>
+  </div>
+
+  <div class="panel-row">
+    <!-- 7-Day Forecast -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>🌡 NWS 7-Day Forecast — Port Washington, WI (53074)</span>
+        <span id="wx-ts" class="ts"></span>
+        <button class="refresh-btn" onclick="loadWeather()">⟳ Refresh</button>
+      </div>
+      <div id="wx-forecast"></div>
+    </div>
+
+    <!-- Current Conditions -->
+    <div class="panel">
+      <div class="panel-header">📊 Current Conditions — ASOS Station
+        <button class="refresh-btn" onclick="loadWeather(true)">⟳ Refresh</button>
+      </div>
+      <div id="wx-current"></div>
+    </div>
+  </div>
+
+  <!-- SWPC Space Weather row -->
+  <div class="panel-row">
+    <div class="panel">
+      <div class="panel-header">🌌 NOAA SWPC — Space Weather &amp; Geomagnetic Activity
+        <button class="refresh-btn" onclick="loadSWPC()">⟳</button>
+      </div>
+      <div id="swpc-panel" class="loading">Loading space weather...</div>
+    </div>
+
+    <!-- AirNow Quality -->
+    <div class="panel">
+      <div class="panel-header">🌫 Air Quality — Port Washington Area
+        <button class="refresh-btn" onclick="loadAirNow()">⟳</button>
+      </div>
+      <div id="airnow-panel" class="loading">Loading air quality...</div>
+      <div class="panel-sub-header">🔥 Active U.S. Wildfires — NIFC / IRWIN</div>
+      <div id="wildfires-panel" class="loading">Loading wildfire data...</div>
+    </div>
+  </div>
+
+  <div class="panel-row">
+    <!-- NWS Radar + Windy Wind Map stacked -->
+    <div class="panel">
+      <div class="panel-header">📡 NWS Radar — Milwaukee/Sullivan (KMKX)</div>
+      <div style="text-align:center;padding:12px">
+        <img src="https://radar.weather.gov/ridge/standard/KMKX_loop.gif"
+             id="radar-img"
+             style="max-width:100%;border:1px solid var(--border)"
+             alt="NWS KMKX Radar Loop">
+        <div class="dim" style="font-size:10px;padding:6px;letter-spacing:2px">
+          KMKX — MILWAUKEE/SULLIVAN, WI // LOOP AUTO-REFRESHES EVERY 5 MIN
+        </div>
+      </div>
+      <div class="panel-header" style="border-top:1px solid var(--border)">🌬 Windy.com — Live Wind & Conditions</div>
+      <iframe src="https://embed.windy.com/embed2.html?lat=43.75&lon=-87.71&zoom=6&level=surface&overlay=wind&menu=&message=true&marker=true&calendar=&pressure=&type=map&location=coordinates&detail=&metricWind=mph&metricTemp=%C2%B0F&radarRange=-1"
+              style="width:100%;height:420px;border:none" title="Windy Wind Map"></iframe>
+      <div class="dim" style="text-align:center;font-size:10px;padding:6px;letter-spacing:2px;border-top:1px solid var(--border)">WINDY.COM — LIVE SURFACE WIND — ZOOMABLE & INTERACTIVE</div>
+    </div>
+
+    <!-- NWS Graphical Forecast -->
+    <div class="panel">
+      <div class="panel-header">📈 NWS Graphical Weather Outlook</div>
+      <div style="text-align:center;padding:12px">
+        <img src="https://forecast.weather.gov/meteograms/Plotter.php?lat=43.39&lon=-87.88&wfo=MKX&zcode=WIZ044&gset=18&gdiff=3&unit=0&tinfo=EY0&ahour=0&pcmd=11011111111110000000000000000000000000000000000000000000000&lg=en&indu=1!1!1!&dd=&bw=&hrspan=48&pqpfhr=6&psnwhr=6"
+             style="max-width:100%;border:1px solid var(--border)"
+             alt="NWS Meteogram Port Washington WI">
+        <div class="dim" style="font-size:10px;padding:6px;letter-spacing:2px">
+          NWS METEOGRAM — 48HR TEMP/PRECIP/WIND/HUMIDITY FORECAST
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel-row">
+    <!-- Weather Prediction Center -->
+    <div class="panel">
+      <div class="panel-header">🗺 Weather Prediction Center — US Outlook</div>
+      <div style="text-align:center;padding:12px">
+        <img src="https://www.wpc.ncep.noaa.gov/noaa/noaad1.gif"
+             style="max-width:100%;border:1px solid var(--border)"
+             alt="WPC Day 1 Outlook">
+        <div class="dim" style="font-size:10px;padding:6px;letter-spacing:2px">
+          WPC DAY 1 — NATIONAL FORECAST // <a href="https://www.wpc.ncep.noaa.gov" target="_blank" style="color:var(--accent)">wpc.ncep.noaa.gov</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- National Hurricane Center -->
+    <div class="panel">
+      <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center">
+        <span>🌀 National Hurricane Center — Tropical Outlook</span>
+        <a href="https://www.nhc.noaa.gov" target="_blank" style="color:var(--accent);font-size:10px;text-decoration:none;letter-spacing:2px;border:1px solid var(--accent);padding:2px 8px">nhc.noaa.gov ↗</a>
+      </div>
+      <div style="padding:10px 12px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <div style="text-align:center">
+            <div style="font-size:9px;letter-spacing:3px;color:var(--accent);margin-bottom:6px">ATLANTIC — 2-DAY</div>
+            <img src="https://www.nhc.noaa.gov/xgtwo/two_atl_2d0.png"
+                 style="width:100%;border:1px solid var(--border)"
+                 alt="NHC Atlantic 2-Day Outlook">
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:9px;letter-spacing:3px;color:var(--accent);margin-bottom:6px">ATLANTIC — 5-DAY</div>
+            <img src="https://www.nhc.noaa.gov/xgtwo/two_atl_5d0.png"
+                 style="width:100%;border:1px solid var(--border)"
+                 alt="NHC Atlantic 5-Day Outlook">
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+          <a href="https://www.nhc.noaa.gov/#ATL" target="_blank" style="font-size:10px;color:var(--text-dim);text-decoration:none;letter-spacing:1px;padding:3px 10px;border:1px solid var(--border)">Atlantic Basin ↗</a>
+          <a href="https://www.nhc.noaa.gov/cyclones/" target="_blank" style="font-size:10px;color:var(--text-dim);text-decoration:none;letter-spacing:1px;padding:3px 10px;border:1px solid var(--border)">Active Storms ↗</a>
+          <a href="https://www.nhc.noaa.gov/gtwo.php" target="_blank" style="font-size:10px;color:var(--text-dim);text-decoration:none;letter-spacing:1px;padding:3px 10px;border:1px solid var(--border)">Full Outlook ↗</a>
+        </div>
+        <div style="font-size:9px;color:var(--text-dim);letter-spacing:2px;text-align:center;margin-top:8px">
+          ATLANTIC SEASON: JUN 1 – NOV 30 // SOURCE: NOAA NHC
+        </div>
+      </div>
+    </div>
+  </div><!-- end panel-row WPC/NHC -->
+
+  <div class="panel-row">
+    <!-- Active Severe Weather -->
+    <div class="panel">
+      <div class="panel-header">⚠ Active Severe Weather Warnings — Wisconsin
+        <button class="refresh-btn" onclick="loadWeather(true)">⟳</button>
+      </div>
+      <div id="wx-alerts-list" class="wx-alerts-list"></div>
+    </div>
+
+    <!-- Earthquakes -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>🌋 USGS — Significant Earthquakes (7 Days)</span>
+        <span id="quake-ts" class="ts"></span>
+        <button class="refresh-btn" onclick="loadEarthquakes(true)">⟳ Refresh</button>
+      </div>
+      <div id="quake-list" class="quake-list"></div>
+    </div>
+
+    <!-- GDACS Global Disasters -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>🌐 GDACS — Global Disaster Alerts</span>
+        <span id="gdacs-ts" class="ts"></span>
+        <button class="refresh-btn" onclick="loadGDACS(true)">⟳ Refresh</button>
+      </div>
+      <div id="gdacs-list" class="loading">Loading...</div>
+    </div>
+  </div>
+
+  <!-- 511 Wisconsin Interactive Map -->
+  <div class="panel">
+    <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center">
+      <span>🚗 Wisconsin 511 — Interactive Road Map</span>
+      <div style="display:flex;gap:8px;font-size:10px">
+        <a href="https://511wi.gov/" target="_blank" style="color:var(--accent);text-decoration:none;border:1px solid var(--accent);padding:3px 10px;letter-spacing:2px">511WI PORTAL ↗</a>
+        <a href="https://511wi.gov/#:Alerts" target="_blank" style="color:var(--text-dim);text-decoration:none;border:1px solid var(--border);padding:3px 10px;letter-spacing:2px">ALERTS ↗</a>
+      </div>
+    </div>
+    <div id="wi511-map" style="height:420px;width:100%;background:#07111f;position:relative"></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px;padding:10px 14px;border-top:1px solid var(--border)">
+      <a href="https://www.weather.gov/greatlakes/globs?sort=4&lake=Michigan&kt=f&trends=f&seagull=t&shipsonly=f" target="_blank" class="qa-btn" style="padding:8px 10px">
+        <div class="qa-icon" style="font-size:16px">🌊</div>GL Obs<span>Great Lakes stations</span>
+      </a>
+      <a href="https://www.ndbc.noaa.gov/station_page.php?station=pwaw3" target="_blank" class="qa-btn" style="padding:8px 10px">
+        <div class="qa-icon" style="font-size:16px">📡</div>NDBC PWAW3<span>Port Washington buoy</span>
+      </a>
+      <a href="https://www.glerl.noaa.gov/res/glcfs/ncast.php?lake=mih" target="_blank" class="qa-btn" style="padding:8px 10px">
+        <div class="qa-icon" style="font-size:16px">🌡</div>GLERL LkMich<span>Surface currents</span>
+      </a>
+      <a href="https://www.swpc.noaa.gov/" target="_blank" class="qa-btn" style="padding:8px 10px">
+        <div class="qa-icon" style="font-size:16px">🌌</div>NOAA SWPC<span>Space weather</span>
+      </a>
+      <a href="https://maps.app.goo.gl/YknkbUTF4NNb28Mh9" target="_blank" class="qa-btn" style="padding:8px 10px">
+        <div class="qa-icon" style="font-size:16px">🗺</div>Google Traffic<span>Milwaukee area</span>
+      </a>
+      <a href="https://www.waze.com/live-map/directions?to=ll.43.3989%2C-87.8936" target="_blank" class="qa-btn" style="padding:8px 10px">
+        <div class="qa-icon" style="font-size:16px">🚙</div>Waze Map<span>Live conditions</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- GLERL Great Lakes Surface Model — live images -->
+  <div class="panel">
+    <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center">
+      <span>🌊 NOAA GLERL — Lake Michigan GLCFS Nowcast</span>
+      <span style="display:flex;gap:8px;align-items:center">
+        <button class="refresh-btn" onclick="loadGlerlImages(true)">⟳ Refresh</button>
+        <a href="https://www.glerl.noaa.gov/res/glcfs/ncast.php?lake=mih" target="_blank"
+           style="color:var(--accent);text-decoration:none;font-size:10px;border:1px solid var(--accent);padding:3px 10px;letter-spacing:2px">
+          FULL MODEL ↗
+        </a>
+      </span>
+    </div>
+    <div id="glerl-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:12px">
+      <div style="text-align:center">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--accent);margin-bottom:6px">SURFACE TEMP</div>
+        <img class="glerl-img" data-name="temp" alt="Surface Temperature" style="width:100%;border:1px solid var(--border)" onerror="this.style.display='none'">
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--accent);margin-bottom:6px">BOTTOM TEMP</div>
+        <img class="glerl-img" data-name="btemp" alt="Bottom Temperature" style="width:100%;border:1px solid var(--border)" onerror="this.style.display='none'">
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--accent);margin-bottom:6px">SURFACE CURRENTS</div>
+        <img class="glerl-img" data-name="uv" alt="Surface Currents" style="width:100%;border:1px solid var(--border)" onerror="this.style.display='none'">
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:6px">WATER LEVEL</div>
+        <img class="glerl-img" data-name="zeta" alt="Water Level" style="width:100%;border:1px solid var(--border)" onerror="this.style.display='none'">
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:6px">WIND STRESS</div>
+        <img class="glerl-img" data-name="wnd" alt="Wind Stress" style="width:100%;border:1px solid var(--border)" onerror="this.style.display='none'">
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:6px">GREAT LAKES SST</div>
+        <img class="glerl-img" data-name="glsea" alt="GL SST" style="width:100%;border:1px solid var(--border)" onerror="this.style.display='none'">
+      </div>
+    </div>
+    <div style="font-size:9px;color:var(--text-dim);letter-spacing:2px;padding:0 12px 10px;text-align:center">
+      IMAGES REFRESHED EVERY 6 HOURS — SOURCE: NOAA GLERL GLCFS NOWCAST
+    </div>
+  </div>
+
+  <!-- Lake Michigan buoy + wind trend (full width) -->
+  <div class="panel">
+    <div class="panel-header">
+      🌊 Lake Michigan — PWAW3 Port Washington &amp; 45013 Atwater Park
+      <span class="ts" id="lake-ts"></span>
+      <button class="refresh-btn" onclick="loadLakeMichigan(true)">⟳ Refresh</button>
+    </div>
+    <div id="buoy-data" class="loading">Loading station data...</div>
+    <div class="panel-sub-header">PWAW3 — Last Hour Wind Trend (5-min intervals)</div>
+    <div id="pwaw3-trend"></div>
+  </div>
+
+  <!-- NWS text products — side by side -->
+  <div class="panel-row">
+    <div class="panel" style="min-width:0;overflow:hidden">
+      <div class="panel-header">
+        <span>⛵ NWS Nearshore Marine (NSH) — MKX · LMZ645 highlighted</span>
+        <button class="refresh-btn" onclick="loadLakeMichigan(true)">⟳</button>
+      </div>
+      <div id="marine-forecast" class="loading" style="max-height:600px;overflow-y:auto">Loading marine forecast...</div>
+    </div>
+    <div class="panel" style="min-width:0;overflow:hidden">
+      <div class="panel-header">
+        <span>🌀 NWS Area Forecast Discussion — MKX</span>
+        <span class="ts" id="afd-issued"></span>
+      </div>
+      <div id="afd-text" class="loading" style="max-height:600px;overflow-y:auto">Loading AFD...</div>
+    </div>
+  </div>
+
+  <!-- ADSB + AIS side by side -->
+  <div class="panel-row" style="align-items:start">
+    <div class="panel" style="flex:1">
+      <div class="panel-header">✈ Live Air Traffic — adsb.lol (Milwaukee / Lake Michigan)</div>
+      <iframe src="https://adsb.lol/?icao=&lat=43.4&lon=-87.9&zoom=8"
+              style="width:100%;height:480px;border:none;background:#000"
+              title="ADSB.lol Live Flight Tracker" allowfullscreen></iframe>
+      <div class="dim" style="text-align:center;font-size:10px;padding:6px;letter-spacing:2px;border-top:1px solid var(--border)">
+        ADSB.LOL — LIVE ADS-B FLIGHT DATA — MILWAUKEE / LAKE MICHIGAN REGION
+      </div>
+    </div>
+    <div class="panel" style="flex:1">
+      <div class="panel-header">⚓ AIS Marine Traffic — Lake Michigan</div>
+      <iframe src="https://www.marinetraffic.com/en/ais/embed/maptype:0/shownames:1/mmsi:/ext:0/zoom:8/centery:43.8/centerx:-87.4/showmenu:false/remember:false"
+              style="width:100%;height:480px;border:none;background:#000"
+              title="MarineTraffic AIS Lake Michigan" allowfullscreen></iframe>
+      <div class="dim" style="text-align:center;font-size:10px;padding:6px;letter-spacing:2px;border-top:1px solid var(--border)">
+        MARINETRAFFIC AIS — LIVE VESSEL POSITIONS — LAKE MICHIGAN / PORT WASHINGTON
+      </div>
+    </div>
+  </div>
+
+  <!-- WI Warnings & Maritime -->
+  <div class="panel" style="margin-bottom:16px">
+    <div class="panel-header">⚠ WISCONSIN ACTIVE WARNINGS — NWS
+      <button class="refresh-btn" onclick="loadWIWarnings(true)">⟳</button>
+    </div>
+    <div class="wi-warnings-layout">
+      <div class="wi-warnings-map">
+        <img id="wi-warn-map" src="https://forecast.weather.gov/wwamap/png/WI.png"
+             alt="Wisconsin Warning Map" style="width:100%;border-radius:4px;display:block"
+             onerror="this.style.display='none'">
+        <div style="font-size:9px;color:var(--text-dim);text-align:center;margin-top:4px">
+          NWS WATCH/WARN/ADVISORY MAP — AUTO-REFRESH
+        </div>
+      </div>
+      <div id="wi-warnings-list" class="wi-warnings-list loading">Loading warnings...</div>
+    </div>
+  </div>
+  <div class="panel-row">
+    <div class="panel">
+      <div class="panel-header">⚓ USCG LNM — District 9 (Great Lakes)
+        <button class="refresh-btn" onclick="loadLNM(true)">⟳</button>
+      </div>
+      <div id="lnm-panel" class="loading">Loading notices...</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════ COMMS ═══ -->
+<div id="tab-comms" class="tab-content">
+
+  <!-- Top row: Notepad + Reminders -->
+  <div class="panel-row">
+    <div class="panel notepad-panel">
+      <div class="panel-header">
+        <span>📝 Classified Notepad</span>
+        <button class="refresh-btn" onclick="saveNote()">💾 Save</button>
+        <button class="refresh-btn" onclick="downloadNote()">⬇ Download</button>
+        <button class="refresh-btn" onclick="notepadToLibrary()" title="Save current notepad as a new note in the library">📚 Save to Library</button>
+        <button class="refresh-btn" onclick="exportObsidian()" title="Download Markdown intel snapshot">🗂 Obsidian Export</button>
+      </div>
+      <div id="note-status" class="note-status"></div>
+      <textarea id="notepad" class="notepad" placeholder="Begin transmission...&#10;&#10;All notes are saved server-side and downloadable locally."></textarea>
+    </div>
+    <div class="panel">
+      <div class="panel-header">⏰ Mission Reminders</div>
+      <div class="reminder-form">
+        <input type="text" id="rem-text" class="rem-input" placeholder="Reminder text...">
+        <input type="datetime-local" id="rem-time" class="rem-input">
+        <button class="refresh-btn full-btn" onclick="addReminder()">+ Add Reminder</button>
+      </div>
+      <div id="reminders-list" class="reminders-list"></div>
+    </div>
+  </div>
+
+  <!-- Notes Library -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>📚 Notes Library</span>
+      <button class="refresh-btn" onclick="notesNewDoc()">+ New Note</button>
+      <button class="refresh-btn" onclick="loadNotesList()">⟳</button>
+    </div>
+    <!-- Editor (hidden until a note is open) -->
+    <div id="notes-editor-wrap" style="display:none;padding:10px 14px;border-bottom:1px solid var(--border)">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
+        <input type="text" id="notes-title" placeholder="Note title..."
+               style="flex:1;min-width:160px;background:var(--bg2);border:1px solid var(--border2);color:var(--text);font-family:var(--font-m);font-size:12px;padding:5px 10px;border-radius:3px;outline:none">
+        <button class="refresh-btn" onclick="notesSave()">💾 Save</button>
+        <button class="refresh-btn" onclick="notesDownload()" title="Download as .txt">⬇</button>
+        <button class="refresh-btn" onclick="notesCloseEditor()" style="color:var(--text-dim)">✕ Close</button>
+      </div>
+      <textarea id="notes-body" style="width:100%;min-height:260px;background:var(--bg2);border:1px solid var(--border2);color:var(--text);font-family:var(--font-m);font-size:12px;line-height:1.6;padding:10px;border-radius:3px;resize:vertical;outline:none;box-sizing:border-box" placeholder="Start writing..."></textarea>
+      <div id="notes-save-status" style="font-size:10px;color:var(--text-dim);margin-top:4px;font-family:var(--font-m);letter-spacing:1px"></div>
+    </div>
+    <!-- File list -->
+    <div id="notes-list" class="loading">Loading notes...</div>
+  </div>
+
+  <!-- Voice Memo Recorder -->
+  <div class="panel">
+    <div class="panel-header">🎙 Voice Memo Recorder</div>
+    <div class="memo-recorder">
+      <div class="memo-controls">
+        <button id="rec-btn" class="rec-btn" onclick="toggleRecording()">⏺ Record</button>
+        <div id="rec-status" class="rec-status">Ready</div>
+        <div id="rec-timer" class="rec-timer">00:00</div>
+      </div>
+      <div class="memo-name-row">
+        <input type="text" id="memo-name" class="rem-input" placeholder="Memo title (e.g. Chapter 3 Notes, Character Idea...)">
+        <button id="save-memo-btn" class="refresh-btn" onclick="saveMemo()" disabled>💾 Save Memo</button>
+      </div>
+      <audio id="memo-preview" controls style="width:100%;display:none;margin-top:8px"></audio>
+    </div>
+  </div>
+
+  <!-- Memo Library -->
+  <div class="panel">
+    <div class="panel-header">📼 Voice Memo Library
+      <button class="refresh-btn" onclick="loadMemos()">⟳ Refresh</button>
+    </div>
+    <div id="memo-library" class="loading">Loading memos...</div>
+  </div>
+
+</div>
+
+<footer>
+  <span>KEVSEC EXECUTIVE INTELLIGENCE PORTAL // CLASSIFICATION: TOP SECRET/SCI // CODEWORD</span>
+  <span>SESSION ACTIVE // ALL ACCESS LOGGED AND MONITORED</span>
+</footer>
+
+<!-- ═══ OPS CONFIRM MODAL (server/service actions) ═══════════════════════ -->
+<div id="ops-modal" style="display:none;position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,0.92);
+     align-items:center;justify-content:center;font-family:var(--font-m)">
+  <div style="max-width:480px;width:92%;position:relative;overflow:hidden" id="ops-modal-inner">
+
+    <!-- scanline -->
+    <div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.1) 2px,rgba(0,0,0,0.1) 4px);pointer-events:none"></div>
+
+    <!-- header -->
+    <div id="ops-modal-header" style="padding:16px 22px;text-align:center;border-bottom:2px solid var(--ops-color,#cc7700)">
+      <div style="font-size:20px;margin-bottom:4px" id="ops-modal-icon">⚡</div>
+      <div id="ops-modal-title" style="font-size:12px;letter-spacing:6px;color:var(--ops-color,#cc7700)">ACTION</div>
+      <div id="ops-modal-sub" style="font-size:9px;letter-spacing:3px;color:var(--ops-dimcolor,#7a4400);margin-top:3px"></div>
+    </div>
+
+    <!-- countdown -->
+    <div style="padding:20px 22px;text-align:center;border-bottom:1px solid #1a1200">
+      <div style="font-size:9px;letter-spacing:3px;color:var(--ops-dimcolor,#7a4400);margin-bottom:8px">HOLD TO ARM</div>
+      <div id="ops-countdown" style="font-size:56px;letter-spacing:6px;font-family:var(--font-m);
+           text-shadow:0 0 16px var(--ops-color,#cc7700);line-height:1;color:var(--ops-color,#cc7700)">10</div>
+      <div style="height:3px;background:#1a1200;margin:12px 0 10px">
+        <div id="ops-countdown-bar" style="height:100%;width:0%;background:var(--ops-color,#cc7700);transition:width 1s linear"></div>
+      </div>
+      <button id="ops-abort-btn" onclick="opsAbort()"
+              style="background:transparent;border:1px solid #3a2200;color:#7a4400;
+                     font-family:var(--font-m);font-size:10px;letter-spacing:3px;padding:6px 24px;cursor:pointer">
+        ■ ABORT
+      </button>
+    </div>
+
+    <!-- confirm section -->
+    <div style="padding:18px 22px">
+      <div id="ops-checkbox-wrap" style="margin-bottom:14px;display:none">
+        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer" id="ops-confirm-label">
+          <input id="ops-confirm-check" type="checkbox" disabled onchange="opsCheckReady()"
+                 style="margin-top:2px;accent-color:var(--ops-color,#cc7700);width:14px;height:14px;flex-shrink:0">
+          <span id="ops-checkbox-text" style="font-size:10px;color:#cc9900;letter-spacing:1px;line-height:1.6"></span>
+        </label>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button onclick="opsAbort()"
+                style="flex:1;background:transparent;border:1px solid #1a1200;color:#3a2200;
+                       font-family:var(--font-m);font-size:10px;letter-spacing:3px;padding:10px;cursor:pointer">
+          ABORT
+        </button>
+        <button id="ops-confirm-btn" disabled onclick="opsExecute()"
+                style="flex:2;background:linear-gradient(180deg,#1a0e00,#0d0700);
+                       border:2px solid #2a1a00;color:#2a1a00;
+                       font-family:var(--font-m);font-size:11px;letter-spacing:3px;padding:10px;
+                       cursor:not-allowed;transition:all 0.2s" id="ops-confirm-btn">
+          CONFIRM
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ NUKE AUTHORITY MODAL ══════════════════════════════════════════════ -->
+<div id="nuke-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.96);
+     align-items:center;justify-content:center;font-family:var(--font-m)">
+  <div style="max-width:560px;width:92%;border:2px solid #cc0000;background:#050000;
+       box-shadow:0 0 60px #cc000088;position:relative;overflow:hidden">
+
+    <!-- scanline overlay -->
+    <div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.15) 2px,rgba(0,0,0,0.15) 4px);pointer-events:none"></div>
+
+    <!-- header -->
+    <div style="background:linear-gradient(90deg,#1a0000,#0d0000,#1a0000);border-bottom:2px solid #cc0000;
+         padding:18px 24px;text-align:center">
+      <div style="font-size:22px;margin-bottom:6px">☢</div>
+      <div style="color:#ff2200;font-size:13px;letter-spacing:8px;margin-bottom:4px">NUKE AUTHORITY</div>
+      <div style="color:#7a0000;font-size:9px;letter-spacing:4px">TIER-OMEGA DESTRUCTION PROTOCOL // KEVSEC STRATEGIC COMMAND</div>
+    </div>
+
+    <!-- countdown -->
+    <div style="padding:24px;text-align:center;border-bottom:1px solid #330000">
+      <div style="font-size:9px;letter-spacing:3px;color:#7a0000;margin-bottom:10px">ARMING SEQUENCE — MANDATORY HOLD</div>
+      <div id="nuke-countdown" style="font-size:64px;color:#ff2200;letter-spacing:8px;font-family:var(--font-m);
+           text-shadow:0 0 20px #ff2200;line-height:1">30</div>
+      <div id="nuke-countdown-bar-wrap" style="height:4px;background:#1a0000;margin:14px 0 8px">
+        <div id="nuke-countdown-bar" style="height:100%;width:0%;background:#cc0000;transition:width 1s linear"></div>
+      </div>
+      <button id="nuke-abort-btn" onclick="abortNuke()"
+              style="margin-top:10px;background:#0d0000;border:1px solid #550000;color:#aa3333;
+                     font-family:var(--font-m);font-size:10px;letter-spacing:4px;padding:8px 28px;
+                     cursor:pointer;transition:all 0.2s"
+              onmouseover="this.style.borderColor='#aa0000';this.style.color='#ff4444'"
+              onmouseout="this.style.borderColor='#550000';this.style.color='#aa3333'">
+        ■ ABORT ARMING SEQUENCE
+      </button>
+      <div id="nuke-armed-msg" style="display:none;font-size:11px;letter-spacing:3px;color:#ff6600;margin-top:10px">
+        ⚠ SYSTEM ARMED — AUTHENTICATE TO PROCEED
+      </div>
+    </div>
+
+    <!-- auth + confirmation -->
+    <div style="padding:24px">
+      <div style="margin-bottom:16px">
+        <div style="font-size:9px;letter-spacing:3px;color:#7a0000;margin-bottom:8px">AUTHORIZATION CODE</div>
+        <input id="nuke-password" type="password" placeholder="ENTER AUTHORIZATION CODE"
+               disabled
+               style="width:100%;box-sizing:border-box;background:#0d0000;border:1px solid #550000;
+                      color:#ff6600;font-family:var(--font-m);font-size:13px;letter-spacing:3px;
+                      padding:10px 14px;outline:none;disabled-opacity:0.3"
+               oninput="nukeCheckReady()">
+        <div id="nuke-pw-error" style="display:none;color:#ff2200;font-size:9px;letter-spacing:2px;margin-top:4px">
+          ✕ INVALID AUTHORIZATION CODE
+        </div>
+      </div>
+
+      <div style="margin-bottom:20px">
+        <label style="display:flex;align-items:flex-start;gap:12px;cursor:pointer;opacity:0.4" id="nuke-confirm-label">
+          <input id="nuke-confirm" type="checkbox" disabled onchange="nukeCheckReady()"
+                 style="margin-top:2px;accent-color:#cc0000;width:16px;height:16px;flex-shrink:0">
+          <span style="font-size:10px;color:#ff6600;letter-spacing:1px;line-height:1.6">
+            I UNDERSTAND THIS ACTION IS IRREVERSIBLE. ALL DATA, CREDENTIALS, KEYS, AND MEDIA WILL BE
+            PERMANENTLY DESTROYED. THE SYSTEM WILL NOT RECOVER. I AM AUTHORIZED TO EXECUTE THIS PROTOCOL.
+          </span>
+        </label>
+      </div>
+
+      <div style="font-size:9px;color:#330000;letter-spacing:2px;margin-bottom:16px;line-height:1.8">
+        PHASE 1 — CREDENTIALS &amp; KEYS · PHASE 2 — APPLICATION DATA · PHASE 3 — MEDIA WIPE · PHASE 4 — SYSTEM HALT
+      </div>
+
+      <div style="display:flex;gap:12px">
+        <button onclick="closeNukeModal()"
+                style="flex:1;background:#0d0000;border:1px solid #330000;color:#7a0000;
+                       font-family:var(--font-m);font-size:10px;letter-spacing:4px;padding:12px;cursor:pointer">
+          ABORT
+        </button>
+        <button id="nuke-execute-btn" disabled onclick="primeNuke()"
+                style="flex:2;background:linear-gradient(180deg,#1a0000,#0d0000);
+                       border:2px solid #330000;color:#330000;
+                       font-family:var(--font-m);font-size:11px;letter-spacing:4px;padding:12px;
+                       cursor:not-allowed;transition:all 0.3s"
+                onmouseover="if(!this.disabled){this.style.boxShadow='0 0 30px #cc0000aa'}"
+                onmouseout="this.style.boxShadow='none'">
+          ☢ PRIME DETONATOR
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 3: Final confirmation (shown after priming) -->
+    <div id="nuke-final-confirm" style="display:none;padding:28px;text-align:center;border-top:2px solid #cc0000;background:#0a0000">
+      <div style="font-size:9px;letter-spacing:4px;color:#ff2200;margin-bottom:6px">⚠ FINAL AUTHORIZATION REQUIRED ⚠</div>
+      <div style="font-size:10px;color:#7a0000;letter-spacing:2px;margin-bottom:20px;line-height:1.8">
+        DETONATOR IS PRIMED.<br>THIS IS YOUR LAST OPPORTUNITY TO ABORT.<br>
+        CLICKING BELOW WILL IMMEDIATELY BEGIN IRREVERSIBLE DESTRUCTION.
+      </div>
+      <div style="display:flex;gap:12px">
+        <button onclick="closeNukeModal()"
+                style="flex:1;background:#0d0000;border:1px solid #330000;color:#7a0000;
+                       font-family:var(--font-m);font-size:10px;letter-spacing:4px;padding:14px;cursor:pointer">
+          ABORT — STAND DOWN
+        </button>
+        <button onclick="executeNuke()"
+                style="flex:2;background:linear-gradient(180deg,#4a0000,#1a0000);
+                       border:2px solid #ff2200;color:#ff2200;
+                       font-family:var(--font-m);font-size:12px;letter-spacing:3px;padding:14px;
+                       cursor:pointer;box-shadow:0 0 30px #cc0000aa;transition:all 0.3s"
+                onmouseover="this.style.boxShadow='0 0 60px #ff2200cc';this.style.background='linear-gradient(180deg,#660000,#2a0000)'"
+                onmouseout="this.style.boxShadow='0 0 30px #cc0000aa';this.style.background='linear-gradient(180deg,#4a0000,#1a0000)'">
+          ☢ CONFIRM — EXECUTE TOTAL DESTRUCTION
+        </button>
+      </div>
+    </div>
+
+    <!-- execution screen (hidden until triggered) -->
+    <div id="nuke-executing" style="display:none;padding:40px;text-align:center">
+      <div style="font-size:32px;margin-bottom:16px">☢</div>
+      <div style="font-size:14px;letter-spacing:6px;color:#ff2200;margin-bottom:12px">DETONATION SEQUENCE INITIATED</div>
+      <div style="font-size:10px;color:#7a0000;letter-spacing:2px;line-height:2" id="nuke-status-log"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="/static/js/main.js"></script>
+</body>
+</html>
