@@ -46,6 +46,20 @@ ENV_FILE          = os.path.join(os.path.dirname(__file__), ".env")
 os.makedirs(MEMOS_DIR, exist_ok=True)
 os.makedirs(NOTES_DIR, exist_ok=True)
 
+HDRS = {"User-Agent": "KEVSec/1.0 ops@kevsec.com"}
+
+# Presidential schedule regex — compiled once at module level
+_DATE_PAT = re.compile(
+    r'text-\[#5C5B5B\][^>]*>\s*([\w]+,)\s*</span>\s*'
+    r'<span[^>]*text-gray-700[^>]*>\s*([\w]+ \d+, \d{4})\s*</span>',
+    re.DOTALL)
+_EVENT_PAT = re.compile(
+    r'data-tooltip="([^"]+)".*?'
+    r'text-sm font-light">(\d+:\d+ [AP]M)</div>.*?'
+    r'text-sm font-light text-gray-600 mt-2">\s*(.*?)\s*</div>',
+    re.DOTALL)
+_WS_PAT = re.compile(r'\s+')
+
 _cache = {}
 CACHE_TTL        = 300    # 5 min — live/frequent data (stocks, METAR, buoy, server stats)
 TARPIT_RESET_FILE = os.path.join(DATA_DIR, "tarpit_reset.json")
@@ -426,7 +440,7 @@ def api_metar():
         r = requests.get(
             "https://aviationweather.gov/api/data/metar",
             params={"ids": "KMKE,KETB,KMWC,KSBM", "format": "json"},
-            headers={"User-Agent": "KEVSec/1.0 ops@kevsec.com"},
+            headers=HDRS,
             timeout=10)
         stations = []
         for m in r.json():
@@ -723,7 +737,7 @@ def api_weather():
     cached = cache_get("weather", ttl=3600, force=force)
     if cached:
         return jsonify(cached)
-    hdrs = {"User-Agent": "KEVSec/1.0 ops@kevsec.com"}
+    hdrs = HDRS
     forecast, alerts, obs = [], [], {}
     try:
         pt = requests.get("https://api.weather.gov/points/43.3875,-87.8756",
@@ -1087,7 +1101,7 @@ def api_wikipedia():
     today = datetime.date.today()
     mm = today.strftime("%m")
     dd = today.strftime("%d")
-    hdrs = {"User-Agent": "KEVSec/1.0 ops@kevsec.com"}
+    hdrs = HDRS
     result = {"tfa": {}, "dyk": [], "news": [], "onthisday": [],
               "date": today.strftime("%B %d, %Y"),
               "fetched": _ts()}
@@ -1241,7 +1255,7 @@ def api_gdacs():
     if cached:
         return jsonify(cached)
     try:
-        hdrs = {"User-Agent": "KEVSec/1.0 ops@kevsec.com"}
+        hdrs = HDRS
         f = feedparser.parse("https://www.gdacs.org/xml/rss.xml")
         events = []
         for e in f.entries[:20]:
@@ -1361,13 +1375,12 @@ def api_ext_services():
         ("Spotify",      "https://www.spotify.com/"),
         ("Snapchat",     "https://www.snapchat.com/"),
         ("Hulu",         "https://www.hulu.com/"),
-        ("Steam Store",  "https://store.steampowered.com/"),
-        ("CS2 Servers",  "https://www.valvesoftware.com/en/"),
         ("Steam",        "https://store.steampowered.com/"),
+        ("CS2 Servers",  "https://www.valvesoftware.com/en/"),
     ]
 
     results = []
-    hdrs = {"User-Agent": "KEVSec/1.0 ops@kevsec.com"}
+    hdrs = HDRS
 
     def indicator_to_status(ind):
         return {"none": "operational", "minor": "degraded",
@@ -1837,7 +1850,7 @@ def api_lake_michigan():
     cached = cache_get("lake", ttl=CACHE_TTL, force=force)
     if cached:
         return jsonify(cached)
-    hdrs = {"User-Agent": "KEVSec/1.0 ops@kevsec.com"}
+    hdrs = HDRS
     result = {
         "pwaw3": {},
         "pwaw3_trend": [],
@@ -1992,7 +2005,7 @@ def api_lnm():
     if cached:
         return jsonify(cached)
     try:
-        hdrs = {"User-Agent": "KEVSec/1.0 ops@kevsec.com"}
+        hdrs = HDRS
         src_url = "https://www.navcen.uscg.gov/local-notices-to-mariners?district=9+0&subdistrict=n"
         r = requests.get(src_url, headers=hdrs, timeout=15)
         notices = []
@@ -2607,7 +2620,7 @@ def api_burn_ban():
     try:
         r = requests.get(
             "https://apps.dnr.wi.gov/forestryapps/burnrestriction/json/",
-            timeout=10, headers={"User-Agent": "KEVSec/1.0 ops@kevsec.com"}
+            timeout=10, headers=HDRS
         )
         r.raise_for_status()
         data = r.json()
@@ -2649,8 +2662,7 @@ def api_ozaukee_alerts():
     try:
         r = requests.get(
             "https://api.weather.gov/alerts/active?zone=WIC089",
-            timeout=10, headers={"User-Agent": "KEVSec/1.0 ops@kevsec.com",
-                                  "Accept": "application/geo+json"}
+            timeout=10, headers={**HDRS, "Accept": "application/geo+json"}
         )
         r.raise_for_status()
         features = r.json().get("features", [])
@@ -2697,28 +2709,11 @@ def api_president_intel():
             timeout=20, headers=hdrs)
         html = resp.text
 
-        # Extract date headers: <span class="text-md text-gray-700"> April 30, 2026 </span>
-        # Extract event rows: time + title + location + type
-        # Parse by finding date blocks then the rows that follow them
-        current_date = ""
-        current_date_obj = None
         today = datetime.date.today()
         window_end = today + datetime.timedelta(days=14)
 
-        # Split on date header rows (they contain day-of-week + date)
-        # Pattern: Thursday, April 30, 2026
-        date_pattern = re.compile(
-            r'text-\[#5C5B5B\][^>]*>\s*([\w]+,)\s*</span>\s*'
-            r'<span[^>]*text-gray-700[^>]*>\s*([\w]+ \d+, \d{4})\s*</span>',
-            re.DOTALL)
-        event_pattern = re.compile(
-            r'data-tooltip="([^"]+)".*?'
-            r'text-sm font-light">(\d+:\d+ [AP]M)</div>.*?'
-            r'text-sm font-light text-gray-600 mt-2">\s*(.*?)\s*</div>',
-            re.DOTALL)
-
         # Find all date positions and event positions
-        date_matches = list(date_pattern.finditer(html))
+        date_matches = list(_DATE_PAT.finditer(html))
         for i, dm in enumerate(date_matches):
             day_str = dm.group(1).strip().rstrip(',')
             date_str = dm.group(2).strip()
@@ -2734,11 +2729,11 @@ def api_president_intel():
             end = date_matches[i + 1].start() if i + 1 < len(date_matches) else len(html)
             chunk = html[start:end]
 
-            for em in event_pattern.finditer(chunk):
+            for em in _EVENT_PAT.finditer(chunk):
                 ev_type = em.group(1).strip()
                 ev_time = em.group(2).strip()
-                ev_title = re.sub(r'\s+', ' ', em.group(3)).strip()
-                if not ev_title or ev_title.lower() in ('', 'tbd'):
+                ev_title = _WS_PAT.sub(' ', em.group(3)).strip()
+                if not ev_title or ev_title.lower() == 'tbd':
                     continue
                 schedule.append({
                     "date":     date_obj.strftime("%a %b %-d"),
@@ -2772,7 +2767,7 @@ def api_congress_status():
         return jsonify(cached)
     from concurrent.futures import ThreadPoolExecutor, as_completed as _as_completed
     import urllib.parse
-    hdrs = {"User-Agent": "KEVSec/1.0 ops@kevsec.com"}
+    hdrs = HDRS
     bills = []
     # Google News RSS — legislation/bills news
     bill_queries = [
@@ -3138,7 +3133,7 @@ def api_f1():
     if cached:
         return jsonify(cached)
     BASE = "https://api.jolpi.ca/ergast/f1"
-    hdrs = {"User-Agent": "KEVSec/1.0 ops@kevsec.com"}
+    hdrs = HDRS
 
     driver_standings, constructor_standings, upcoming, last_result = [], [], [], {}
 
@@ -3213,7 +3208,7 @@ def api_f1():
 def _warm_cache(force=False):
     """Pre-populate expensive caches at startup so first page load is instant."""
     time.sleep(2)  # let Flask fully start
-    hdrs = {"User-Agent": "KEVSec/1.0 ops@kevsec.com"}
+    hdrs = HDRS
     today = datetime.date.today()
     mm = today.strftime("%m"); dd = today.strftime("%d")
 
