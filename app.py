@@ -583,16 +583,17 @@ def _frost_status(today):
 @app.route("/api/watering")
 @login_required
 def api_watering():
-    """Serve the pre-computed watering schedule. force=1 re-runs watering-calc.py first."""
+    """Serve the pre-computed watering schedule. Auto-refreshes if stale >25h."""
     force = request.args.get("force") == "1"
     f = os.path.join(DISK_CACHE_DIR, "watering_schedule.json")
-    if force:
+    # Auto-refresh if file is missing or older than 25 hours
+    age_hours = (time.time() - os.path.getmtime(f)) / 3600 if os.path.exists(f) else 999
+    if force or age_hours > 25:
         try:
-            import subprocess
             venv_py = "/opt/kevsec-dashboard/venv/bin/python"
             script  = "/usr/local/bin/watering-calc.py"
-            subprocess.run([venv_py, script], timeout=60, check=True,
-                           capture_output=True)
+            subprocess.run([venv_py, script], timeout=90, check=True, capture_output=True)
+            app.logger.info("watering-calc.py refreshed (was %.1fh old)", age_hours)
         except Exception as e:
             app.logger.warning("watering-calc.py run failed: %s", e)
     try:
