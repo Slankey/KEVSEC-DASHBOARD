@@ -2,18 +2,13 @@
 
 A personal security operations dashboard and public-facing cyber intelligence platform. Aggregates threat intelligence, live data feeds, server telemetry, and cyber ops tooling into a single command interface.
 
-**Live:** [kevsec.com](https://kevsec.com) — public landing page  
-**Operator:** [Kevin Maslanka](https://resume.kevsec.com) — Cybersecurity Professional, OSINT Researcher  
-**GitHub:** [github.com/Slankey](https://github.com/Slankey)  
 **Version:** 1.2
 
 ---
 
-## Public Website (kevsec.com)
+## Public Website
 
-The public-facing site at `kevsec.com` is a professional cyber operations landing page. It shows live threat stats (IPs blocked, probes caught), an operative profile, and a capabilities overview.
-
-**Hidden dashboard access:** Type `k` `e` `v` anywhere on the page to open the authenticated ops portal.
+The public-facing landing page shows live threat stats (IPs blocked, probes caught), an operative profile, and a capabilities overview.
 
 ---
 
@@ -103,14 +98,14 @@ pip install flask python-dotenv requests feedparser
 ### Configuration
 Copy `.env.example` to `.env`:
 ```
-KEVSEC_USERNAME=admin
-KEVSEC_PASSWORD_HASH=<sha256 of your password>
-NUKE_PASSWORD_HASH=<sha256 of nuke auth code>
-PROXMOX_HOST=https://proxmox.local:8006/api2/json
-PROXMOX_USER=root@pve
+KEVSEC_USERNAME=
+KEVSEC_PASSWORD_HASH=
+NUKE_PASSWORD_HASH=
+PROXMOX_HOST=
+PROXMOX_USER=
 PROXMOX_PASS=
 ABUSEIPDB_KEY=
-NASA_API_KEY=DEMO_KEY
+NASA_API_KEY=
 CF_ZONE_ID=
 CF_API_TOKEN=
 ```
