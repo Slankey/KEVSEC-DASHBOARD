@@ -1888,8 +1888,7 @@ function loadWeather(force) {
       bannerEl.innerHTML = data.alerts.map(a => {
         const sevCls = a.severity === 'Extreme' || a.urgency === 'Immediate' ? 'alert-extreme'
                      : a.severity === 'Severe' ? 'alert-severe' : 'alert-moderate';
-        const link = a.url ? `href="${a.url}" target="_blank"` : '';
-        return `<a ${link} class="wx-alert-banner-item ${sevCls}">
+        return `<a href="https://www.weather.gov/mkx/" target="_blank" class="wx-alert-banner-item ${sevCls}">
           <span class="wx-alert-banner-event">⚠ ${a.event}</span>
           <span class="wx-alert-banner-detail">${a.effective ? a.effective + ' UTC' : ''} — Ozaukee Co. / Lake Michigan</span>
         </a>`;
