@@ -495,45 +495,45 @@
 
 <!-- INTEL FEED -->
 <section id="intel">
-  <div class="section-label">Live Intel</div>
-  <h2>Current Threat Surface</h2>
+  <div class="section-label">Platform</div>
+  <h2>Defense Posture</h2>
   <div class="intel-layout">
     <div>
       <div class="intel-feed">
         <div class="intel-row">
-          <div class="intel-tag tag-crit">CRITICAL</div>
-          <div class="intel-title">SSH scanner activity above baseline — tarpit engaged</div>
-          <div class="intel-time" id="t1">—</div>
+          <div class="intel-tag tag-ok">ACTIVE</div>
+          <div class="intel-title">SSH tarpit — automated bots trapped and delayed</div>
+          <div class="intel-time">Continuous</div>
         </div>
         <div class="intel-row">
-          <div class="intel-tag tag-med">MEDIUM</div>
-          <div class="intel-title">Credential stuffing probes on admin honeypot</div>
-          <div class="intel-time" id="t2">—</div>
+          <div class="intel-tag tag-ok">ACTIVE</div>
+          <div class="intel-title">Honeypot endpoints logging all scanner probes</div>
+          <div class="intel-time">Continuous</div>
         </div>
         <div class="intel-row">
-          <div class="intel-tag tag-info">INFO</div>
-          <div class="intel-title">New CVEs disclosed — NVD feed updated</div>
-          <div class="intel-time" id="t3">—</div>
+          <div class="intel-tag tag-ok">ACTIVE</div>
+          <div class="intel-title">CVE feed monitoring — NVD disclosures tracked in real time</div>
+          <div class="intel-time">15 min</div>
         </div>
         <div class="intel-row">
-          <div class="intel-tag tag-ok">CLEAR</div>
-          <div class="intel-title">Geomagnetic activity nominal — Kp index within range</div>
-          <div class="intel-time" id="t4">—</div>
+          <div class="intel-tag tag-ok">ACTIVE</div>
+          <div class="intel-title">Space weather — NOAA SWPC geomagnetic activity monitored</div>
+          <div class="intel-time">30 min</div>
         </div>
         <div class="intel-row">
-          <div class="intel-tag tag-med">MEDIUM</div>
-          <div class="intel-title">Port scan detected — /wp-login.php probe logged</div>
-          <div class="intel-time" id="t5">—</div>
+          <div class="intel-tag tag-ok">ACTIVE</div>
+          <div class="intel-title">Threat intel feed — 20+ RSS sources aggregated and deduplicated</div>
+          <div class="intel-time">5 min</div>
         </div>
         <div class="intel-row">
-          <div class="intel-tag tag-info">INFO</div>
-          <div class="intel-title">nftables blacklist updated — new entries synchronized</div>
-          <div class="intel-time" id="t6">—</div>
+          <div class="intel-tag tag-ok">ACTIVE</div>
+          <div class="intel-title">nftables blacklist — 3.4M IPs enforced at network layer</div>
+          <div class="intel-time">2x daily</div>
         </div>
         <div class="intel-row">
-          <div class="intel-tag tag-ok">CLEAR</div>
-          <div class="intel-title">All monitored services nominal</div>
-          <div class="intel-time" id="t7">—</div>
+          <div class="intel-tag tag-ok">ACTIVE</div>
+          <div class="intel-title">Cloudflare WAF — edge enforcement across all ingress</div>
+          <div class="intel-time">Always</div>
         </div>
       </div>
     </div>
@@ -643,7 +643,6 @@
         &gt; Credentials transmitted over TLS.
       </div>
       <form method="POST" action="/ops">
-        <input type="hidden" name="_csrf" id="csrf-input" value="">
         <div class="login-field">
           <label>Identifier</label>
           <input type="text" name="username" id="login-user" autocomplete="off" spellcheck="false">
@@ -662,18 +661,7 @@
 </div>
 
 <script>
-  // ── Dynamic timestamps ──
-  function relTime(minAgo) {
-    if (minAgo < 2) return 'just now';
-    if (minAgo < 60) return minAgo + 'm ago';
-    return Math.floor(minAgo/60) + 'h ago';
-  }
   const now = new Date();
-  const base = [2,7,11,18,29,43,58];
-  base.forEach((m,i) => {
-    const el = document.getElementById('t'+(i+1));
-    if (el) el.textContent = relTime(m);
-  });
   document.getElementById('last-sync').textContent = now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
 
   // ── Uptime ──
@@ -707,9 +695,6 @@
   });
 
   function openLogin() {
-    fetch('/api/csrf').then(r=>r.json()).then(d=>{
-      document.getElementById('csrf-input').value = d.token || '';
-    }).catch(()=>{});
     document.getElementById('login-overlay').classList.add('visible');
     setTimeout(()=>{ document.getElementById('login-user').focus(); }, 50);
   }

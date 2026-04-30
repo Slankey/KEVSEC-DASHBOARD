@@ -237,12 +237,18 @@ def api_public_uptime():
 
 @app.route("/api/public/stats")
 def api_public_stats():
-    """Public — rough counts from honeypot log for landing page display."""
+    """Public — IP block count from nftables blacklist + honeypot probe count."""
+    cached = cache_get("public_stats", ttl=3600)
+    if cached:
+        return jsonify(cached)
     blocked = 0
     caught = 0
     try:
-        with open("/var/log/honeypot/permanent_bans.log") as f:
-            blocked = sum(1 for line in f if "BANNED" in line)
+        # Count IPs in the nftables blacklist file (comma-separated inside add element blocks)
+        with open("/etc/nftables-blacklist/blacklist.nft") as f:
+            content = f.read()
+        import re as _re
+        blocked = len(_re.findall(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', content))
     except Exception:
         pass
     try:
@@ -250,7 +256,9 @@ def api_public_stats():
             caught = sum(1 for _ in f)
     except Exception:
         pass
-    return jsonify({"blocked": blocked, "caught": caught})
+    result = {"blocked": blocked, "caught": caught}
+    cache_set("public_stats", result)
+    return jsonify(result)
 
 @app.route("/admin", methods=["GET", "POST"])
 @app.route("/wp-admin", methods=["GET", "POST"])
@@ -3152,6 +3160,83 @@ def api_pol_tweets():
         app.logger.warning("pol_tweets read error: %s", e)
     return jsonify({"politicians": [], "fetched": _ts(),
                     "error": "No data yet — run /usr/local/bin/scrape-pol-tweets.py first"})
+
+
+@app.route("/api/podcasts")
+@login_required
+def api_podcasts():
+    """Latest episode from each podcast feed with audio URL for in-browser playback."""
+    force = request.args.get("force") == "1"
+    cached = cache_get("podcasts", ttl=900, force=force)  # 15-min TTL
+    if cached:
+        return jsonify(cached)
+
+    FEEDS = [
+        ("BBC Global News",      "https://podcasts.files.bbci.co.uk/p02nq0gn.rss"),
+        ("NPR Hourly News",      "https://feeds.npr.org/500005/podcast.xml"),
+        ("NPR Up First",         "https://feeds.npr.org/510318/podcast.xml"),
+        ("NPR Consider This",    "https://feeds.npr.org/510355/podcast.xml"),
+        ("CNN 5 Things",         "http://rss.cnn.com/services/podcasting/5things/rss.xml"),
+        ("Fox News Rundown",     "https://feeds.foxnews.com/foxnewsradio/the-rundown"),
+        ("The Daily (NYT)",      "https://feeds.simplecast.com/54nAGcIl"),
+        ("Pod Save America",     "https://feeds.megaphone.fm/crooked-pod-save-america"),
+        ("Axios Today",          "https://feeds.simplecast.com/axiostoday"),
+        ("FT News Briefing",     "https://feeds.acast.com/public/shows/ft-news-briefing"),
+    ]
+
+    def _fetch(name, url):
+        try:
+            f = feedparser.parse(url)
+            if not f.entries:
+                return None
+            e = f.entries[0]
+            audio_url = ""
+            for enc in e.get("enclosures", []):
+                if enc.get("type", "").startswith("audio"):
+                    audio_url = enc.get("href", enc.get("url", ""))
+                    break
+            if not audio_url:
+                # Try media_content
+                for mc in e.get("media_content", []):
+                    if mc.get("type", "").startswith("audio"):
+                        audio_url = mc.get("url", "")
+                        break
+            if not audio_url:
+                return None
+            pub = e.get("published", e.get("updated", ""))
+            dur = ""
+            for tag in ("itunes_duration", "duration"):
+                if e.get(tag):
+                    dur = str(e[tag]); break
+            return {
+                "name":        name,
+                "episode":     e.get("title", "")[:120],
+                "summary":     re.sub(r"<[^>]+>", "", e.get("summary", ""))[:200].strip(),
+                "published":   pub[:16] if pub else "",
+                "duration":    dur,
+                "audio_url":   audio_url,
+                "feed_url":    url,
+            }
+        except Exception as ex:
+            app.logger.debug("podcast feed %s: %s", name, ex)
+            return None
+
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    podcasts = []
+    with ThreadPoolExecutor(max_workers=10) as ex:
+        futures = {ex.submit(_fetch, name, url): name for name, url in FEEDS}
+        for fut in as_completed(futures):
+            r = fut.result()
+            if r:
+                podcasts.append(r)
+
+    # Preserve display order
+    order = [n for n, _ in FEEDS]
+    podcasts.sort(key=lambda x: order.index(x["name"]) if x["name"] in order else 99)
+
+    result = {"podcasts": podcasts, "fetched": _ts()}
+    cache_set("podcasts", result)
+    return jsonify(result)
 
 
 @app.route("/api/f1")

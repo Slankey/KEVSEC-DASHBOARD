@@ -90,7 +90,7 @@ document.querySelectorAll('.tab[data-tab]').forEach(btn => {
 });
 
 function loadTab(tab) {
-  if (tab === 'intel')   { loadNews(); loadThreatLevel(); loadWikipedia(); loadAPOD(); loadStocks(false,'intel'); loadOzaukeeAlerts(); loadPresidentIntel(); loadCongressStatus(); loadMidtermIntel(); loadPolls(); loadF1(); loadPolTweets(); loadGovtIntel(); }
+  if (tab === 'intel')   { loadNews(); loadThreatLevel(); loadWikipedia(); loadAPOD(); loadStocks(false,'intel'); loadOzaukeeAlerts(); loadPresidentIntel(); loadCongressStatus(); loadMidtermIntel(); loadPolls(); loadF1(); loadPolTweets(); loadGovtIntel(); loadPodcasts(); }
   if (tab === 'command') { loadServerStats(); loadProxmox(); loadExtServices(); loadTarpitStats(); buildSvcControlGrid(); loadGoals(); loadDjStatus(); }
   if (tab === 'cyber')   { loadCVEs(); loadFirewallDrops(); loadSWPC(); loadServerHealth(); loadJailSummary(); }
   if (tab === 'weather') { loadGarden(); loadWeather(); loadEarthquakes(); loadGDACS(); loadLakeMichigan(); loadAirNow(); loadWildfires(); loadSWPC(); loadMETAR(); initWi511Map(); loadWIWarnings(); loadLNM(); loadGlerlImages(); loadBurnBan(); }
@@ -116,6 +116,7 @@ window.addEventListener('load', () => {
   setTimeout(() => { loadF1(); }, 1200);
   setTimeout(() => { loadPolTweets(); }, 1400);
   setTimeout(() => { loadGovtIntel(); }, 1600);
+  setTimeout(() => { loadPodcasts(); }, 1800);
   // Intervals
   setInterval(loadServerStats, 30000);
   setInterval(refreshRadar, 300000);
@@ -1823,6 +1824,53 @@ function loadTarpitStats(force) {
       }
     }
   });
+}
+
+// ══════════════════════════════════════════════════════════
+//  PODCASTS
+// ══════════════════════════════════════════════════════════
+function loadPodcasts(force) {
+  const list = document.getElementById('podcast-list');
+  if (!list) return;
+  list.innerHTML = '<div class="loading">Loading podcasts...</div>';
+
+  api(force ? '/api/podcasts?force=1' : '/api/podcasts', data => {
+    const ts = document.getElementById('podcast-ts');
+    if (ts) ts.textContent = data.fetched || '';
+    const pods = data.podcasts || [];
+    if (!pods.length) {
+      list.innerHTML = '<div style="padding:12px 16px;color:var(--muted);font-size:12px">No podcasts available</div>';
+      return;
+    }
+    list.innerHTML = pods.map((p, i) => {
+      const dur = p.duration ? ` · ${p.duration}` : '';
+      const pub = p.published ? ` · ${p.published.slice(0,10)}` : '';
+      return `<div class="feed-item" style="cursor:pointer;padding:12px 16px;border-bottom:1px solid var(--border);display:flex;gap:14px;align-items:flex-start;transition:background .15s"
+        onclick="playPodcast(${JSON.stringify(p.audio_url)}, ${JSON.stringify(p.name)}, ${JSON.stringify(p.episode)})"
+        onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
+        <div style="flex-shrink:0;width:32px;height:32px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--accent)">▶</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:10px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:3px">${esc(p.name)}</div>
+          <div style="font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.episode)}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:3px">${pub.trim()}${dur}</div>
+        </div>
+      </div>`;
+    }).join('');
+  });
+}
+
+function playPodcast(url, show, title) {
+  const player = document.getElementById('podcast-player');
+  const audio = document.getElementById('pod-audio');
+  const showEl = document.getElementById('pod-now-show');
+  const titleEl = document.getElementById('pod-now-title');
+  if (!audio || !player) return;
+  player.style.display = 'flex';
+  player.style.flexDirection = 'column';
+  showEl.textContent = show;
+  titleEl.textContent = title;
+  audio.src = url;
+  audio.play().catch(() => {});
 }
 
 // ══════════════════════════════════════════════════════════
