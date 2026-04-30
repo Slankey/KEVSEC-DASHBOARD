@@ -158,9 +158,7 @@
       <a href="https://apod.nasa.gov/apod/astropix.html" target="_blank" class="qa-btn">
         <div class="qa-icon">🔭</div>NASA APOD<span>Astronomy pic</span>
       </a>
-      <a href="https://downdetector.com/" target="_blank" class="qa-btn">
-        <div class="qa-icon">📡</div>Downdetector<span>Service outages</span>
-      </a>
+
       <a href="https://www.ndbc.noaa.gov/station_page.php?station=pwaw3" target="_blank" class="qa-btn">
         <div class="qa-icon">🌊</div>NDBC PWAW3<span>Port Washington buoy</span>
       </a>
@@ -784,10 +782,6 @@
       </table>
     </div>
     </div><!-- end firewall panel -->
-  </div><!-- end panel-row -->
-
-  <!-- IP Management + Network Stats — two-column row -->
-  <div class="panel-row" style="margin-bottom:16px;align-items:start">
 
     <!-- IP Management Panel -->
     <div class="panel">
@@ -836,6 +830,11 @@
       </div>
     </div>
 
+  </div><!-- end firewall+ip row -->
+
+  <!-- Server Health + Network Stats -->
+  <div class="panel-row" style="margin-bottom:16px;align-items:start">
+
     <!-- Server Health + Network Panel -->
     <div class="panel">
       <div class="panel-header">
@@ -865,7 +864,7 @@
       </div>
     </div>
 
-  </div><!-- end ip+health row -->
+  </div><!-- end health row -->
 
   <!-- Threat Maps -->
   <div class="panel">
@@ -919,34 +918,8 @@
     </div>
   </div>
 
-  <!-- Downdetector + SANS ISC + Krebs -->
+  <!-- SANS ISC + Krebs -->
   <div class="panel-row-3">
-    <div class="panel">
-      <div class="panel-header">📡 Downdetector — Service Outage Monitor</div>
-      <div style="padding:24px 16px;text-align:center">
-        <div style="font-size:12px;color:var(--text-dim);margin-bottom:18px;letter-spacing:1px">Downdetector does not allow embedding. Open directly:</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;max-width:600px;margin:0 auto">
-          <a href="https://downdetector.com/" target="_blank" class="qa-btn" style="padding:14px">
-            <div class="qa-icon">📡</div>Downdetector<span>All services</span>
-          </a>
-          <a href="https://downdetector.com/status/google/" target="_blank" class="qa-btn" style="padding:14px">
-            <div class="qa-icon">🔍</div>Google<span>status</span>
-          </a>
-          <a href="https://downdetector.com/status/cloudflare/" target="_blank" class="qa-btn" style="padding:14px">
-            <div class="qa-icon">🌐</div>Cloudflare<span>status</span>
-          </a>
-          <a href="https://downdetector.com/status/discord/" target="_blank" class="qa-btn" style="padding:14px">
-            <div class="qa-icon">💬</div>Discord<span>status</span>
-          </a>
-          <a href="https://downdetector.com/status/steam/" target="_blank" class="qa-btn" style="padding:14px">
-            <div class="qa-icon">🎮</div>Steam<span>status</span>
-          </a>
-          <a href="https://downdetector.com/status/amazon-web-services/" target="_blank" class="qa-btn" style="padding:14px">
-            <div class="qa-icon">☁</div>AWS<span>status</span>
-          </a>
-        </div>
-      </div>
-    </div>
     <div class="panel">
       <div class="panel-header">🌩 SANS Internet Storm Center — Daily Diary
         <button class="refresh-btn" onclick="loadSWPC()">⟳</button>
