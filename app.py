@@ -25,7 +25,7 @@ def _real_ip():
     return request.headers.get("X-Forwarded-For", request.remote_addr).split(",")[0].strip()
 app.permanent_session_lifetime = datetime.timedelta(hours=24)
 
-USERNAME      = os.environ.get("KEVSEC_USERNAME", "slankey")
+USERNAME      = os.environ.get("KEVSEC_USERNAME", "admin")
 PASSWORD_HASH = os.environ.get("KEVSEC_PASSWORD_HASH",
                                hashlib.sha256(b"changeme").hexdigest())
 DATA_DIR      = "/opt/kevsec-dashboard/data"
@@ -33,8 +33,8 @@ NOTEPAD_FILE  = f"{DATA_DIR}/notepad.txt"
 REMINDERS_FILE= f"{DATA_DIR}/reminders.json"
 MEMOS_DIR     = f"{DATA_DIR}/memos"
 NOTES_DIR     = f"{DATA_DIR}/notes"
-PROXMOX       = os.environ.get("PROXMOX_HOST", "https://69.30.236.218:8006/api2/json")
-PROXMOX_USER  = os.environ.get("PROXMOX_USER", "slankey@pve")
+PROXMOX       = os.environ.get("PROXMOX_HOST", "https://proxmox.local:8006/api2/json")
+PROXMOX_USER  = os.environ.get("PROXMOX_USER", "root@pve")
 PROXMOX_PASS  = os.environ.get("PROXMOX_PASS", "")
 ABUSEIPDB_KEY     = os.environ.get("ABUSEIPDB_KEY", "")
 FAA_CLIENT_ID     = os.environ.get("FAA_CLIENT_ID", "")
@@ -426,7 +426,7 @@ def api_metar():
         r = requests.get(
             "https://aviationweather.gov/api/data/metar",
             params={"ids": "KMKE,KETB,KMWC,KSBM", "format": "json"},
-            headers={"User-Agent": "KEVSec/1.0 kevinmaslanka94@gmail.com"},
+            headers={"User-Agent": "KEVSec/1.0 ops@kevsec.com"},
             timeout=10)
         stations = []
         for m in r.json():
@@ -723,7 +723,7 @@ def api_weather():
     cached = cache_get("weather", ttl=3600, force=force)
     if cached:
         return jsonify(cached)
-    hdrs = {"User-Agent": "KEVSec/1.0 kevinmaslanka94@gmail.com"}
+    hdrs = {"User-Agent": "KEVSec/1.0 ops@kevsec.com"}
     forecast, alerts, obs = [], [], {}
     try:
         pt = requests.get("https://api.weather.gov/points/43.3875,-87.8756",
@@ -1087,7 +1087,7 @@ def api_wikipedia():
     today = datetime.date.today()
     mm = today.strftime("%m")
     dd = today.strftime("%d")
-    hdrs = {"User-Agent": "KEVSec/1.0 kevinmaslanka94@gmail.com"}
+    hdrs = {"User-Agent": "KEVSec/1.0 ops@kevsec.com"}
     result = {"tfa": {}, "dyk": [], "news": [], "onthisday": [],
               "date": today.strftime("%B %d, %Y"),
               "fetched": _ts()}
@@ -1241,7 +1241,7 @@ def api_gdacs():
     if cached:
         return jsonify(cached)
     try:
-        hdrs = {"User-Agent": "KEVSec/1.0 kevinmaslanka94@gmail.com"}
+        hdrs = {"User-Agent": "KEVSec/1.0 ops@kevsec.com"}
         f = feedparser.parse("https://www.gdacs.org/xml/rss.xml")
         events = []
         for e in f.entries[:20]:
@@ -1295,7 +1295,7 @@ def api_server_stats():
             return round((1 - idle / total) * 100, 1) if total else 0
         cpu_pct = _cpu_pct()
         # Batch all service checks into one subprocess call
-        svc_names = ["jellyfin", "rtorrent@slankey", "autobrr", "librarian-bot",
+        svc_names = ["jellyfin", "librarian-bot",
                      "reminder-bot", "kevsec-dashboard", "presidential-sim",
                      "honeypot", "endlessh", "fail2ban", "sonarr", "radarr", "prowlarr", "nginx",
                      "dj-atticus"]
@@ -1363,11 +1363,11 @@ def api_ext_services():
         ("Hulu",         "https://www.hulu.com/"),
         ("Steam Store",  "https://store.steampowered.com/"),
         ("CS2 Servers",  "https://www.valvesoftware.com/en/"),
-        ("IPTorrents",   "https://www.iptorrents.com/"),
+        ("Steam",        "https://store.steampowered.com/"),
     ]
 
     results = []
-    hdrs = {"User-Agent": "KEVSec/1.0 kevinmaslanka94@gmail.com"}
+    hdrs = {"User-Agent": "KEVSec/1.0 ops@kevsec.com"}
 
     def indicator_to_status(ind):
         return {"none": "operational", "minor": "degraded",
@@ -1401,7 +1401,6 @@ def api_ext_services():
         ("Dashboard",      "kevsec-dashboard"),
         ("Pres. Sim",      "presidential-sim"),
         ("Nginx",          "nginx"),
-        ("rTorrent",       "rtorrent@slankey"),
         ("Sonarr",         "sonarr"),
         ("Radarr",         "radarr"),
         ("Fail2ban",       "fail2ban"),
@@ -1838,7 +1837,7 @@ def api_lake_michigan():
     cached = cache_get("lake", ttl=CACHE_TTL, force=force)
     if cached:
         return jsonify(cached)
-    hdrs = {"User-Agent": "KEVSec/1.0 kevinmaslanka94@gmail.com"}
+    hdrs = {"User-Agent": "KEVSec/1.0 ops@kevsec.com"}
     result = {
         "pwaw3": {},
         "pwaw3_trend": [],
@@ -1993,7 +1992,7 @@ def api_lnm():
     if cached:
         return jsonify(cached)
     try:
-        hdrs = {"User-Agent": "KEVSec/1.0 kevinmaslanka94@gmail.com"}
+        hdrs = {"User-Agent": "KEVSec/1.0 ops@kevsec.com"}
         src_url = "https://www.navcen.uscg.gov/local-notices-to-mariners?district=9+0&subdistrict=n"
         r = requests.get(src_url, headers=hdrs, timeout=15)
         notices = []
@@ -2379,9 +2378,9 @@ def api_glerl_image(img_name):
 def api_service_control():
     """Start / stop / restart a whitelisted systemd service."""
     ALLOWED_SERVICES = {
-        "jellyfin", "rtorrent@slankey", "honeypot", "endlessh",
+        "jellyfin", "honeypot", "endlessh",
         "librarian-bot", "reminder-bot", "presidential-sim",
-        "prowlarr", "radarr", "sonarr", "autobrr", "nginx",
+        "prowlarr", "radarr", "sonarr", "nginx",
         "kevsec-dashboard",
     }
     ALLOWED_ACTIONS = {"start", "stop", "restart"}
@@ -2469,7 +2468,7 @@ def api_tarpit_week_reset():
 @csrf_required
 def api_nuke():
     """NUKE AUTHORITY — Tier-Omega destruction protocol. Triple-authenticated server wipe."""
-    NUKE_HASH = "0b6c7a49fb9681bfa9e569c301647b9535740199eccc7b7f578fc873ff53873c"
+    NUKE_HASH = os.environ.get("NUKE_PASSWORD_HASH", "")
     data = request.json or {}
     pw = data.get("password", "")
     if not pw:
@@ -2619,7 +2618,7 @@ def api_burn_ban():
     try:
         r = requests.get(
             "https://apps.dnr.wi.gov/forestryapps/burnrestriction/json/",
-            timeout=10, headers={"User-Agent": "KEVSec/1.0 kevinmaslanka94@gmail.com"}
+            timeout=10, headers={"User-Agent": "KEVSec/1.0 ops@kevsec.com"}
         )
         r.raise_for_status()
         data = r.json()
@@ -2661,7 +2660,7 @@ def api_ozaukee_alerts():
     try:
         r = requests.get(
             "https://api.weather.gov/alerts/active?zone=WIC089",
-            timeout=10, headers={"User-Agent": "KEVSec/1.0 kevinmaslanka94@gmail.com",
+            timeout=10, headers={"User-Agent": "KEVSec/1.0 ops@kevsec.com",
                                   "Accept": "application/geo+json"}
         )
         r.raise_for_status()
@@ -2694,7 +2693,7 @@ def api_president_intel():
     cached = cache_get("president_intel", ttl=1800, force=force)
     if cached:
         return jsonify(cached)
-    hdrs = {"User-Agent": "KEVSec/1.0 kevinmaslanka94@gmail.com"}
+    hdrs = {"User-Agent": "KEVSec/1.0 ops@kevsec.com"}
     schedule = []
     items = []
 
@@ -2776,7 +2775,7 @@ def api_congress_status():
         return jsonify(cached)
     from concurrent.futures import ThreadPoolExecutor, as_completed as _as_completed
     import urllib.parse
-    hdrs = {"User-Agent": "KEVSec/1.0 kevinmaslanka94@gmail.com"}
+    hdrs = {"User-Agent": "KEVSec/1.0 ops@kevsec.com"}
     bills = []
     # Google News RSS — legislation/bills news
     bill_queries = [
@@ -3142,7 +3141,7 @@ def api_f1():
     if cached:
         return jsonify(cached)
     BASE = "https://api.jolpi.ca/ergast/f1"
-    hdrs = {"User-Agent": "KEVSec/1.0 kevinmaslanka94@gmail.com"}
+    hdrs = {"User-Agent": "KEVSec/1.0 ops@kevsec.com"}
 
     driver_standings, constructor_standings, upcoming, last_result = [], [], [], {}
 
@@ -3217,7 +3216,7 @@ def api_f1():
 def _warm_cache(force=False):
     """Pre-populate expensive caches at startup so first page load is instant."""
     time.sleep(2)  # let Flask fully start
-    hdrs = {"User-Agent": "KEVSec/1.0 kevinmaslanka94@gmail.com"}
+    hdrs = {"User-Agent": "KEVSec/1.0 ops@kevsec.com"}
     today = datetime.date.today()
     mm = today.strftime("%m"); dd = today.strftime("%d")
 
