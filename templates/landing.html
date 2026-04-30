@@ -9,7 +9,6 @@
   :root {
     --green: #00ff88;
     --cyan: #00e5ff;
-    --dim-green: #00cc6a;
     --bg: #080b0f;
     --bg2: #0d1117;
     --bg3: #111820;
@@ -33,24 +32,15 @@
   nav {
     position: fixed; top: 0; left: 0; right: 0; z-index: 100;
     display: flex; align-items: center; justify-content: space-between;
-    padding: 0 48px;
-    height: 56px;
+    padding: 0 48px; height: 56px;
     background: rgba(8,11,15,0.92);
     backdrop-filter: blur(8px);
     border-bottom: 1px solid var(--border);
   }
-  .nav-logo {
-    font-size: 18px; font-weight: 700; letter-spacing: 4px;
-    color: var(--green); text-decoration: none;
-    cursor: default; user-select: none;
-  }
+  .nav-logo { font-size: 18px; font-weight: 700; letter-spacing: 4px; color: var(--green); cursor: default; user-select: none; }
   .nav-logo span { color: var(--muted); }
   .nav-links { display: flex; gap: 32px; }
-  .nav-links a {
-    color: var(--muted); text-decoration: none; font-size: 12px;
-    letter-spacing: 2px; text-transform: uppercase;
-    transition: color .2s;
-  }
+  .nav-links a { color: var(--muted); text-decoration: none; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; transition: color .2s; }
   .nav-links a:hover { color: var(--cyan); }
 
   /* ── HERO ── */
@@ -79,194 +69,102 @@
     text-transform: uppercase; margin-bottom: 24px;
     display: flex; align-items: center; gap: 12px;
   }
-  .hero-eyebrow::before {
-    content: ''; display: block; width: 32px; height: 1px;
-    background: var(--green);
-  }
-  h1 {
-    font-size: clamp(32px, 5vw, 58px);
-    font-weight: 700; line-height: 1.1;
-    letter-spacing: -1px; color: #e6edf3;
-    margin-bottom: 24px;
-  }
+  .hero-eyebrow::before { content: ''; display: block; width: 32px; height: 1px; background: var(--green); }
+  h1 { font-size: clamp(32px, 5vw, 58px); font-weight: 700; line-height: 1.1; letter-spacing: -1px; color: #e6edf3; margin-bottom: 24px; }
   h1 .accent { color: var(--green); }
-  .hero-sub {
-    font-size: 15px; color: var(--muted); max-width: 520px;
-    line-height: 1.8; margin-bottom: 40px;
-  }
-  .hero-stats {
-    display: flex; gap: 40px; flex-wrap: wrap;
-  }
+  .hero-sub { font-size: 15px; color: var(--muted); max-width: 520px; line-height: 1.8; margin-bottom: 40px; }
+  .hero-stats { display: flex; gap: 40px; flex-wrap: wrap; }
   .stat { display: flex; flex-direction: column; gap: 4px; }
   .stat-num { font-size: 24px; font-weight: 700; color: var(--cyan); }
   .stat-lbl { font-size: 11px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; }
+  .classified { color: var(--red); letter-spacing: 2px; font-size: 13px; }
 
-  /* ── TERMINAL TICKER ── */
+  /* ── TICKER ── */
   .ticker-wrap {
     background: var(--bg2);
-    border-top: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
+    border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
     overflow: hidden; padding: 10px 0;
   }
-  .ticker {
-    display: flex; gap: 0;
-    animation: ticker-scroll 40s linear infinite;
-    white-space: nowrap;
-  }
-  .ticker-item {
-    display: inline-flex; align-items: center; gap: 8px;
-    padding: 0 32px; font-size: 11px; color: var(--muted);
-  }
-  .ticker-item .dot {
-    width: 6px; height: 6px; border-radius: 50%;
-    background: var(--green); flex-shrink: 0;
-    box-shadow: 0 0 6px var(--green);
-  }
+  .ticker { display: flex; animation: ticker-scroll 45s linear infinite; white-space: nowrap; }
+  .ticker-item { display: inline-flex; align-items: center; gap: 8px; padding: 0 32px; font-size: 11px; color: var(--muted); }
+  .ticker-item .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); flex-shrink: 0; box-shadow: 0 0 6px var(--green); }
   .ticker-item .dot.red { background: var(--red); box-shadow: 0 0 6px var(--red); }
   .ticker-item .dot.cyan { background: var(--cyan); box-shadow: 0 0 6px var(--cyan); }
-  @keyframes ticker-scroll {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-50%); }
-  }
+  @keyframes ticker-scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
 
   /* ── SECTIONS ── */
   section { padding: 96px 48px; }
-  .section-label {
-    font-size: 11px; letter-spacing: 4px; color: var(--green);
-    text-transform: uppercase; margin-bottom: 16px;
-    display: flex; align-items: center; gap: 12px;
-  }
-  .section-label::before {
-    content: '//'; color: var(--muted);
-  }
-  h2 {
-    font-size: clamp(24px, 3vw, 36px);
-    color: #e6edf3; font-weight: 700; margin-bottom: 48px;
-  }
+  .section-label { font-size: 11px; letter-spacing: 4px; color: var(--green); text-transform: uppercase; margin-bottom: 16px; display: flex; align-items: center; gap: 12px; }
+  .section-label::before { content: '//'; color: var(--muted); }
+  h2 { font-size: clamp(24px, 3vw, 36px); color: #e6edf3; font-weight: 700; margin-bottom: 48px; }
 
   /* ── ABOUT ── */
   #about { background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
-  .about-grid {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: start;
-    max-width: 1100px;
-  }
+  .about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: start; max-width: 1100px; }
   @media (max-width: 768px) { .about-grid { grid-template-columns: 1fr; } }
   .about-text p { color: var(--muted); line-height: 1.9; margin-bottom: 20px; font-size: 14px; }
   .about-text p:last-child { margin-bottom: 0; }
-  .terminal-card {
-    background: var(--bg); border: 1px solid var(--border);
-    border-radius: 4px; overflow: hidden;
-  }
-  .terminal-bar {
-    background: #161c24; padding: 10px 16px;
-    display: flex; align-items: center; gap: 8px;
-    border-bottom: 1px solid var(--border);
-  }
-  .terminal-bar .circle {
-    width: 10px; height: 10px; border-radius: 50%;
-  }
-  .circle.r { background: #ff5f57; }
-  .circle.y { background: #febc2e; }
-  .circle.g { background: #28c840; }
+  .terminal-card { background: var(--bg); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
+  .terminal-bar { background: #161c24; padding: 10px 16px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); }
+  .terminal-bar .circle { width: 10px; height: 10px; border-radius: 50%; }
+  .circle.r { background: #ff5f57; } .circle.y { background: #febc2e; } .circle.g { background: #28c840; }
   .terminal-body { padding: 20px 16px; font-size: 12px; line-height: 2; }
-  .t-prompt { color: var(--green); }
-  .t-cmd { color: var(--text); }
+  .t-prompt { color: var(--green); } .t-cmd { color: var(--text); }
   .t-out { color: var(--muted); padding-left: 16px; }
-  .t-out.hi { color: var(--cyan); }
-  .t-out.ok { color: var(--green); }
-  .t-cursor {
-    display: inline-block; width: 8px; height: 14px;
-    background: var(--green); vertical-align: middle;
-    animation: blink 1.1s step-end infinite;
-  }
+  .t-out.hi { color: var(--cyan); } .t-out.ok { color: var(--green); } .t-out.cl { color: var(--red); }
+  .t-cursor { display: inline-block; width: 8px; height: 14px; background: var(--green); vertical-align: middle; animation: blink 1.1s step-end infinite; }
   @keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0; } }
 
   /* ── CAPABILITIES ── */
   #capabilities { background: var(--bg); }
-  .caps-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 16px; max-width: 1100px;
-  }
-  .cap-card {
-    background: var(--bg2); border: 1px solid var(--border);
-    padding: 24px; transition: border-color .2s, transform .2s;
-  }
-  .cap-card:hover {
-    border-color: var(--green);
-    transform: translateY(-2px);
-  }
-  .cap-icon {
-    font-size: 20px; margin-bottom: 16px; color: var(--green);
-    font-family: monospace;
-  }
+  .caps-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; max-width: 1100px; }
+  .cap-card { background: var(--bg2); border: 1px solid var(--border); padding: 24px; transition: border-color .2s, transform .2s; }
+  .cap-card:hover { border-color: var(--green); transform: translateY(-2px); }
+  .cap-icon { font-size: 20px; margin-bottom: 16px; color: var(--green); font-family: monospace; }
   .cap-title { color: #e6edf3; font-size: 14px; font-weight: 700; margin-bottom: 8px; letter-spacing: 1px; }
   .cap-desc { color: var(--muted); font-size: 12px; line-height: 1.7; }
 
-  /* ── INTEL FEED ── */
-  #intel { background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
-  .intel-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 32px; max-width: 1100px; }
-  @media (max-width: 900px) { .intel-layout { grid-template-columns: 1fr; } }
-  .intel-feed { display: flex; flex-direction: column; gap: 1px; border: 1px solid var(--border); }
-  .intel-row {
-    display: grid; grid-template-columns: 80px 1fr 100px;
+  /* ── PLATFORM STATUS ── */
+  #platform { background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .platform-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 32px; max-width: 1100px; }
+  @media (max-width: 900px) { .platform-layout { grid-template-columns: 1fr; } }
+  .status-feed { display: flex; flex-direction: column; gap: 1px; border: 1px solid var(--border); }
+  .status-row-item {
+    display: grid; grid-template-columns: 90px 1fr 120px;
     padding: 12px 16px; background: var(--bg);
     border-bottom: 1px solid var(--border); gap: 16px;
     align-items: center; transition: background .15s;
   }
-  .intel-row:last-child { border-bottom: none; }
-  .intel-row:hover { background: var(--bg3); }
-  .intel-tag {
-    font-size: 9px; letter-spacing: 2px; padding: 3px 7px;
-    border: 1px solid; text-align: center; text-transform: uppercase;
-  }
-  .tag-crit { border-color: var(--red); color: var(--red); }
-  .tag-med  { border-color: #f39c12; color: #f39c12; }
-  .tag-info { border-color: var(--cyan); color: var(--cyan); }
-  .tag-ok   { border-color: var(--green); color: var(--green); }
-  .intel-title { font-size: 12px; color: var(--text); }
-  .intel-time { font-size: 11px; color: var(--muted); text-align: right; }
-  .status-panel { border: 1px solid var(--border); }
-  .status-header {
-    padding: 12px 16px; background: var(--bg);
-    border-bottom: 1px solid var(--border);
-    font-size: 11px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase;
-  }
-  .status-row {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 12px 16px; background: var(--bg);
-    border-bottom: 1px solid var(--border); font-size: 12px;
-  }
-  .status-row:last-child { border-bottom: none; }
-  .status-dot {
-    width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
-  }
-  .sdot-ok { background: var(--green); box-shadow: 0 0 5px var(--green); }
-  .sdot-warn { background: #f39c12; box-shadow: 0 0 5px #f39c12; }
-  .sdot-off { background: var(--muted); }
-  .status-label { color: var(--muted); }
-  .status-val { color: var(--text); }
-  .status-val.ok { color: var(--green); }
+  .status-row-item:last-child { border-bottom: none; }
+  .status-tag { font-size: 9px; letter-spacing: 2px; padding: 3px 7px; border: 1px solid; text-align: center; text-transform: uppercase; }
+  .tag-class { border-color: var(--red); color: var(--red); }
+  .tag-op    { border-color: var(--green); color: var(--green); }
+  .tag-enc   { border-color: var(--cyan); color: var(--cyan); }
+  .row-title { font-size: 12px; color: var(--text); }
+  .row-val   { font-size: 11px; color: var(--muted); text-align: right; letter-spacing: 1px; }
+  .row-val.cl { color: var(--red); }
+  .info-panel { border: 1px solid var(--border); }
+  .info-header { padding: 12px 16px; background: var(--bg); border-bottom: 1px solid var(--border); font-size: 11px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; }
+  .info-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: var(--bg); border-bottom: 1px solid var(--border); font-size: 12px; }
+  .info-row:last-child { border-bottom: none; }
+  .info-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .idot-ok { background: var(--green); box-shadow: 0 0 5px var(--green); }
+  .idot-cl { background: var(--red); box-shadow: 0 0 5px var(--red); }
+  .info-label { color: var(--muted); }
+  .info-val { color: var(--text); }
+  .info-val.ok { color: var(--green); }
+  .info-val.cl { color: var(--red); font-size: 10px; letter-spacing: 1px; }
 
   /* ── CONTACT ── */
   #contact { background: var(--bg); }
   .contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; max-width: 900px; }
   @media (max-width: 768px) { .contact-grid { grid-template-columns: 1fr; } }
   .contact-links { display: flex; flex-direction: column; gap: 16px; }
-  .contact-link {
-    display: flex; align-items: center; gap: 16px;
-    padding: 16px; background: var(--bg2); border: 1px solid var(--border);
-    text-decoration: none; color: var(--text); font-size: 13px;
-    transition: border-color .2s;
-  }
+  .contact-link { display: flex; align-items: center; gap: 16px; padding: 16px; background: var(--bg2); border: 1px solid var(--border); text-decoration: none; color: var(--text); font-size: 13px; transition: border-color .2s; }
   .contact-link:hover { border-color: var(--cyan); color: var(--cyan); }
   .contact-link .icon { color: var(--green); font-size: 16px; width: 24px; text-align: center; }
-  .pgp-box {
-    background: var(--bg2); border: 1px solid var(--border);
-    padding: 20px; font-size: 11px;
-  }
+  .pgp-box { background: var(--bg2); border: 1px solid var(--border); padding: 20px; font-size: 11px; }
   .pgp-label { color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; font-size: 10px; }
-  .pgp-fp { color: var(--green); word-break: break-all; line-height: 1.8; }
 
   /* ── FOOTER ── */
   footer {
@@ -277,7 +175,7 @@
   }
   .footer-brand { color: var(--green); font-size: 14px; letter-spacing: 3px; }
   .footer-copy { color: var(--muted); font-size: 11px; }
-  .footer-build { color: var(--muted); font-size: 10px; letter-spacing: 1px; }
+  .footer-cl { color: var(--red); font-size: 10px; letter-spacing: 2px; }
 
   /* ── LOGIN MODAL ── */
   #login-overlay {
@@ -288,70 +186,36 @@
     opacity: 0; pointer-events: none;
     transition: opacity .25s;
   }
-  #login-overlay.visible {
-    opacity: 1; pointer-events: all;
-  }
+  #login-overlay.visible { opacity: 1; pointer-events: all; }
   .login-box {
     background: var(--bg2); border: 1px solid var(--green);
     box-shadow: 0 0 40px rgba(0,255,136,0.12);
     width: 100%; max-width: 420px;
-    padding: 0;
     transform: translateY(12px);
     transition: transform .25s;
   }
-  #login-overlay.visible .login-box {
-    transform: translateY(0);
-  }
-  .login-bar {
-    background: var(--bg); padding: 14px 20px;
-    display: flex; align-items: center; justify-content: space-between;
-    border-bottom: 1px solid var(--border);
-  }
+  #login-overlay.visible .login-box { transform: translateY(0); }
+  .login-bar { background: var(--bg); padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
   .login-bar-title { font-size: 11px; letter-spacing: 3px; color: var(--green); text-transform: uppercase; }
-  .login-close {
-    cursor: pointer; color: var(--muted); font-size: 16px;
-    background: none; border: none; color: var(--muted);
-    transition: color .15s; line-height: 1;
-  }
+  .login-close { cursor: pointer; background: none; border: none; color: var(--muted); font-size: 16px; transition: color .15s; line-height: 1; }
   .login-close:hover { color: var(--text); }
   .login-body { padding: 32px 28px; }
   .login-prompt { font-size: 11px; color: var(--muted); margin-bottom: 24px; line-height: 1.8; }
   .login-field { margin-bottom: 20px; }
-  .login-field label {
-    display: block; font-size: 10px; letter-spacing: 2px;
-    color: var(--muted); text-transform: uppercase; margin-bottom: 8px;
-  }
-  .login-field input {
-    width: 100%; background: var(--bg); border: 1px solid var(--border);
-    color: var(--text); padding: 10px 14px; font-family: inherit; font-size: 13px;
-    outline: none; transition: border-color .2s;
-  }
+  .login-field label { display: block; font-size: 10px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; margin-bottom: 8px; }
+  .login-field input { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 10px 14px; font-family: inherit; font-size: 13px; outline: none; transition: border-color .2s; }
   .login-field input:focus { border-color: var(--green); }
-  .login-submit {
-    width: 100%; padding: 12px; background: transparent;
-    border: 1px solid var(--green); color: var(--green);
-    font-family: inherit; font-size: 12px; letter-spacing: 3px;
-    text-transform: uppercase; cursor: pointer;
-    transition: background .2s, color .2s;
-    margin-top: 8px;
-  }
+  .login-submit { width: 100%; padding: 12px; background: transparent; border: 1px solid var(--green); color: var(--green); font-family: inherit; font-size: 12px; letter-spacing: 3px; text-transform: uppercase; cursor: pointer; transition: background .2s, color .2s; margin-top: 8px; }
   .login-submit:hover { background: var(--green); color: var(--bg); }
-  .login-error {
-    color: var(--red); font-size: 11px; margin-top: 16px;
-    letter-spacing: 1px; min-height: 16px; text-align: center;
-  }
+  .login-error { color: var(--red); font-size: 11px; margin-top: 16px; letter-spacing: 1px; min-height: 16px; text-align: center; }
 
   /* ── MISC ── */
   .scan-line {
     position: fixed; top: 0; left: 0; right: 0; height: 2px;
     background: linear-gradient(90deg, transparent, var(--green), transparent);
-    animation: scan 8s linear infinite; pointer-events: none; z-index: 9998;
-    opacity: 0.35;
+    animation: scan 8s linear infinite; pointer-events: none; z-index: 9998; opacity: 0.35;
   }
-  @keyframes scan {
-    0% { top: 0; }
-    100% { top: 100vh; }
-  }
+  @keyframes scan { 0% { top: 0; } 100% { top: 100vh; } }
 </style>
 </head>
 <body>
@@ -364,7 +228,7 @@
   <div class="nav-links">
     <a href="#about">About</a>
     <a href="#capabilities">Capabilities</a>
-    <a href="#intel">Intel</a>
+    <a href="#platform">Platform</a>
     <a href="#contact">Contact</a>
   </div>
 </nav>
@@ -374,41 +238,50 @@
   <div class="hero-bg"></div>
   <div class="hero-grid"></div>
   <div class="hero-content">
-    <div class="hero-eyebrow">Active Monitoring</div>
+    <div class="hero-eyebrow">Continuous Operations</div>
     <h1>Threat Intelligence.<br><span class="accent">Cyber Operations.</span><br>Active Defense.</h1>
     <p class="hero-sub">
-      Independent security research, real-time threat aggregation, and network defense
-      from a homelab-first operations platform.
+      Independent security research and operations platform. Real-time threat aggregation,
+      network defense, and situational awareness — always on.
     </p>
     <div class="hero-stats">
-      <div class="stat"><span class="stat-num" id="ips-blocked">—</span><span class="stat-lbl">IPs Blocked</span></div>
-      <div class="stat"><span class="stat-num" id="traps-caught">—</span><span class="stat-lbl">Traps Caught</span></div>
-      <div class="stat"><span class="stat-num">24/7</span><span class="stat-lbl">Monitoring</span></div>
+      <div class="stat">
+        <span class="stat-num classified">CLASSIFIED</span>
+        <span class="stat-lbl">Threats Blocked</span>
+      </div>
+      <div class="stat">
+        <span class="stat-num classified">CLASSIFIED</span>
+        <span class="stat-lbl">Probes Caught</span>
+      </div>
+      <div class="stat">
+        <span class="stat-num">24/7</span>
+        <span class="stat-lbl">Monitoring</span>
+      </div>
     </div>
   </div>
 </section>
 
 <!-- TICKER -->
 <div class="ticker-wrap">
-  <div class="ticker" id="ticker">
-    <span class="ticker-item"><span class="dot"></span>ENDLESSH TARPIT — ACTIVE</span>
-    <span class="ticker-item"><span class="dot cyan"></span>FAIL2BAN — WATCHING</span>
-    <span class="ticker-item"><span class="dot"></span>NFTABLES BLACKLIST — ENFORCED</span>
-    <span class="ticker-item"><span class="dot red"></span>HONEYPOT — ONLINE</span>
-    <span class="ticker-item"><span class="dot cyan"></span>CLOUDFLARE WAF — ENABLED</span>
-    <span class="ticker-item"><span class="dot"></span>THREAT INTEL FEED — LIVE</span>
-    <span class="ticker-item"><span class="dot cyan"></span>CVE MONITOR — ACTIVE</span>
+  <div class="ticker">
+    <span class="ticker-item"><span class="dot"></span>PERIMETER DEFENSE — ACTIVE</span>
+    <span class="ticker-item"><span class="dot cyan"></span>INTRUSION DETECTION — ONLINE</span>
+    <span class="ticker-item"><span class="dot"></span>THREAT INTELLIGENCE — LIVE</span>
+    <span class="ticker-item"><span class="dot red"></span>ADVERSARIAL PROBES — DETECTED</span>
+    <span class="ticker-item"><span class="dot cyan"></span>EDGE ENFORCEMENT — ENABLED</span>
+    <span class="ticker-item"><span class="dot"></span>CVE MONITORING — ACTIVE</span>
+    <span class="ticker-item"><span class="dot cyan"></span>GEOPOLITICAL FEEDS — INGESTING</span>
     <span class="ticker-item"><span class="dot"></span>SPACE WEATHER — NOMINAL</span>
-    <span class="ticker-item"><span class="dot red"></span>SCANNER PROBES DETECTED</span>
-    <span class="ticker-item"><span class="dot"></span>ENDLESSH TARPIT — ACTIVE</span>
-    <span class="ticker-item"><span class="dot cyan"></span>FAIL2BAN — WATCHING</span>
-    <span class="ticker-item"><span class="dot"></span>NFTABLES BLACKLIST — ENFORCED</span>
-    <span class="ticker-item"><span class="dot red"></span>HONEYPOT — ONLINE</span>
-    <span class="ticker-item"><span class="dot cyan"></span>CLOUDFLARE WAF — ENABLED</span>
-    <span class="ticker-item"><span class="dot"></span>THREAT INTEL FEED — LIVE</span>
-    <span class="ticker-item"><span class="dot cyan"></span>CVE MONITOR — ACTIVE</span>
+    <span class="ticker-item"><span class="dot red"></span>ACTIVE SCANNING TRAFFIC — LOGGED</span>
+    <span class="ticker-item"><span class="dot"></span>PERIMETER DEFENSE — ACTIVE</span>
+    <span class="ticker-item"><span class="dot cyan"></span>INTRUSION DETECTION — ONLINE</span>
+    <span class="ticker-item"><span class="dot"></span>THREAT INTELLIGENCE — LIVE</span>
+    <span class="ticker-item"><span class="dot red"></span>ADVERSARIAL PROBES — DETECTED</span>
+    <span class="ticker-item"><span class="dot cyan"></span>EDGE ENFORCEMENT — ENABLED</span>
+    <span class="ticker-item"><span class="dot"></span>CVE MONITORING — ACTIVE</span>
+    <span class="ticker-item"><span class="dot cyan"></span>GEOPOLITICAL FEEDS — INGESTING</span>
     <span class="ticker-item"><span class="dot"></span>SPACE WEATHER — NOMINAL</span>
-    <span class="ticker-item"><span class="dot red"></span>SCANNER PROBES DETECTED</span>
+    <span class="ticker-item"><span class="dot red"></span>ACTIVE SCANNING TRAFFIC — LOGGED</span>
   </div>
 </div>
 
@@ -419,19 +292,19 @@
   <div class="about-grid">
     <div class="about-text">
       <p>
-        KEVSEC is an independent cyber intelligence and operations platform built for
-        continuous network monitoring, threat aggregation, and active defense research.
-        Built and operated from a hardened homelab running bare-metal Linux infrastructure.
+        KEVSEC is an independent cyber intelligence and operations platform. We aggregate,
+        analyze, and act on threat data across multiple intelligence domains — from network
+        intrusion attempts to geopolitical developments and environmental hazards.
       </p>
       <p>
-        Our stack aggregates 20+ threat intelligence feeds, monitors live CVE disclosures,
-        tracks geomagnetic and solar activity, and maintains real-time situational awareness
-        across network, weather, and geopolitical domains.
+        Our platform runs continuous monitoring across security feeds, vulnerability disclosures,
+        and open-source intelligence sources. All ingested data is correlated, deduplicated,
+        and surfaced in real time through a hardened internal operations interface.
       </p>
       <p>
-        All traffic into this infrastructure is logged, analyzed, and cross-referenced against
-        known threat actor IPs. Persistent scanners and credential stuffers are automatically
-        blacklisted via nftables with Cloudflare WAF enforcement at the edge.
+        Unauthorized access attempts against this infrastructure are automatically identified,
+        logged, and blocked. All traffic is subject to multi-layer inspection and enforcement
+        at both the network edge and host level.
       </p>
     </div>
     <div class="terminal-card">
@@ -439,16 +312,16 @@
         <div class="circle r"></div><div class="circle y"></div><div class="circle g"></div>
       </div>
       <div class="terminal-body">
-        <div><span class="t-prompt">root@kevsec</span><span class="t-cmd">:~# uptime</span></div>
-        <div class="t-out hi" id="uptime-out">loading...</div>
-        <div><span class="t-prompt">root@kevsec</span><span class="t-cmd">:~# systemctl list --active</span></div>
-        <div class="t-out ok">● endlessh.service — SSH Tarpit</div>
-        <div class="t-out ok">● fail2ban.service — IDS/IPS Engine</div>
-        <div class="t-out ok">● honeypot.service — Probe Trap</div>
-        <div class="t-out ok">● nginx.service — Reverse Proxy</div>
-        <div class="t-out ok">● kevsec-dashboard.service — Ops Center</div>
+        <div><span class="t-prompt">ops@kevsec</span><span class="t-cmd">:~# status --all</span></div>
+        <div class="t-out ok">● perimeter     ACTIVE</div>
+        <div class="t-out ok">● detection     ACTIVE</div>
+        <div class="t-out ok">● intel-feed    ACTIVE</div>
+        <div class="t-out ok">● threat-db     ACTIVE</div>
+        <div class="t-out ok">● edge-proxy    ACTIVE</div>
+        <div><span class="t-prompt">ops@kevsec</span><span class="t-cmd">:~# uptime</span></div>
+        <div class="t-out cl">[CLASSIFIED]</div>
         <div style="margin-top:8px">
-          <span class="t-prompt">root@kevsec</span><span class="t-cmd">:~# </span><span class="t-cursor"></span>
+          <span class="t-prompt">ops@kevsec</span><span class="t-cmd">:~# </span><span class="t-cursor"></span>
         </div>
       </div>
     </div>
@@ -463,129 +336,129 @@
     <div class="cap-card">
       <div class="cap-icon">[01]</div>
       <div class="cap-title">Threat Intelligence</div>
-      <div class="cap-desc">Real-time aggregation of 20+ security news feeds, CVE disclosures, GDACS disaster events, and dark web mentions across active threat actors.</div>
+      <div class="cap-desc">Real-time aggregation across dozens of security news feeds, CVE disclosures, disaster event feeds, and open-source intelligence sources.</div>
     </div>
     <div class="cap-card">
       <div class="cap-icon">[02]</div>
       <div class="cap-title">Active Defense</div>
-      <div class="cap-desc">SSH tarpit trapping automated bots for hours, honeypot endpoints catching scanners, automatic IP bans via nftables and Cloudflare WAF.</div>
+      <div class="cap-desc">Multi-layer perimeter enforcement. Automated identification and blocking of malicious actors, credential stuffers, and infrastructure scanners.</div>
     </div>
     <div class="cap-card">
       <div class="cap-icon">[03]</div>
       <div class="cap-title">OSINT Research</div>
-      <div class="cap-desc">Username enumeration, passive reconnaissance tooling, AbuseIPDB cross-referencing, and geolocation intelligence on threat actors.</div>
+      <div class="cap-desc">Passive reconnaissance, actor attribution, cross-referencing against threat databases, and geolocation intelligence on adversarial infrastructure.</div>
     </div>
     <div class="cap-card">
       <div class="cap-icon">[04]</div>
-      <div class="cap-title">Network Monitoring</div>
-      <div class="cap-desc">Live interface rx/tx telemetry, service status grids across 14+ systemd services, Proxmox VM health, and uptime tracking.</div>
+      <div class="cap-title">Infrastructure Monitoring</div>
+      <div class="cap-desc">Continuous health monitoring across all platform services. Real-time telemetry, anomaly detection, and automated alerting on state changes.</div>
     </div>
     <div class="cap-card">
       <div class="cap-icon">[05]</div>
       <div class="cap-title">Vulnerability Tracking</div>
-      <div class="cap-desc">NVD CVE feed monitoring with severity scoring, patch tracking, and automated alerts for critical disclosures affecting monitored stacks.</div>
+      <div class="cap-desc">NVD CVE feed monitoring with severity scoring and patch tracking. Automated triage of critical disclosures against monitored technology stacks.</div>
     </div>
     <div class="cap-card">
       <div class="cap-icon">[06]</div>
       <div class="cap-title">Situational Awareness</div>
-      <div class="cap-desc">NOAA space weather, USGS seismic events, NWS weather alerts, aviation METARs, and Great Lakes buoy data for full environmental context.</div>
+      <div class="cap-desc">Cross-domain environmental intelligence — space weather, seismic activity, weather alerts, aviation data, and geopolitical feeds unified in one platform.</div>
     </div>
   </div>
 </section>
 
-<!-- INTEL FEED -->
-<section id="intel">
+<!-- PLATFORM STATUS -->
+<section id="platform">
   <div class="section-label">Platform</div>
-  <h2>Defense Posture</h2>
-  <div class="intel-layout">
+  <h2>Operational Status</h2>
+  <div class="platform-layout">
     <div>
-      <div class="intel-feed">
-        <div class="intel-row">
-          <div class="intel-tag tag-ok">ACTIVE</div>
-          <div class="intel-title">SSH tarpit — automated bots trapped and delayed</div>
-          <div class="intel-time">Continuous</div>
+      <div class="status-feed">
+        <div class="status-row-item">
+          <div class="status-tag tag-op">ONLINE</div>
+          <div class="row-title">Perimeter defense — ingress filtering and enforcement active</div>
+          <div class="row-val">Continuous</div>
         </div>
-        <div class="intel-row">
-          <div class="intel-tag tag-ok">ACTIVE</div>
-          <div class="intel-title">Honeypot endpoints logging all scanner probes</div>
-          <div class="intel-time">Continuous</div>
+        <div class="status-row-item">
+          <div class="status-tag tag-op">ONLINE</div>
+          <div class="row-title">Intrusion detection — adversarial probe logging active</div>
+          <div class="row-val">Continuous</div>
         </div>
-        <div class="intel-row">
-          <div class="intel-tag tag-ok">ACTIVE</div>
-          <div class="intel-title">CVE feed monitoring — NVD disclosures tracked in real time</div>
-          <div class="intel-time">15 min</div>
+        <div class="status-row-item">
+          <div class="status-tag tag-op">ONLINE</div>
+          <div class="row-title">Threat intelligence feeds — aggregating across all sources</div>
+          <div class="row-val">Real-time</div>
         </div>
-        <div class="intel-row">
-          <div class="intel-tag tag-ok">ACTIVE</div>
-          <div class="intel-title">Space weather — NOAA SWPC geomagnetic activity monitored</div>
-          <div class="intel-time">30 min</div>
+        <div class="status-row-item">
+          <div class="status-tag tag-op">ONLINE</div>
+          <div class="row-title">Vulnerability monitoring — CVE disclosures tracked</div>
+          <div class="row-val">Real-time</div>
         </div>
-        <div class="intel-row">
-          <div class="intel-tag tag-ok">ACTIVE</div>
-          <div class="intel-title">Threat intel feed — 20+ RSS sources aggregated and deduplicated</div>
-          <div class="intel-time">5 min</div>
+        <div class="status-row-item">
+          <div class="status-tag tag-op">ONLINE</div>
+          <div class="row-title">Edge enforcement — external threat blocking at network boundary</div>
+          <div class="row-val">Always</div>
         </div>
-        <div class="intel-row">
-          <div class="intel-tag tag-ok">ACTIVE</div>
-          <div class="intel-title">nftables blacklist — 3.4M IPs enforced at network layer</div>
-          <div class="intel-time">2x daily</div>
+        <div class="status-row-item">
+          <div class="status-tag tag-class">CLASSIFIED</div>
+          <div class="row-title">Internal systems — operational metrics and telemetry</div>
+          <div class="row-val cl">REDACTED</div>
         </div>
-        <div class="intel-row">
-          <div class="intel-tag tag-ok">ACTIVE</div>
-          <div class="intel-title">Cloudflare WAF — edge enforcement across all ingress</div>
-          <div class="intel-time">Always</div>
+        <div class="status-row-item">
+          <div class="status-tag tag-class">CLASSIFIED</div>
+          <div class="row-title">Defense stack composition and tooling</div>
+          <div class="row-val cl">REDACTED</div>
         </div>
       </div>
     </div>
-    <div class="status-panel">
-      <div class="status-header">System Status</div>
-      <div class="status-row">
-        <span class="status-label">Perimeter</span>
+    <div class="info-panel">
+      <div class="info-header">System Overview</div>
+      <div class="info-row">
+        <span class="info-label">Platform</span>
         <div style="display:flex;align-items:center;gap:8px">
-          <span class="status-val ok">ACTIVE</span>
-          <span class="status-dot sdot-ok"></span>
+          <span class="info-val ok">OPERATIONAL</span>
+          <span class="info-dot idot-ok"></span>
         </div>
       </div>
-      <div class="status-row">
-        <span class="status-label">Tarpit</span>
+      <div class="info-row">
+        <span class="info-label">Perimeter</span>
         <div style="display:flex;align-items:center;gap:8px">
-          <span class="status-val ok">RUNNING</span>
-          <span class="status-dot sdot-ok"></span>
+          <span class="info-val ok">ENFORCING</span>
+          <span class="info-dot idot-ok"></span>
         </div>
       </div>
-      <div class="status-row">
-        <span class="status-label">Fail2Ban</span>
+      <div class="info-row">
+        <span class="info-label">Intel Feeds</span>
         <div style="display:flex;align-items:center;gap:8px">
-          <span class="status-val ok">WATCHING</span>
-          <span class="status-dot sdot-ok"></span>
+          <span class="info-val ok">LIVE</span>
+          <span class="info-dot idot-ok"></span>
         </div>
       </div>
-      <div class="status-row">
-        <span class="status-label">WAF</span>
+      <div class="info-row">
+        <span class="info-label">CVE Monitor</span>
         <div style="display:flex;align-items:center;gap:8px">
-          <span class="status-val ok">ENFORCING</span>
-          <span class="status-dot sdot-ok"></span>
+          <span class="info-val ok">ACTIVE</span>
+          <span class="info-dot idot-ok"></span>
         </div>
       </div>
-      <div class="status-row">
-        <span class="status-label">Blacklist</span>
+      <div class="info-row">
+        <span class="info-label">Threats Blocked</span>
         <div style="display:flex;align-items:center;gap:8px">
-          <span class="status-val ok">3.4M IPs</span>
-          <span class="status-dot sdot-ok"></span>
+          <span class="info-val cl">CLASSIFIED</span>
+          <span class="info-dot idot-cl"></span>
         </div>
       </div>
-      <div class="status-row">
-        <span class="status-label">CVE Feed</span>
+      <div class="info-row">
+        <span class="info-label">Stack Details</span>
         <div style="display:flex;align-items:center;gap:8px">
-          <span class="status-val ok">LIVE</span>
-          <span class="status-dot sdot-ok"></span>
+          <span class="info-val cl">CLASSIFIED</span>
+          <span class="info-dot idot-cl"></span>
         </div>
       </div>
-      <div class="status-row" id="uptime-row">
-        <span class="status-label">Uptime</span>
+      <div class="info-row">
+        <span class="info-label">Uptime</span>
         <div style="display:flex;align-items:center;gap:8px">
-          <span class="status-val" id="uptime-val">—</span>
-          <span class="status-dot sdot-ok"></span>
+          <span class="info-val cl">CLASSIFIED</span>
+          <span class="info-dot idot-cl"></span>
         </div>
       </div>
     </div>
@@ -613,11 +486,11 @@
     </div>
     <div class="pgp-box">
       <div class="pgp-label">Platform Status</div>
-      <div style="font-size:12px;color:var(--muted);line-height:1.9">
-        <div>Infrastructure: <span style="color:var(--green)">ONLINE</span></div>
-        <div>Threat feeds: <span style="color:var(--green)">ACTIVE</span></div>
-        <div>Defense systems: <span style="color:var(--green)">ARMED</span></div>
-        <div>Last sync: <span style="color:var(--cyan)" id="last-sync">—</span></div>
+      <div style="font-size:12px;color:var(--muted);line-height:2">
+        <div>All systems: <span style="color:var(--green)">OPERATIONAL</span></div>
+        <div>Intel feeds: <span style="color:var(--green)">ACTIVE</span></div>
+        <div>Defense: <span style="color:var(--green)">ARMED</span></div>
+        <div>Infrastructure: <span style="color:var(--red);letter-spacing:1px;font-size:11px">CLASSIFIED</span></div>
       </div>
     </div>
   </div>
@@ -627,7 +500,7 @@
 <footer>
   <span class="footer-brand">KEVSEC</span>
   <span class="footer-copy">Cyber Intelligence Operations</span>
-  <span class="footer-build">BUILD 2026 // SWIZZIN // PROXMOX</span>
+  <span class="footer-cl">[CLASSIFIED]</span>
 </footer>
 
 <!-- HIDDEN LOGIN MODAL -->
@@ -661,25 +534,6 @@
 </div>
 
 <script>
-  const now = new Date();
-  document.getElementById('last-sync').textContent = now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
-
-  // ── Uptime ──
-  fetch('/api/public/uptime').then(r=>r.json()).then(d=>{
-    if (d.uptime) {
-      document.getElementById('uptime-out').textContent = d.uptime;
-      document.getElementById('uptime-val').textContent = d.uptime;
-    }
-  }).catch(()=>{
-    document.getElementById('uptime-out').textContent = 'unavailable';
-  });
-
-  // ── Stats (honeypot log counts) ──
-  fetch('/api/public/stats').then(r=>r.json()).then(d=>{
-    if (d.blocked) document.getElementById('ips-blocked').textContent = d.blocked.toLocaleString();
-    if (d.caught) document.getElementById('traps-caught').textContent = d.caught.toLocaleString();
-  }).catch(()=>{});
-
   // ── Hidden login trigger: type "kev" anywhere (not in an input) ──
   let _seq = '', _timer = null;
   document.addEventListener('keydown', e => {
@@ -688,31 +542,26 @@
     if (_seq.length > 3) _seq = _seq.slice(-3);
     clearTimeout(_timer);
     _timer = setTimeout(() => { _seq = ''; }, 2000);
-    if (_seq === 'kev') {
-      _seq = '';
-      openLogin();
-    }
+    if (_seq === 'kev') { _seq = ''; openLogin(); }
   });
 
   function openLogin() {
     document.getElementById('login-overlay').classList.add('visible');
-    setTimeout(()=>{ document.getElementById('login-user').focus(); }, 50);
+    setTimeout(() => { document.getElementById('login-user').focus(); }, 50);
   }
 
   document.getElementById('login-close-btn').addEventListener('click', () => {
     document.getElementById('login-overlay').classList.remove('visible');
   });
   document.getElementById('login-overlay').addEventListener('click', e => {
-    if (e.target === document.getElementById('login-overlay')) {
+    if (e.target === document.getElementById('login-overlay'))
       document.getElementById('login-overlay').classList.remove('visible');
-    }
   });
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') document.getElementById('login-overlay').classList.remove('visible');
   });
 
   {% if show_modal %}
-  // Re-open on failed auth
   document.addEventListener('DOMContentLoaded', () => openLogin());
   {% endif %}
 </script>
