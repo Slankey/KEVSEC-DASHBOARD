@@ -3160,7 +3160,7 @@ document.getElementById('nuke-modal').addEventListener('click', function(e) {
 
 // ── SSH Copy ───────────────────────────────────────────────
 function copySSH() {
-  navigator.clipboard.writeText('ssh user@your-server').then(() => {
+  navigator.clipboard.writeText('ssh slankey@69.30.236.220').then(() => {
     const el = document.getElementById('ssh-btn-sub2');
     if (el) { el.textContent = '✓ Copied!'; setTimeout(() => el.textContent = 'Click to copy', 2000); }
   });
