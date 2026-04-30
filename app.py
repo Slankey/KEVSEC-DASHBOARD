@@ -2677,78 +2677,86 @@ def api_ozaukee_alerts():
 @app.route("/api/president_intel")
 @login_required
 def api_president_intel():
-    """Presidential schedule via Factbase iCal + WH RSS press releases."""
+    """Presidential schedule scraped daily from Roll Call / Factbase calendar."""
     force = request.args.get("force") == "1"
-    cached = cache_get("president_intel", ttl=1800, force=force)
+    cached = cache_get("president_intel", ttl=86400, force=force)  # 24hr — daily scrape
     if cached:
         return jsonify(cached)
-    hdrs = {"User-Agent": "KEVSec/1.0 ops@kevsec.com"}
+
+    hdrs = {
+        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+                      "(KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml",
+        "Accept-Language": "en-US,en;q=0.9",
+    }
     schedule = []
-    items = []
 
-    # ── Presidential schedule: Factbase JSON (the actual daily schedule) ───
     try:
-        fb_r = requests.get(
-            "https://media-cdn.factba.se/rss/json/trump/calendar-full.json",
-            timeout=12, headers=hdrs)
-        if fb_r.status_code == 200:
-            today_et = datetime.date.today()
-            window_end = today_et + datetime.timedelta(days=10)
-            for ev in fb_r.json():
-                try:
-                    ev_date = datetime.date.fromisoformat(ev["date"])
-                except Exception:
-                    continue
-                if ev_date < today_et or ev_date > window_end:
-                    continue
-                # Skip vague "Executive Time" filler entries unless nothing else
-                schedule.append({
-                    "date":     ev_date.strftime("%a %b %-d"),
-                    "time":     ev.get("time_formatted", "").strip(),
-                    "title":    ev.get("details", "")[:140],
-                    "location": ev.get("location", ""),
-                    "desc":     ev.get("coverage", ""),
-                    "source":   "Factbase",
-                })
-            # Sort by date then time
-            schedule.sort(key=lambda x: (x["date"], x["time"]))
-    except Exception as ex:
-        app.logger.warning("president_intel factbase: %s", ex)
+        resp = requests.get(
+            "https://rollcall.com/factbase/trump/calendar/",
+            timeout=20, headers=hdrs)
+        html = resp.text
 
-    # ── White House RSS press releases (updated URLs) ────────────────────
-    wh_feeds = [
-        ("WH News",     "https://www.whitehouse.gov/news/feed/"),
-        ("Exec Orders", "https://www.whitehouse.gov/presidential-actions/feed/"),
-        ("Briefings",   "https://www.whitehouse.gov/briefings-statements/feed/"),
-    ]
-    for label, feed_url in wh_feeds:
-        try:
-            parsed = feedparser.parse(feed_url)
-            for e in parsed.entries[:5]:
-                pub = e.get("published", e.get("updated", ""))
-                items.append({
-                    "title":   e.get("title", "")[:120],
-                    "link":    e.get("link", "#"),
-                    "date":    pub[:10] if pub else "",
-                    "summary": re.sub(r"<[^>]+>", "", e.get("summary", ""))[:200],
-                    "source":  label,
+        # Extract date headers: <span class="text-md text-gray-700"> April 30, 2026 </span>
+        # Extract event rows: time + title + location + type
+        # Parse by finding date blocks then the rows that follow them
+        current_date = ""
+        current_date_obj = None
+        today = datetime.date.today()
+        window_end = today + datetime.timedelta(days=14)
+
+        # Split on date header rows (they contain day-of-week + date)
+        # Pattern: Thursday, April 30, 2026
+        date_pattern = re.compile(
+            r'text-\[#5C5B5B\][^>]*>\s*([\w]+,)\s*</span>\s*'
+            r'<span[^>]*text-gray-700[^>]*>\s*([\w]+ \d+, \d{4})\s*</span>',
+            re.DOTALL)
+        event_pattern = re.compile(
+            r'data-tooltip="([^"]+)".*?'
+            r'text-sm font-light">(\d+:\d+ [AP]M)</div>.*?'
+            r'text-sm font-light text-gray-600 mt-2">\s*(.*?)\s*</div>',
+            re.DOTALL)
+
+        # Find all date positions and event positions
+        date_matches = list(date_pattern.finditer(html))
+        for i, dm in enumerate(date_matches):
+            day_str = dm.group(1).strip().rstrip(',')
+            date_str = dm.group(2).strip()
+            try:
+                date_obj = datetime.datetime.strptime(date_str, "%B %d, %Y").date()
+            except Exception:
+                continue
+            if date_obj < today or date_obj > window_end:
+                continue
+
+            # Get the html slice between this date and the next
+            start = dm.end()
+            end = date_matches[i + 1].start() if i + 1 < len(date_matches) else len(html)
+            chunk = html[start:end]
+
+            for em in event_pattern.finditer(chunk):
+                ev_type = em.group(1).strip()
+                ev_time = em.group(2).strip()
+                ev_title = re.sub(r'\s+', ' ', em.group(3)).strip()
+                if not ev_title or ev_title.lower() in ('', 'tbd'):
+                    continue
+                schedule.append({
+                    "date":     date_obj.strftime("%a %b %-d"),
+                    "day":      day_str,
+                    "time":     ev_time,
+                    "title":    ev_title[:160],
+                    "type":     ev_type,
+                    "source":   "Roll Call / Factbase",
                 })
-        except Exception:
-            pass
-    # Sort by date desc, dedupe
-    seen_items = set(); deduped_items = []
-    for it in sorted(items, key=lambda x: x.get("date",""), reverse=True):
-        k = it["title"][:60].lower()
-        if k not in seen_items:
-            seen_items.add(k); deduped_items.append(it)
-    items = deduped_items[:18]
+
+        schedule.sort(key=lambda x: (x["date"], x["time"]))
+    except Exception as ex:
+        app.logger.warning("president_intel scrape error: %s", ex)
 
     result = {
-        "schedule": schedule[:15],
-        "items":    items[:18],
-        "fetched":  _ts(),
-        "schedule_url": "https://www.whitehouse.gov/briefings-statements/",
-        "wh_url":       "https://www.whitehouse.gov/news/",
+        "schedule":     schedule[:30],
+        "fetched":      _ts(),
+        "schedule_url": "https://rollcall.com/factbase/trump/calendar/",
     }
     cache_set("president_intel", result)
     return jsonify(result)
@@ -3529,55 +3537,7 @@ def _warm_cache(force=False):
         except Exception as e:
             app.logger.warning("[warm_cache] burn_ban: %s", e)
 
-    # Presidential Intel — 30-min TTL
-    if force or not cache_get("president_intel", 1800):
-        try:
-            _sched_feeds = [
-                ("WH Remarks",  "https://www.whitehouse.gov/remarks/feed/"),
-                ("WH Releases", "https://www.whitehouse.gov/releases/feed/"),
-                ("Google News", "https://news.google.com/rss/search?q=Trump+White+House+schedule+agenda+today&hl=en-US&gl=US&ceid=US:en"),
-            ]
-            _wh_feeds = [
-                ("WH News",     "https://www.whitehouse.gov/news/feed/"),
-                ("Exec Orders", "https://www.whitehouse.gov/presidential-actions/feed/"),
-                ("Briefings",   "https://www.whitehouse.gov/briefings-statements/feed/"),
-            ]
-            _sched = []; _items = []
-            for _lbl, _url in _sched_feeds:
-                try:
-                    _f = feedparser.parse(_url)
-                    for _e in _f.entries[:4]:
-                        _pub = _e.get("published", _e.get("updated",""))
-                        _sched.append({"date":_pub[:10] if _pub else "","time":"",
-                                       "title":_e.get("title","")[:140],"location":"",
-                                       "desc":re.sub(r"<[^>]+>","",_e.get("summary",""))[:200],
-                                       "source":_lbl})
-                except Exception: pass
-            for _lbl, _url in _wh_feeds:
-                try:
-                    _f = feedparser.parse(_url)
-                    for _e in _f.entries[:5]:
-                        _pub = _e.get("published", _e.get("updated",""))
-                        _items.append({"title":_e.get("title","")[:120],"link":_e.get("link","#"),
-                                       "date":_pub[:10] if _pub else "","source":_lbl,
-                                       "summary":re.sub(r"<[^>]+>","",_e.get("summary",""))[:200]})
-                except Exception: pass
-            # Sort + dedupe schedule
-            _ss = set(); _ds = []
-            for _s in sorted(_sched, key=lambda x: x.get("date",""), reverse=True):
-                _k = _s["title"][:60].lower()
-                if _k not in _ss: _ss.add(_k); _ds.append(_s)
-            # Sort + dedupe items
-            _si = set(); _di = []
-            for _i in sorted(_items, key=lambda x: x.get("date",""), reverse=True):
-                _k = _i["title"][:60].lower()
-                if _k not in _si: _si.add(_k); _di.append(_i)
-            cache_set("president_intel", {
-                "schedule": _ds[:15], "items": _di[:18], "fetched": _ts(),
-                "schedule_url": "https://www.whitehouse.gov/briefings-statements/",
-                "wh_url": "https://www.whitehouse.gov/news/"})
-        except Exception as e:
-            app.logger.warning("[warm_cache] president_intel: %s", e)
+    # Presidential Intel — 24hr TTL; scraped on first daily request, no warm_cache needed
 
     # Congress Status — 1-hr TTL
     if force or not cache_get("congress_status", 3600):
