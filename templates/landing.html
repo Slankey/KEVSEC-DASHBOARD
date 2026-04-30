@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KEVSEC — Cyber Intelligence Operations</title>
+<meta name="description" content="Independent threat intelligence, network defense, and cyber operations research.">
+<style>
+  :root {
+    --green: #00ff88;
+    --cyan: #00e5ff;
+    --dim-green: #00cc6a;
+    --bg: #080b0f;
+    --bg2: #0d1117;
+    --bg3: #111820;
+    --border: #1a2535;
+    --text: #c9d1d9;
+    --muted: #586069;
+    --red: #ff4757;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Courier New', 'Lucida Console', monospace;
+    font-size: 14px;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 48px;
+    height: 56px;
+    background: rgba(8,11,15,0.92);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-logo {
+    font-size: 18px; font-weight: 700; letter-spacing: 4px;
+    color: var(--green); text-decoration: none;
+    cursor: default; user-select: none;
+  }
+  .nav-logo span { color: var(--muted); }
+  .nav-links { display: flex; gap: 32px; }
+  .nav-links a {
+    color: var(--muted); text-decoration: none; font-size: 12px;
+    letter-spacing: 2px; text-transform: uppercase;
+    transition: color .2s;
+  }
+  .nav-links a:hover { color: var(--cyan); }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 80px 48px 64px;
+    position: relative; overflow: hidden;
+  }
+  .hero-bg {
+    position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(ellipse 60% 60% at 70% 50%, rgba(0,255,136,0.04) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 40% at 20% 80%, rgba(0,229,255,0.03) 0%, transparent 60%);
+  }
+  .hero-grid {
+    position: absolute; inset: 0; z-index: 0;
+    background-image:
+      linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+  .hero-content { position: relative; z-index: 1; max-width: 760px; }
+  .hero-eyebrow {
+    font-size: 11px; letter-spacing: 4px; color: var(--green);
+    text-transform: uppercase; margin-bottom: 24px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .hero-eyebrow::before {
+    content: ''; display: block; width: 32px; height: 1px;
+    background: var(--green);
+  }
+  h1 {
+    font-size: clamp(32px, 5vw, 58px);
+    font-weight: 700; line-height: 1.1;
+    letter-spacing: -1px; color: #e6edf3;
+    margin-bottom: 24px;
+  }
+  h1 .accent { color: var(--green); }
+  .hero-sub {
+    font-size: 15px; color: var(--muted); max-width: 520px;
+    line-height: 1.8; margin-bottom: 40px;
+  }
+  .hero-stats {
+    display: flex; gap: 40px; flex-wrap: wrap;
+  }
+  .stat { display: flex; flex-direction: column; gap: 4px; }
+  .stat-num { font-size: 24px; font-weight: 700; color: var(--cyan); }
+  .stat-lbl { font-size: 11px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; }
+
+  /* ── TERMINAL TICKER ── */
+  .ticker-wrap {
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    overflow: hidden; padding: 10px 0;
+  }
+  .ticker {
+    display: flex; gap: 0;
+    animation: ticker-scroll 40s linear infinite;
+    white-space: nowrap;
+  }
+  .ticker-item {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 0 32px; font-size: 11px; color: var(--muted);
+  }
+  .ticker-item .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--green); flex-shrink: 0;
+    box-shadow: 0 0 6px var(--green);
+  }
+  .ticker-item .dot.red { background: var(--red); box-shadow: 0 0 6px var(--red); }
+  .ticker-item .dot.cyan { background: var(--cyan); box-shadow: 0 0 6px var(--cyan); }
+  @keyframes ticker-scroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  /* ── SECTIONS ── */
+  section { padding: 96px 48px; }
+  .section-label {
+    font-size: 11px; letter-spacing: 4px; color: var(--green);
+    text-transform: uppercase; margin-bottom: 16px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .section-label::before {
+    content: '//'; color: var(--muted);
+  }
+  h2 {
+    font-size: clamp(24px, 3vw, 36px);
+    color: #e6edf3; font-weight: 700; margin-bottom: 48px;
+  }
+
+  /* ── ABOUT ── */
+  #about { background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .about-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: start;
+    max-width: 1100px;
+  }
+  @media (max-width: 768px) { .about-grid { grid-template-columns: 1fr; } }
+  .about-text p { color: var(--muted); line-height: 1.9; margin-bottom: 20px; font-size: 14px; }
+  .about-text p:last-child { margin-bottom: 0; }
+  .terminal-card {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 4px; overflow: hidden;
+  }
+  .terminal-bar {
+    background: #161c24; padding: 10px 16px;
+    display: flex; align-items: center; gap: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .terminal-bar .circle {
+    width: 10px; height: 10px; border-radius: 50%;
+  }
+  .circle.r { background: #ff5f57; }
+  .circle.y { background: #febc2e; }
+  .circle.g { background: #28c840; }
+  .terminal-body { padding: 20px 16px; font-size: 12px; line-height: 2; }
+  .t-prompt { color: var(--green); }
+  .t-cmd { color: var(--text); }
+  .t-out { color: var(--muted); padding-left: 16px; }
+  .t-out.hi { color: var(--cyan); }
+  .t-out.ok { color: var(--green); }
+  .t-cursor {
+    display: inline-block; width: 8px; height: 14px;
+    background: var(--green); vertical-align: middle;
+    animation: blink 1.1s step-end infinite;
+  }
+  @keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0; } }
+
+  /* ── CAPABILITIES ── */
+  #capabilities { background: var(--bg); }
+  .caps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px; max-width: 1100px;
+  }
+  .cap-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    padding: 24px; transition: border-color .2s, transform .2s;
+  }
+  .cap-card:hover {
+    border-color: var(--green);
+    transform: translateY(-2px);
+  }
+  .cap-icon {
+    font-size: 20px; margin-bottom: 16px; color: var(--green);
+    font-family: monospace;
+  }
+  .cap-title { color: #e6edf3; font-size: 14px; font-weight: 700; margin-bottom: 8px; letter-spacing: 1px; }
+  .cap-desc { color: var(--muted); font-size: 12px; line-height: 1.7; }
+
+  /* ── INTEL FEED ── */
+  #intel { background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .intel-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 32px; max-width: 1100px; }
+  @media (max-width: 900px) { .intel-layout { grid-template-columns: 1fr; } }
+  .intel-feed { display: flex; flex-direction: column; gap: 1px; border: 1px solid var(--border); }
+  .intel-row {
+    display: grid; grid-template-columns: 80px 1fr 100px;
+    padding: 12px 16px; background: var(--bg);
+    border-bottom: 1px solid var(--border); gap: 16px;
+    align-items: center; transition: background .15s;
+  }
+  .intel-row:last-child { border-bottom: none; }
+  .intel-row:hover { background: var(--bg3); }
+  .intel-tag {
+    font-size: 9px; letter-spacing: 2px; padding: 3px 7px;
+    border: 1px solid; text-align: center; text-transform: uppercase;
+  }
+  .tag-crit { border-color: var(--red); color: var(--red); }
+  .tag-med  { border-color: #f39c12; color: #f39c12; }
+  .tag-info { border-color: var(--cyan); color: var(--cyan); }
+  .tag-ok   { border-color: var(--green); color: var(--green); }
+  .intel-title { font-size: 12px; color: var(--text); }
+  .intel-time { font-size: 11px; color: var(--muted); text-align: right; }
+  .status-panel { border: 1px solid var(--border); }
+  .status-header {
+    padding: 12px 16px; background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    font-size: 11px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase;
+  }
+  .status-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px; background: var(--bg);
+    border-bottom: 1px solid var(--border); font-size: 12px;
+  }
+  .status-row:last-child { border-bottom: none; }
+  .status-dot {
+    width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+  }
+  .sdot-ok { background: var(--green); box-shadow: 0 0 5px var(--green); }
+  .sdot-warn { background: #f39c12; box-shadow: 0 0 5px #f39c12; }
+  .sdot-off { background: var(--muted); }
+  .status-label { color: var(--muted); }
+  .status-val { color: var(--text); }
+  .status-val.ok { color: var(--green); }
+
+  /* ── CONTACT ── */
+  #contact { background: var(--bg); }
+  .contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; max-width: 900px; }
+  @media (max-width: 768px) { .contact-grid { grid-template-columns: 1fr; } }
+  .contact-links { display: flex; flex-direction: column; gap: 16px; }
+  .contact-link {
+    display: flex; align-items: center; gap: 16px;
+    padding: 16px; background: var(--bg2); border: 1px solid var(--border);
+    text-decoration: none; color: var(--text); font-size: 13px;
+    transition: border-color .2s;
+  }
+  .contact-link:hover { border-color: var(--cyan); color: var(--cyan); }
+  .contact-link .icon { color: var(--green); font-size: 16px; width: 24px; text-align: center; }
+  .pgp-box {
+    background: var(--bg2); border: 1px solid var(--border);
+    padding: 20px; font-size: 11px;
+  }
+  .pgp-label { color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; font-size: 10px; }
+  .pgp-fp { color: var(--green); word-break: break-all; line-height: 1.8; }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--bg2); border-top: 1px solid var(--border);
+    padding: 32px 48px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 16px;
+  }
+  .footer-brand { color: var(--green); font-size: 14px; letter-spacing: 3px; }
+  .footer-copy { color: var(--muted); font-size: 11px; }
+  .footer-build { color: var(--muted); font-size: 10px; letter-spacing: 1px; }
+
+  /* ── LOGIN MODAL ── */
+  #login-overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    background: rgba(8,11,15,0.92);
+    backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity .25s;
+  }
+  #login-overlay.visible {
+    opacity: 1; pointer-events: all;
+  }
+  .login-box {
+    background: var(--bg2); border: 1px solid var(--green);
+    box-shadow: 0 0 40px rgba(0,255,136,0.12);
+    width: 100%; max-width: 420px;
+    padding: 0;
+    transform: translateY(12px);
+    transition: transform .25s;
+  }
+  #login-overlay.visible .login-box {
+    transform: translateY(0);
+  }
+  .login-bar {
+    background: var(--bg); padding: 14px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+  .login-bar-title { font-size: 11px; letter-spacing: 3px; color: var(--green); text-transform: uppercase; }
+  .login-close {
+    cursor: pointer; color: var(--muted); font-size: 16px;
+    background: none; border: none; color: var(--muted);
+    transition: color .15s; line-height: 1;
+  }
+  .login-close:hover { color: var(--text); }
+  .login-body { padding: 32px 28px; }
+  .login-prompt { font-size: 11px; color: var(--muted); margin-bottom: 24px; line-height: 1.8; }
+  .login-field { margin-bottom: 20px; }
+  .login-field label {
+    display: block; font-size: 10px; letter-spacing: 2px;
+    color: var(--muted); text-transform: uppercase; margin-bottom: 8px;
+  }
+  .login-field input {
+    width: 100%; background: var(--bg); border: 1px solid var(--border);
+    color: var(--text); padding: 10px 14px; font-family: inherit; font-size: 13px;
+    outline: none; transition: border-color .2s;
+  }
+  .login-field input:focus { border-color: var(--green); }
+  .login-submit {
+    width: 100%; padding: 12px; background: transparent;
+    border: 1px solid var(--green); color: var(--green);
+    font-family: inherit; font-size: 12px; letter-spacing: 3px;
+    text-transform: uppercase; cursor: pointer;
+    transition: background .2s, color .2s;
+    margin-top: 8px;
+  }
+  .login-submit:hover { background: var(--green); color: var(--bg); }
+  .login-error {
+    color: var(--red); font-size: 11px; margin-top: 16px;
+    letter-spacing: 1px; min-height: 16px; text-align: center;
+  }
+
+  /* ── MISC ── */
+  .scan-line {
+    position: fixed; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--green), transparent);
+    animation: scan 8s linear infinite; pointer-events: none; z-index: 9998;
+    opacity: 0.35;
+  }
+  @keyframes scan {
+    0% { top: 0; }
+    100% { top: 100vh; }
+  }
+</style>
+</head>
+<body>
+
+<div class="scan-line"></div>
+
+<!-- NAV -->
+<nav>
+  <span class="nav-logo">KEV<span>SEC</span></span>
+  <div class="nav-links">
+    <a href="#about">About</a>
+    <a href="#capabilities">Capabilities</a>
+    <a href="#intel">Intel</a>
+    <a href="#contact">Contact</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grid"></div>
+  <div class="hero-content">
+    <div class="hero-eyebrow">Active Monitoring</div>
+    <h1>Threat Intelligence.<br><span class="accent">Cyber Operations.</span><br>Active Defense.</h1>
+    <p class="hero-sub">
+      Independent security research, real-time threat aggregation, and network defense
+      from a homelab-first operations platform.
+    </p>
+    <div class="hero-stats">
+      <div class="stat"><span class="stat-num" id="ips-blocked">—</span><span class="stat-lbl">IPs Blocked</span></div>
+      <div class="stat"><span class="stat-num" id="traps-caught">—</span><span class="stat-lbl">Traps Caught</span></div>
+      <div class="stat"><span class="stat-num">24/7</span><span class="stat-lbl">Monitoring</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker-wrap">
+  <div class="ticker" id="ticker">
+    <span class="ticker-item"><span class="dot"></span>ENDLESSH TARPIT — ACTIVE</span>
+    <span class="ticker-item"><span class="dot cyan"></span>FAIL2BAN — WATCHING</span>
+    <span class="ticker-item"><span class="dot"></span>NFTABLES BLACKLIST — ENFORCED</span>
+    <span class="ticker-item"><span class="dot red"></span>HONEYPOT — ONLINE</span>
+    <span class="ticker-item"><span class="dot cyan"></span>CLOUDFLARE WAF — ENABLED</span>
+    <span class="ticker-item"><span class="dot"></span>THREAT INTEL FEED — LIVE</span>
+    <span class="ticker-item"><span class="dot cyan"></span>CVE MONITOR — ACTIVE</span>
+    <span class="ticker-item"><span class="dot"></span>SPACE WEATHER — NOMINAL</span>
+    <span class="ticker-item"><span class="dot red"></span>SCANNER PROBES DETECTED</span>
+    <span class="ticker-item"><span class="dot"></span>ENDLESSH TARPIT — ACTIVE</span>
+    <span class="ticker-item"><span class="dot cyan"></span>FAIL2BAN — WATCHING</span>
+    <span class="ticker-item"><span class="dot"></span>NFTABLES BLACKLIST — ENFORCED</span>
+    <span class="ticker-item"><span class="dot red"></span>HONEYPOT — ONLINE</span>
+    <span class="ticker-item"><span class="dot cyan"></span>CLOUDFLARE WAF — ENABLED</span>
+    <span class="ticker-item"><span class="dot"></span>THREAT INTEL FEED — LIVE</span>
+    <span class="ticker-item"><span class="dot cyan"></span>CVE MONITOR — ACTIVE</span>
+    <span class="ticker-item"><span class="dot"></span>SPACE WEATHER — NOMINAL</span>
+    <span class="ticker-item"><span class="dot red"></span>SCANNER PROBES DETECTED</span>
+  </div>
+</div>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="section-label">About</div>
+  <h2>Who We Are</h2>
+  <div class="about-grid">
+    <div class="about-text">
+      <p>
+        KEVSEC is an independent cyber intelligence and operations platform built for
+        continuous network monitoring, threat aggregation, and active defense research.
+        Built and operated from a hardened homelab running bare-metal Linux infrastructure.
+      </p>
+      <p>
+        Our stack aggregates 20+ threat intelligence feeds, monitors live CVE disclosures,
+        tracks geomagnetic and solar activity, and maintains real-time situational awareness
+        across network, weather, and geopolitical domains.
+      </p>
+      <p>
+        All traffic into this infrastructure is logged, analyzed, and cross-referenced against
+        known threat actor IPs. Persistent scanners and credential stuffers are automatically
+        blacklisted via nftables with Cloudflare WAF enforcement at the edge.
+      </p>
+    </div>
+    <div class="terminal-card">
+      <div class="terminal-bar">
+        <div class="circle r"></div><div class="circle y"></div><div class="circle g"></div>
+      </div>
+      <div class="terminal-body">
+        <div><span class="t-prompt">root@kevsec</span><span class="t-cmd">:~# uptime</span></div>
+        <div class="t-out hi" id="uptime-out">loading...</div>
+        <div><span class="t-prompt">root@kevsec</span><span class="t-cmd">:~# systemctl list --active</span></div>
+        <div class="t-out ok">● endlessh.service — SSH Tarpit</div>
+        <div class="t-out ok">● fail2ban.service — IDS/IPS Engine</div>
+        <div class="t-out ok">● honeypot.service — Probe Trap</div>
+        <div class="t-out ok">● nginx.service — Reverse Proxy</div>
+        <div class="t-out ok">● kevsec-dashboard.service — Ops Center</div>
+        <div style="margin-top:8px">
+          <span class="t-prompt">root@kevsec</span><span class="t-cmd">:~# </span><span class="t-cursor"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CAPABILITIES -->
+<section id="capabilities">
+  <div class="section-label">Capabilities</div>
+  <h2>Operational Domains</h2>
+  <div class="caps-grid">
+    <div class="cap-card">
+      <div class="cap-icon">[01]</div>
+      <div class="cap-title">Threat Intelligence</div>
+      <div class="cap-desc">Real-time aggregation of 20+ security news feeds, CVE disclosures, GDACS disaster events, and dark web mentions across active threat actors.</div>
+    </div>
+    <div class="cap-card">
+      <div class="cap-icon">[02]</div>
+      <div class="cap-title">Active Defense</div>
+      <div class="cap-desc">SSH tarpit trapping automated bots for hours, honeypot endpoints catching scanners, automatic IP bans via nftables and Cloudflare WAF.</div>
+    </div>
+    <div class="cap-card">
+      <div class="cap-icon">[03]</div>
+      <div class="cap-title">OSINT Research</div>
+      <div class="cap-desc">Username enumeration, passive reconnaissance tooling, AbuseIPDB cross-referencing, and geolocation intelligence on threat actors.</div>
+    </div>
+    <div class="cap-card">
+      <div class="cap-icon">[04]</div>
+      <div class="cap-title">Network Monitoring</div>
+      <div class="cap-desc">Live interface rx/tx telemetry, service status grids across 14+ systemd services, Proxmox VM health, and uptime tracking.</div>
+    </div>
+    <div class="cap-card">
+      <div class="cap-icon">[05]</div>
+      <div class="cap-title">Vulnerability Tracking</div>
+      <div class="cap-desc">NVD CVE feed monitoring with severity scoring, patch tracking, and automated alerts for critical disclosures affecting monitored stacks.</div>
+    </div>
+    <div class="cap-card">
+      <div class="cap-icon">[06]</div>
+      <div class="cap-title">Situational Awareness</div>
+      <div class="cap-desc">NOAA space weather, USGS seismic events, NWS weather alerts, aviation METARs, and Great Lakes buoy data for full environmental context.</div>
+    </div>
+  </div>
+</section>
+
+<!-- INTEL FEED -->
+<section id="intel">
+  <div class="section-label">Live Intel</div>
+  <h2>Current Threat Surface</h2>
+  <div class="intel-layout">
+    <div>
+      <div class="intel-feed">
+        <div class="intel-row">
+          <div class="intel-tag tag-crit">CRITICAL</div>
+          <div class="intel-title">SSH scanner activity above baseline — tarpit engaged</div>
+          <div class="intel-time" id="t1">—</div>
+        </div>
+        <div class="intel-row">
+          <div class="intel-tag tag-med">MEDIUM</div>
+          <div class="intel-title">Credential stuffing probes on admin honeypot</div>
+          <div class="intel-time" id="t2">—</div>
+        </div>
+        <div class="intel-row">
+          <div class="intel-tag tag-info">INFO</div>
+          <div class="intel-title">New CVEs disclosed — NVD feed updated</div>
+          <div class="intel-time" id="t3">—</div>
+        </div>
+        <div class="intel-row">
+          <div class="intel-tag tag-ok">CLEAR</div>
+          <div class="intel-title">Geomagnetic activity nominal — Kp index within range</div>
+          <div class="intel-time" id="t4">—</div>
+        </div>
+        <div class="intel-row">
+          <div class="intel-tag tag-med">MEDIUM</div>
+          <div class="intel-title">Port scan detected — /wp-login.php probe logged</div>
+          <div class="intel-time" id="t5">—</div>
+        </div>
+        <div class="intel-row">
+          <div class="intel-tag tag-info">INFO</div>
+          <div class="intel-title">nftables blacklist updated — new entries synchronized</div>
+          <div class="intel-time" id="t6">—</div>
+        </div>
+        <div class="intel-row">
+          <div class="intel-tag tag-ok">CLEAR</div>
+          <div class="intel-title">All monitored services nominal</div>
+          <div class="intel-time" id="t7">—</div>
+        </div>
+      </div>
+    </div>
+    <div class="status-panel">
+      <div class="status-header">System Status</div>
+      <div class="status-row">
+        <span class="status-label">Perimeter</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="status-val ok">ACTIVE</span>
+          <span class="status-dot sdot-ok"></span>
+        </div>
+      </div>
+      <div class="status-row">
+        <span class="status-label">Tarpit</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="status-val ok">RUNNING</span>
+          <span class="status-dot sdot-ok"></span>
+        </div>
+      </div>
+      <div class="status-row">
+        <span class="status-label">Fail2Ban</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="status-val ok">WATCHING</span>
+          <span class="status-dot sdot-ok"></span>
+        </div>
+      </div>
+      <div class="status-row">
+        <span class="status-label">WAF</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="status-val ok">ENFORCING</span>
+          <span class="status-dot sdot-ok"></span>
+        </div>
+      </div>
+      <div class="status-row">
+        <span class="status-label">Blacklist</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="status-val ok">3.4M IPs</span>
+          <span class="status-dot sdot-ok"></span>
+        </div>
+      </div>
+      <div class="status-row">
+        <span class="status-label">CVE Feed</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="status-val ok">LIVE</span>
+          <span class="status-dot sdot-ok"></span>
+        </div>
+      </div>
+      <div class="status-row" id="uptime-row">
+        <span class="status-label">Uptime</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="status-val" id="uptime-val">—</span>
+          <span class="status-dot sdot-ok"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact">
+  <div class="section-label">Contact</div>
+  <h2>Reach Out</h2>
+  <div class="contact-grid">
+    <div class="contact-links">
+      <a class="contact-link" href="https://github.com/Slankey" target="_blank" rel="noopener">
+        <span class="icon">&#x27A5;</span>
+        <span>github.com/Slankey</span>
+      </a>
+      <a class="contact-link" href="mailto:ops@kevsec.com">
+        <span class="icon">@</span>
+        <span>ops@kevsec.com</span>
+      </a>
+      <a class="contact-link" href="https://resume.kevsec.com" target="_blank" rel="noopener">
+        <span class="icon">&#x27A5;</span>
+        <span>resume.kevsec.com</span>
+      </a>
+    </div>
+    <div class="pgp-box">
+      <div class="pgp-label">Platform Status</div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.9">
+        <div>Infrastructure: <span style="color:var(--green)">ONLINE</span></div>
+        <div>Threat feeds: <span style="color:var(--green)">ACTIVE</span></div>
+        <div>Defense systems: <span style="color:var(--green)">ARMED</span></div>
+        <div>Last sync: <span style="color:var(--cyan)" id="last-sync">—</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <span class="footer-brand">KEVSEC</span>
+  <span class="footer-copy">Cyber Intelligence Operations</span>
+  <span class="footer-build">BUILD 2026 // SWIZZIN // PROXMOX</span>
+</footer>
+
+<!-- HIDDEN LOGIN MODAL -->
+<div id="login-overlay">
+  <div class="login-box">
+    <div class="login-bar">
+      <span class="login-bar-title">Authenticated Access</span>
+      <button class="login-close" id="login-close-btn" title="Close">&times;</button>
+    </div>
+    <div class="login-body">
+      <div class="login-prompt">
+        &gt; Secure session required.<br>
+        &gt; Credentials transmitted over TLS.
+      </div>
+      <form method="POST" action="/ops">
+        <input type="hidden" name="_csrf" id="csrf-input" value="">
+        <div class="login-field">
+          <label>Identifier</label>
+          <input type="text" name="username" id="login-user" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="login-field">
+          <label>Auth Token</label>
+          <input type="password" name="password" id="login-pass" autocomplete="off">
+        </div>
+        <button type="submit" class="login-submit">Authenticate</button>
+      </form>
+      {% if error %}
+      <div class="login-error">{{ error }}</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── Dynamic timestamps ──
+  function relTime(minAgo) {
+    if (minAgo < 2) return 'just now';
+    if (minAgo < 60) return minAgo + 'm ago';
+    return Math.floor(minAgo/60) + 'h ago';
+  }
+  const now = new Date();
+  const base = [2,7,11,18,29,43,58];
+  base.forEach((m,i) => {
+    const el = document.getElementById('t'+(i+1));
+    if (el) el.textContent = relTime(m);
+  });
+  document.getElementById('last-sync').textContent = now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+
+  // ── Uptime ──
+  fetch('/api/public/uptime').then(r=>r.json()).then(d=>{
+    if (d.uptime) {
+      document.getElementById('uptime-out').textContent = d.uptime;
+      document.getElementById('uptime-val').textContent = d.uptime;
+    }
+  }).catch(()=>{
+    document.getElementById('uptime-out').textContent = 'unavailable';
+  });
+
+  // ── Stats (honeypot log counts) ──
+  fetch('/api/public/stats').then(r=>r.json()).then(d=>{
+    if (d.blocked) document.getElementById('ips-blocked').textContent = d.blocked.toLocaleString();
+    if (d.caught) document.getElementById('traps-caught').textContent = d.caught.toLocaleString();
+  }).catch(()=>{});
+
+  // ── Hidden login trigger: type "kev" anywhere (not in an input) ──
+  let _seq = '', _timer = null;
+  document.addEventListener('keydown', e => {
+    if (['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) return;
+    _seq += e.key.toLowerCase();
+    if (_seq.length > 3) _seq = _seq.slice(-3);
+    clearTimeout(_timer);
+    _timer = setTimeout(() => { _seq = ''; }, 2000);
+    if (_seq === 'kev') {
+      _seq = '';
+      openLogin();
+    }
+  });
+
+  function openLogin() {
+    fetch('/api/csrf').then(r=>r.json()).then(d=>{
+      document.getElementById('csrf-input').value = d.token || '';
+    }).catch(()=>{});
+    document.getElementById('login-overlay').classList.add('visible');
+    setTimeout(()=>{ document.getElementById('login-user').focus(); }, 50);
+  }
+
+  document.getElementById('login-close-btn').addEventListener('click', () => {
+    document.getElementById('login-overlay').classList.remove('visible');
+  });
+  document.getElementById('login-overlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('login-overlay')) {
+      document.getElementById('login-overlay').classList.remove('visible');
+    }
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') document.getElementById('login-overlay').classList.remove('visible');
+  });
+
+  {% if show_modal %}
+  // Re-open on failed auth
+  document.addEventListener('DOMContentLoaded', () => openLogin());
+  {% endif %}
+</script>
+</body>
+</html>

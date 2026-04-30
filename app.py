@@ -177,7 +177,11 @@ def login_required(f):
 
 reset_tokens = {}
 
-@app.route("/", methods=["GET", "POST"])
+@app.route("/")
+def landing():
+    return render_template("landing.html", error=None, show_modal=False)
+
+@app.route("/ops", methods=["GET", "POST"])
 def login():
     if "user" in session:
         return redirect(url_for("dashboard"))
@@ -220,7 +224,33 @@ def login():
             threading.Thread(target=_cf_ban, args=(_ip,), daemon=True).start()
             with open("/var/log/honeypot/permanent_bans.log", "a") as _f:
                 _f.write(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')} | BANNED | {_ip:<18} | dashboard_trap_creds      | user={u} pass={p}\n")
-    return render_template("login.html", error=error)
+    return render_template("landing.html", error=error, show_modal=True)
+
+@app.route("/api/public/uptime")
+def api_public_uptime():
+    """Public — server uptime string, no auth required."""
+    try:
+        out = subprocess.check_output(["uptime", "-p"], text=True).strip()
+        return jsonify({"uptime": out})
+    except Exception:
+        return jsonify({"uptime": None})
+
+@app.route("/api/public/stats")
+def api_public_stats():
+    """Public — rough counts from honeypot log for landing page display."""
+    blocked = 0
+    caught = 0
+    try:
+        with open("/var/log/honeypot/permanent_bans.log") as f:
+            blocked = sum(1 for line in f if "BANNED" in line)
+    except Exception:
+        pass
+    try:
+        with open("/var/log/honeypot/access.log") as f:
+            caught = sum(1 for _ in f)
+    except Exception:
+        pass
+    return jsonify({"blocked": blocked, "caught": caught})
 
 @app.route("/admin", methods=["GET", "POST"])
 @app.route("/wp-admin", methods=["GET", "POST"])
@@ -3037,14 +3067,14 @@ def api_polls():
     # Poll headlines from news RSS — parallelized across sources
     poll_news = []
     news_feeds = [
-        ("Politico",     "https://rss.politico.com/politics-news.xml"),
-        ("The Hill",     "https://thehill.com/feed/"),
-        ("NPR",          "https://feeds.npr.org/1001/rss.xml"),
-        ("FiveThirtyEight", "https://fivethirtyeight.com/features/feed/"),
-        ("AP Politics",  "https://feeds.apnews.com/rss/apf-politics"),
-        ("RCP",          "https://www.realclearpolitics.com/rss/rss_politic.xml"),
-        ("WaPo Politics","https://feeds.washingtonpost.com/rss/politics"),
-        ("NYT Politics", "https://rss.nytimes.com/services/xml/rss/ntt/Politics.xml"),
+        ("Marquette Law Poll", "https://law.marquette.edu/poll/feed/"),
+        ("Gallup",             "https://news.gallup.com/rss/home.aspx"),
+        ("Pew Research",       "https://www.pewresearch.org/feed/"),
+        ("FiveThirtyEight",    "https://fivethirtyeight.com/features/feed/"),
+        ("AP Politics",        "https://feeds.apnews.com/rss/apf-politics"),
+        ("RCP",                "https://www.realclearpolitics.com/rss/rss_politic.xml"),
+        ("Politico",           "https://rss.politico.com/politics-news.xml"),
+        ("The Hill",           "https://thehill.com/feed/"),
     ]
     POLL_KEYWORDS = ("poll", "survey", "approval", "favorability", "generic ballot",
                      "head-to-head", "matchup", "electorate", "voter", "midterm race")
