@@ -1,8 +1,23 @@
 # KEVSEC Intelligence Dashboard
 
-A personal security operations dashboard built from scratch. Aggregates threat intelligence, live data feeds, server telemetry, and cyber ops tooling into a single command interface.
+A personal security operations dashboard and public-facing cyber intelligence platform. Aggregates threat intelligence, live data feeds, server telemetry, and cyber ops tooling into a single command interface.
 
-## What It Does
+**Live:** [kevsec.com](https://kevsec.com) — public landing page  
+**Operator:** [Kevin Maslanka](https://resume.kevsec.com) — Cybersecurity Professional, OSINT Researcher  
+**GitHub:** [github.com/Slankey](https://github.com/Slankey)  
+**Version:** 1.2
+
+---
+
+## Public Website (kevsec.com)
+
+The public-facing site at `kevsec.com` is a professional cyber operations landing page. It shows live threat stats (IPs blocked, probes caught), an operative profile, and a capabilities overview.
+
+**Hidden dashboard access:** Type `k` `e` `v` anywhere on the page to open the authenticated ops portal.
+
+---
+
+## Dashboard Features
 
 ### Intel Feed
 - 20+ RSS news feeds aggregated and deduplicated
@@ -12,6 +27,7 @@ A personal security operations dashboard built from scratch. Aggregates threat i
 - Active wildfire map (NIFC)
 - NASA Astronomy Picture of the Day
 - Wikipedia featured article
+- **Podcast player** — BBC Global News, NPR (Hourly/Up First/Consider This), CNN 5 Things, Fox News Rundown, The Daily, Pod Save America, Axios Today, FT News Briefing
 
 ### Weather Ops
 - NWS weather forecasts
@@ -27,12 +43,11 @@ A personal security operations dashboard built from scratch. Aggregates threat i
 - Proxmox VM telemetry
 - Network interface rx/tx stats
 - System package update tracker
-- Large file scanner
 
 ### Cyber Ops
 - **Firewall & Fail2Ban** — honeypot probe catches + automated ban tracking
 - **IP Management** — manual ban/unban, blacklist sync, jail summary
-- **Tarpit Stats** — endlessh SSH tarpit analytics (connections trapped, time wasted, unique IPs)
+- **Tarpit Stats** — SSH tarpit analytics (connections trapped, time wasted, unique IPs)
 - **CVE Feed** — latest CVEs from NVD
 - **Space Weather** — NOAA SWPC geomagnetic/solar activity
 
@@ -42,47 +57,62 @@ A personal security operations dashboard built from scratch. Aggregates threat i
 - Quick notepad
 - Reminders with notification support
 
+### Political Intel
+- Presidential schedule (Roll Call / Factbase daily scrape)
+- Congress status
+- 2026 midterm race ratings and prediction markets
+- Polling aggregators (Marquette Law Poll, Gallup, Pew Research, FiveThirtyEight, RCP)
+
 ### Other
-- Political intel — White House RSS, Congress status, midterm market data
 - Stock ticker (Yahoo Finance)
+- F1 standings + race schedule
 - GLERL Great Lakes satellite imagery
 - USCG Local Notice to Mariners
+
+---
 
 ## Architecture
 
 ```
 Flask (Python 3) — port 5555
-├── app.py          — all routes and API logic (~4000 lines)
-├── templates/      — Jinja2 HTML templates
-│   └── dashboard.html
+├── app.py              — all routes and API logic (~4200 lines)
+├── templates/
+│   ├── landing.html    — public-facing kevsec.com website
+│   ├── dashboard.html  — authenticated ops center
+│   └── login.html      — gov portal login page (kevsec.com/ops)
 └── static/
     ├── css/style.css
     └── js/main.js
 ```
 
 **Caching:** In-memory + disk-persisted cache with per-endpoint TTLs (5min–24hr)  
-**Auth:** SHA-256 password hash via environment variable, session-based login  
-**Security:** CSRF protection on all POST routes, fail2ban integration, security audit logging  
-**Honeypot:** nginx routes scanner paths → honeypot → fail2ban → nftables blacklist
+**Auth:** SHA-256 password hash via environment variable, session-based, 24hr lifetime  
+**Security:** CSRF protection on all POST routes, fail2ban integration, security audit logging, Cloudflare auto-ban on honeypot hits  
+**Honeypot:** Routes scanner paths → fail2ban → nftables blacklist + Cloudflare firewall rules  
+**Public stats:** `/api/public/stats` and `/api/public/uptime` — unauthenticated, safe to expose
+
+---
 
 ## Setup
 
 ### Requirements
 ```bash
-pip install flask python-dotenv requests
+pip install flask python-dotenv requests feedparser
 ```
 
 ### Configuration
-Copy `.env.example` to `.env` and fill in your values:
+Copy `.env.example` to `.env`:
 ```
 KEVSEC_USERNAME=admin
 KEVSEC_PASSWORD_HASH=<sha256 of your password>
+NUKE_PASSWORD_HASH=<sha256 of nuke auth code>
 PROXMOX_HOST=https://proxmox.local:8006/api2/json
 PROXMOX_USER=root@pve
 PROXMOX_PASS=
 ABUSEIPDB_KEY=
 NASA_API_KEY=DEMO_KEY
-NUKE_PASSWORD_HASH=<sha256 of nuke auth code>
+CF_ZONE_ID=
+CF_API_TOKEN=
 ```
 
 Generate a password hash:
@@ -97,8 +127,12 @@ python app.py
 gunicorn -w 2 -b 127.0.0.1:5555 app:app
 ```
 
-## Notes
+---
 
-- All sensitive credentials are loaded from environment variables — never hardcoded
-- The `.env` file is gitignored
+## Security Notes
+
+- All sensitive credentials loaded from environment variables — never hardcoded
+- `.env` is gitignored
 - Designed for personal/homelab use behind a reverse proxy (nginx + Cloudflare)
+- Dashboard login hidden behind public landing page — no visible login link
+- Pre-auth honeypot traps common credential stuffing attempts (admin/password etc.) with Cloudflare auto-ban

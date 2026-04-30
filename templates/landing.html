@@ -126,6 +126,50 @@
   .cap-title { color: #e6edf3; font-size: 14px; font-weight: 700; margin-bottom: 8px; letter-spacing: 1px; }
   .cap-desc { color: var(--muted); font-size: 12px; line-height: 1.7; }
 
+  /* ── OPERATIVE ── */
+  #operative { background: var(--bg); }
+  .operative-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 64px; align-items: start; max-width: 1100px; }
+  @media (max-width: 768px) { .operative-grid { grid-template-columns: 1fr; } }
+  .id-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    padding: 28px; display: flex; flex-direction: column; gap: 0;
+  }
+  .id-card-header {
+    font-size: 9px; letter-spacing: 4px; color: var(--muted);
+    text-transform: uppercase; margin-bottom: 20px;
+    padding-bottom: 12px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .id-card-header .id-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--green); box-shadow: 0 0 6px var(--green);
+  }
+  .id-row { display: flex; flex-direction: column; gap: 3px; margin-bottom: 16px; }
+  .id-row:last-child { margin-bottom: 0; }
+  .id-label { font-size: 9px; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; }
+  .id-val { font-size: 13px; color: var(--text); }
+  .id-val a { color: var(--cyan); text-decoration: none; }
+  .id-val a:hover { color: var(--green); }
+  .id-badge {
+    display: inline-block; font-size: 9px; letter-spacing: 2px;
+    padding: 3px 8px; border: 1px solid var(--green);
+    color: var(--green); text-transform: uppercase; margin-right: 6px; margin-bottom: 6px;
+  }
+  .bio-text p { color: var(--muted); line-height: 1.9; margin-bottom: 20px; font-size: 14px; }
+  .bio-text p:last-child { margin-bottom: 0; }
+  .spec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 32px; }
+  @media (max-width: 600px) { .spec-grid { grid-template-columns: 1fr; } }
+  .spec-item {
+    background: var(--bg2); border: 1px solid var(--border);
+    padding: 14px 16px; display: flex; align-items: flex-start; gap: 12px;
+    transition: border-color .2s;
+  }
+  .spec-item:hover { border-color: var(--green); }
+  .spec-bullet { color: var(--green); font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+  .spec-body { display: flex; flex-direction: column; gap: 3px; }
+  .spec-title { font-size: 12px; color: #e6edf3; font-weight: 700; letter-spacing: 1px; }
+  .spec-desc { font-size: 11px; color: var(--muted); }
+
   /* ── PLATFORM STATUS ── */
   #platform { background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
   .platform-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 32px; max-width: 1100px; }
@@ -366,6 +410,7 @@
   <div class="nav-links">
     <a href="#about">About</a>
     <a href="#capabilities">Capabilities</a>
+    <a href="#operative">Operative</a>
     <a href="#platform">Platform</a>
     <a href="#contact">Contact</a>
   </div>
@@ -502,6 +547,129 @@
       <div class="cap-title">Situational Awareness</div>
       <div class="cap-desc">Cross-domain environmental intelligence — space weather, seismic activity, weather alerts, aviation data, and geopolitical feeds unified in one platform.</div>
     </div>
+  </div>
+</section>
+
+<!-- OPERATIVE PROFILE -->
+<section id="operative">
+  <div class="section-label">Operative</div>
+  <h2>Behind the Platform</h2>
+  <div class="operative-grid">
+
+    <div class="id-card">
+      <div class="id-card-header">
+        <span>IDENTIFICATION</span>
+        <span class="id-dot"></span>
+      </div>
+      <div class="id-row">
+        <span class="id-label">Name</span>
+        <span class="id-val">Kevin Maslanka</span>
+      </div>
+      <div class="id-row">
+        <span class="id-label">Designation</span>
+        <span class="id-val">Slankey</span>
+      </div>
+      <div class="id-row">
+        <span class="id-label">Role</span>
+        <span class="id-val">Cybersecurity Professional<br>OSINT Researcher<br>Homelab Operator</span>
+      </div>
+      <div class="id-row">
+        <span class="id-label">Contact</span>
+        <span class="id-val"><a href="mailto:ops@kevsec.com">ops@kevsec.com</a></span>
+      </div>
+      <div class="id-row">
+        <span class="id-label">LinkedIn</span>
+        <span class="id-val"><a href="https://www.linkedin.com/in/kevin-earl-maslanka-625001b2/" target="_blank" rel="noopener">linkedin.com/in/kevin-earl-maslanka</a></span>
+      </div>
+      <div class="id-row">
+        <span class="id-label">GitHub</span>
+        <span class="id-val"><a href="https://github.com/Slankey" target="_blank" rel="noopener">github.com/Slankey</a></span>
+      </div>
+      <div class="id-row">
+        <span class="id-label">Resume</span>
+        <span class="id-val"><a href="https://resume.kevsec.com" target="_blank" rel="noopener">resume.kevsec.com</a></span>
+      </div>
+      <div class="id-row" style="margin-top:8px">
+        <span class="id-label">Specializations</span>
+        <div style="margin-top:8px">
+          <span class="id-badge">OSINT</span>
+          <span class="id-badge">Threat Intel</span>
+          <span class="id-badge">Active Defense</span>
+          <span class="id-badge">Malware Analysis</span>
+          <span class="id-badge">Digital Forensics</span>
+          <span class="id-badge">Homelab Ops</span>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="bio-text">
+        <p>
+          I'm a cybersecurity professional with a focus on open-source intelligence,
+          threat aggregation, and building hardened infrastructure from the ground up.
+          KEVSEC is my personal operations platform — a live environment where I research,
+          monitor, and actively defend against real-world threat actors targeting my infrastructure 24/7.
+        </p>
+        <p>
+          My background spans network security, malware analysis, digital forensics, and
+          adversary tradecraft. I built this platform not just as a homelab project but as a
+          genuine intelligence environment — aggregating live feeds across threat intelligence,
+          geopolitics, space weather, and global events into a single unified ops center.
+        </p>
+        <p>
+          Everything here — the perimeter defense, the intrusion detection, the OSINT tooling —
+          is designed, operated, and continuously improved by me. Every scanner that hits this
+          infrastructure is logged, attributed, and dealt with. Every CVE that drops gets tracked.
+          That's the mission.
+        </p>
+      </div>
+
+      <div class="spec-grid">
+        <div class="spec-item">
+          <span class="spec-bullet">▸</span>
+          <div class="spec-body">
+            <span class="spec-title">OSINT & Attribution</span>
+            <span class="spec-desc">Passive recon, username enumeration, actor attribution, digital footprint analysis</span>
+          </div>
+        </div>
+        <div class="spec-item">
+          <span class="spec-bullet">▸</span>
+          <div class="spec-body">
+            <span class="spec-title">Threat Intelligence</span>
+            <span class="spec-desc">Multi-source feed aggregation, CVE triage, IOC correlation</span>
+          </div>
+        </div>
+        <div class="spec-item">
+          <span class="spec-bullet">▸</span>
+          <div class="spec-body">
+            <span class="spec-title">Active Defense</span>
+            <span class="spec-desc">Perimeter hardening, automated blocking, adversarial deception layers</span>
+          </div>
+        </div>
+        <div class="spec-item">
+          <span class="spec-bullet">▸</span>
+          <div class="spec-body">
+            <span class="spec-title">Malware Analysis</span>
+            <span class="spec-desc">Static and behavioral analysis, reverse engineering, sandbox techniques</span>
+          </div>
+        </div>
+        <div class="spec-item">
+          <span class="spec-bullet">▸</span>
+          <div class="spec-body">
+            <span class="spec-title">Infrastructure Engineering</span>
+            <span class="spec-desc">Bare-metal Linux, virtualization, automated deployment, monitoring pipelines</span>
+          </div>
+        </div>
+        <div class="spec-item">
+          <span class="spec-bullet">▸</span>
+          <div class="spec-body">
+            <span class="spec-title">Digital Forensics</span>
+            <span class="spec-desc">Log analysis, incident reconstruction, evidence preservation</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </section>
 
@@ -681,9 +849,10 @@
       </form>
 
       <div class="gov-warning">
-        UNAUTHORIZED ACCESS OR USE OF THIS SYSTEM IS PROHIBITED AND SUBJECT<br>
-        TO CRIMINAL AND CIVIL PENALTIES UNDER FEDERAL LAW — 18 U.S.C. § 1030<br>
-        ALL ACTIVITY IS MONITORED, LOGGED, AND SUBJECT TO AUDIT
+        THIS IS A PRIVATE COMPUTER SYSTEM. UNAUTHORIZED ACCESS IS PROHIBITED<br>
+        UNDER THE COMPUTER FRAUD AND ABUSE ACT (CFAA) — 18 U.S.C. § 1030<br>
+        AND THE ELECTRONIC COMMUNICATIONS PRIVACY ACT — 18 U.S.C. §§ 2510–2523.<br>
+        ALL ACCESS ATTEMPTS ARE LOGGED, ATTRIBUTED, AND WILL BE PROSECUTED.
       </div>
     </div>
 
