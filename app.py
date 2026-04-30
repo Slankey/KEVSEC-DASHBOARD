@@ -260,6 +260,82 @@ def api_public_stats():
     cache_set("public_stats", result)
     return jsonify(result)
 
+@app.route("/api/public/feed")
+def api_public_feed():
+    """Public — real attacker IPs parsed from honeypot access.log, cached 30 min."""
+    cached = cache_get("public_feed", ttl=1800)
+    if cached:
+        return jsonify(cached)
+
+    # Path → display label
+    _path_labels = {
+        "wp-login": "WP_BRUTEFORCE",  "wp-admin": "WP_BRUTEFORCE",
+        "wordpress": "WP_SCAN",       "phpmyadmin": "DB_PROBE",
+        "admin": "ADMIN_PANEL",       "cpanel": "CPANEL_PROBE",
+        "jenkins": "JENKINS_PROBE",   "gitlab": "GITLAB_PROBE",
+        "grafana": "GRAFANA_PROBE",   "portainer": "DOCKER_PROBE",
+        "actuator": "SPRING_PROBE",   "solr": "SOLR_PROBE",
+        "telescope": "LARAVEL_PROBE", "nagios": "NAGIOS_PROBE",
+        "zabbix": "ZABBIX_PROBE",     "jupyter": "JUPYTER_PROBE",
+        ".env": "ENV_PROBE",          ".git": "GIT_PROBE",
+        "xmlrpc": "XMLRPC_BF",        "backup": "BACKUP_PROBE",
+        "shell": "SHELL_PROBE",       "exec": "SHELL_PROBE",
+        "v1.41": "DOCKER_API",        "api/v1": "K8S_API",
+        "meta-data": "AWS_IMDS",      "vault": "VAULT_PROBE",
+        ".ssh": "SSH_KEY_PROBE",      "config.json": "CONFIG_PROBE",
+        "server-status": "APACHESTATUS",
+    }
+    # Event → tag
+    _event_tags = {
+        "TARPIT": "TRAPPED",       "LOGIN_ATTEMPT": "BANNED",
+        "TRAP_CREDS": "BANNED",    "ELASTIC": "BANNED",
+        "K8S": "BANNED",           "DOCKER": "BANNED",
+        "VAULT": "BANNED",         "SSH_KEY": "BANNED",
+        "AWS": "BANNED",           "ENV_FILE": "TRAPPED",
+        "GIT_CONFIG": "TRAPPED",   "BACKUP": "TRAPPED",
+        "SHELL": "TRAPPED",        "TELESCOPE": "TRAPPED",
+        "XMLRPC": "TRAPPED",       "CONFIG": "TRAPPED",
+        "SERVER_STATUS": "BANNED", "UNKNOWN": "BLOCKED",
+        "SUSPICIOUS": "BLOCKED",   "MONITORING": "BANNED",
+    }
+
+    entries = []
+    seen_ips = set()
+    try:
+        with open("/var/log/honeypot/access.log") as f:
+            lines = f.readlines()
+        import random as _rand
+        for line in reversed(lines):
+            parts = [p.strip() for p in line.split("|")]
+            if len(parts) < 4:
+                continue
+            _, event, ip, path = parts[0], parts[1], parts[2], parts[3]
+            if not ip or ip in seen_ips:
+                continue
+            seen_ips.add(ip)
+            # determine display label from path
+            label = "BOT_CRAWL"
+            for key, lbl in _path_labels.items():
+                if key in path.lower():
+                    label = lbl
+                    break
+            # determine tag from event
+            tag = "BLOCKED"
+            for key, t in _event_tags.items():
+                if key in event.upper():
+                    tag = t
+                    break
+            entries.append({"ip": ip, "tag": tag, "type": label})
+            if len(entries) >= 200:
+                break
+        _rand.shuffle(entries)
+    except Exception:
+        pass
+
+    result = {"feed": entries}
+    cache_set("public_feed", result)
+    return jsonify(result)
+
 @app.route("/admin", methods=["GET", "POST"])
 @app.route("/wp-admin", methods=["GET", "POST"])
 @app.route("/wp-login.php", methods=["GET", "POST"])

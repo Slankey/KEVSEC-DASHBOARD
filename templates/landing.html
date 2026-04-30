@@ -1198,56 +1198,59 @@
     }, 65);
   })();
 
-  // ── Attack log widget ──
+  // ── Attack log widget — real IPs from honeypot, mega-delayed drip ──
   (function() {
     const container = document.getElementById('al-entries');
     if (!container) return;
-    const ipBases = [
-      '185.234.219','45.129.33','193.32.162','91.240.118','103.73.65',
-      '5.188.86','194.165.16','62.204.41','212.34.158','80.66.88',
-      '51.77.135','178.128.55','164.92.188','147.182.229','159.65.12'
-    ];
-    const events = [
-      ['type-blocked','BLOCKED','SSH_SCAN'],
-      ['type-trapped','TRAPPED','HONEYPOT_HIT'],
-      ['type-banned','BANNED','CRED_STUFF'],
-      ['type-blocked','BLOCKED','PORT_SCAN'],
-      ['type-trapped','TRAPPED','ENV_PROBE'],
-      ['type-blocked','BLOCKED','BRUTE_FORCE'],
-      ['type-banned','BANNED','CVE_SCAN'],
-      ['type-trapped','TRAPPED','ADMIN_PANEL'],
-      ['type-blocked','BLOCKED','RCE_ATTEMPT'],
-      ['type-banned','BANNED','BOT_CRAWL'],
-      ['type-trapped','TRAPPED','XMLRPC_BF'],
-      ['type-blocked','BLOCKED','K8S_PROBE']
-    ];
-    function randIp() {
-      const b = ipBases[Math.floor(Math.random() * ipBases.length)];
-      return b + '.' + (Math.floor(Math.random() * 253) + 1);
-    }
     const MAX = 7;
-    function addEntry() {
-      const [cls, tag, action] = events[Math.floor(Math.random() * events.length)];
+    let pool = [], poolIdx = 0;
+
+    function tagCls(tag) {
+      if (tag === 'TRAPPED') return 'type-trapped';
+      if (tag === 'BANNED')  return 'type-banned';
+      return 'type-blocked';
+    }
+    function addEntry(ip, tag, type) {
+      const cls = tagCls(tag);
       const el = document.createElement('div');
       el.className = 'al-entry ' + cls;
       el.innerHTML = '<span class="al-tag ' + cls + '">' + tag + '</span>'
-        + '<span class="al-ip">' + randIp() + '</span>'
-        + '<span class="al-action">' + action + '</span>';
+        + '<span class="al-ip">' + ip + '</span>'
+        + '<span class="al-action">' + type + '</span>';
       container.insertBefore(el, container.firstChild);
       while (container.children.length > MAX) container.removeChild(container.lastChild);
-      setTimeout(addEntry, 1600 + Math.random() * 2400);
     }
-    // seed
-    for (let i = 0; i < 6; i++) {
-      const [cls, tag, action] = events[Math.floor(Math.random() * events.length)];
-      const el = document.createElement('div');
-      el.className = 'al-entry ' + cls;
-      el.innerHTML = '<span class="al-tag ' + cls + '">' + tag + '</span>'
-        + '<span class="al-ip">' + randIp() + '</span>'
-        + '<span class="al-action">' + action + '</span>';
-      container.appendChild(el);
+    function shuffle(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
     }
-    setTimeout(addEntry, 1200);
+    function drip() {
+      if (!pool.length) return;
+      if (poolIdx >= pool.length) { poolIdx = 0; shuffle(pool); }
+      const e = pool[poolIdx++];
+      addEntry(e.ip, e.tag, e.type);
+      // 12–30 second delay between each entry = "mega delayed"
+      setTimeout(drip, 12000 + Math.random() * 18000);
+    }
+
+    fetch('/api/public/feed')
+      .then(r => r.json())
+      .then(d => {
+        pool = d.feed || [];
+        if (!pool.length) return;
+        shuffle(pool);
+        // seed the widget with first 6 entries immediately (no delay on initial fill)
+        const seed = Math.min(6, pool.length);
+        for (let i = 0; i < seed; i++) {
+          addEntry(pool[i].ip, pool[i].tag, pool[i].type);
+        }
+        poolIdx = seed;
+        // then start the slow drip
+        setTimeout(drip, 14000 + Math.random() * 16000);
+      })
+      .catch(() => {});
   })();
 
   // ── Threat toast ──
