@@ -312,14 +312,15 @@
         <div class="circle r"></div><div class="circle y"></div><div class="circle g"></div>
       </div>
       <div class="terminal-body">
-        <div><span class="t-prompt">ops@kevsec</span><span class="t-cmd">:~# status --all</span></div>
-        <div class="t-out ok">● perimeter     ACTIVE</div>
-        <div class="t-out ok">● detection     ACTIVE</div>
-        <div class="t-out ok">● intel-feed    ACTIVE</div>
-        <div class="t-out ok">● threat-db     ACTIVE</div>
-        <div class="t-out ok">● edge-proxy    ACTIVE</div>
+        <div><span class="t-prompt">ops@kevsec</span><span class="t-cmd">:~# systemctl status --active</span></div>
+        <div class="t-out ok">● perimeter-defense      ACTIVE</div>
+        <div class="t-out ok">● intrusion-detection    ACTIVE</div>
+        <div class="t-out ok">● intel-aggregator       ACTIVE</div>
+        <div class="t-out ok">● threat-database        ACTIVE</div>
+        <div class="t-out ok">● edge-enforcement       ACTIVE</div>
+        <div class="t-out ok">● ops-center             ACTIVE</div>
         <div><span class="t-prompt">ops@kevsec</span><span class="t-cmd">:~# uptime</span></div>
-        <div class="t-out cl">[CLASSIFIED]</div>
+        <div class="t-out cl">permission denied — [CLASSIFIED]</div>
         <div style="margin-top:8px">
           <span class="t-prompt">ops@kevsec</span><span class="t-cmd">:~# </span><span class="t-cursor"></span>
         </div>
