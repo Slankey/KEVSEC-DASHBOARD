@@ -398,11 +398,150 @@
     animation: scan 8s linear infinite; pointer-events: none; z-index: 9998; opacity: 0.35;
   }
   @keyframes scan { 0% { top: 0; } 100% { top: 100vh; } }
+
+  /* ── MOBILE RESPONSIVE ── */
+  @media (max-width: 600px) {
+    nav { padding: 0 20px; }
+    .nav-links { gap: 16px; }
+    .nav-links a { font-size: 10px; letter-spacing: 1px; }
+    .hero { padding: 80px 20px 48px; }
+    section { padding: 64px 20px; }
+    .hero-stats { gap: 24px; }
+    .stat-num { font-size: 18px; }
+    footer { padding: 24px 20px; flex-direction: column; gap: 8px; }
+    #attack-log { display: none; }
+    #threat-toast { right: 10px; width: 260px; }
+  }
+  @media (max-width: 480px) {
+    h1 { font-size: 28px; }
+    .nav-links { display: none; }
+    .maps-grid { grid-template-columns: 1fr; }
+    .caps-grid  { grid-template-columns: 1fr; }
+    .contact-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ── MATRIX CANVAS ── */
+  #matrix-canvas {
+    position: absolute; inset: 0; z-index: 0;
+    opacity: 0.06; pointer-events: none;
+  }
+
+  /* ── ATTACK LOG WIDGET ── */
+  #attack-log {
+    position: fixed; bottom: 24px; right: 20px; z-index: 500;
+    width: 290px; background: rgba(8,11,15,0.9);
+    border: 1px solid rgba(0,255,136,0.12);
+    backdrop-filter: blur(10px);
+    font-family: 'Courier New', monospace;
+    opacity: 0.55; transition: opacity .3s;
+  }
+  #attack-log:hover { opacity: 1; }
+  .al-header {
+    padding: 5px 12px; border-bottom: 1px solid rgba(0,255,136,0.08);
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 8px; letter-spacing: 3px; color: rgba(0,255,136,0.5); text-transform: uppercase;
+  }
+  .al-pulse {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--green); box-shadow: 0 0 4px var(--green);
+    animation: alpulse 1.2s ease infinite;
+  }
+  @keyframes alpulse { 0%,100%{opacity:1;} 50%{opacity:.15;} }
+  .al-body { height: 106px; overflow: hidden; }
+  .al-entry {
+    display: flex; align-items: center; gap: 6px;
+    padding: 3px 12px; font-size: 9px;
+    border-left: 2px solid transparent;
+    animation: al-in .25s ease;
+    white-space: nowrap; overflow: hidden;
+  }
+  @keyframes al-in { from{opacity:0;transform:translateY(-4px);} to{opacity:1;transform:none;} }
+  .al-entry.type-blocked { border-left-color: var(--red); }
+  .al-entry.type-trapped { border-left-color: #ff8800; }
+  .al-entry.type-banned  { border-left-color: var(--green); }
+  .al-tag { font-size: 8px; letter-spacing: 1px; min-width: 50px; }
+  .al-tag.type-blocked { color: var(--red); }
+  .al-tag.type-trapped { color: #ff8800; }
+  .al-tag.type-banned  { color: var(--green); }
+  .al-ip { color: var(--muted); flex: 1; font-size: 9px; }
+  .al-action { color: #2a3a4a; font-size: 8px; letter-spacing: 1px; }
+
+  /* ── THREAT TOAST ── */
+  #threat-toast {
+    position: fixed; top: 68px; right: 20px; z-index: 8000;
+    width: 272px; pointer-events: none;
+    transform: translateX(310px);
+    transition: transform .35s cubic-bezier(.4,0,.2,1);
+    font-family: 'Courier New', monospace;
+  }
+  #threat-toast.visible { transform: translateX(0); }
+  .toast-wrap { border: 1px solid; background: rgba(8,11,15,0.97); backdrop-filter: blur(8px); }
+  .toast-wrap.detecting { border-color: rgba(255,71,87,.45); }
+  .toast-wrap.neutralized { border-color: rgba(0,255,136,.35); }
+  .toast-head {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 12px; font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
+    border-bottom: 1px solid;
+  }
+  .toast-wrap.detecting  .toast-head { background: rgba(255,71,87,.09); border-color: rgba(255,71,87,.18); color: var(--red); }
+  .toast-wrap.neutralized .toast-head { background: rgba(0,255,136,.06); border-color: rgba(0,255,136,.14); color: var(--green); }
+  .toast-body { padding: 9px 12px; font-size: 9px; line-height: 1.9; color: var(--muted); }
+  .toast-ip-val  { color: var(--cyan); }
+  .toast-act-val { color: var(--red); }
+  .toast-act-val.ok { color: var(--green); }
+  .toast-bar { height: 2px; width: 100%; overflow: hidden; }
+  .toast-bar-inner { height: 100%; }
+  .toast-wrap.detecting  .toast-bar-inner { background: var(--red); }
+  .toast-wrap.neutralized .toast-bar-inner { background: var(--green); }
+
+  /* ── THREAT MAPS ── */
+  #threat-maps { background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .maps-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; max-width: 1100px; }
+  .map-card {
+    background: var(--bg); border: 1px solid var(--border);
+    text-decoration: none; display: flex; flex-direction: column;
+    transition: border-color .2s, transform .2s; overflow: hidden;
+  }
+  .map-card:hover { border-color: var(--cyan); transform: translateY(-2px); }
+  .map-thumb {
+    height: 90px; background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 34px; position: relative; overflow: hidden;
+  }
+  .map-thumb::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at 30% 55%, rgba(0,255,136,0.08), transparent 60%),
+                radial-gradient(circle at 72% 28%, rgba(255,71,87,0.07), transparent 50%);
+  }
+  .map-info { padding: 14px; display: flex; flex-direction: column; gap: 5px; flex: 1; }
+  .map-name { font-size: 12px; font-weight: 700; color: #e6edf3; letter-spacing: 1px; }
+  .map-desc { font-size: 11px; color: var(--muted); line-height: 1.6; flex: 1; }
+  .map-cta  { font-size: 9px; letter-spacing: 2px; color: var(--cyan); text-transform: uppercase; margin-top: 4px; }
 </style>
 </head>
 <body>
 
 <div class="scan-line"></div>
+
+<!-- ATTACK LOG WIDGET -->
+<div id="attack-log">
+  <div class="al-header">
+    <span>Live Attack Feed</span>
+    <div class="al-pulse"></div>
+  </div>
+  <div class="al-body" id="al-entries"></div>
+</div>
+
+<!-- THREAT TOAST -->
+<div id="threat-toast">
+  <div class="toast-wrap detecting" id="toast-wrap">
+    <div class="toast-head" id="toast-head">⚠&nbsp; Threat Detected</div>
+    <div class="toast-body" id="toast-body"></div>
+    <div class="toast-bar"><div class="toast-bar-inner" id="toast-bar" style="width:100%"></div></div>
+  </div>
+</div>
 
 <!-- NAV -->
 <nav>
@@ -420,6 +559,7 @@
 <section class="hero">
   <div class="hero-bg"></div>
   <div class="hero-grid"></div>
+  <canvas id="matrix-canvas"></canvas>
   <div class="hero-content">
     <div class="hero-eyebrow">Continuous Operations</div>
     <h1>Threat Intelligence.<br><span class="accent">Cyber Operations.</span><br>Active Defense.</h1>
@@ -440,6 +580,19 @@
         <span class="stat-num">24/7</span>
         <span class="stat-lbl">Monitoring</span>
       </div>
+    </div>
+
+    <!-- visitor tracking panel -->
+    <div id="visitor-panel" style="margin-top:32px;background:rgba(0,255,136,0.03);border:1px solid rgba(0,255,136,0.12);padding:14px 18px;max-width:520px;font-size:11px;line-height:2.1;letter-spacing:.5px;">
+      <div style="font-size:9px;letter-spacing:3px;color:rgba(0,255,136,0.5);text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:8px;">
+        <span style="width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 5px var(--green);display:inline-block;animation:alpulse 1.2s infinite;"></span>
+        Connection Logged
+      </div>
+      <div style="color:var(--muted)">IP Address: <span style="color:var(--cyan)" id="vis-ip">resolving...</span></div>
+      <div style="color:var(--muted)">Browser: <span style="color:var(--text)" id="vis-browser">—</span></div>
+      <div style="color:var(--muted)">OS: <span style="color:var(--text)" id="vis-os">—</span></div>
+      <div style="color:var(--muted)">Device: <span style="color:var(--text)" id="vis-device">—</span></div>
+      <div style="color:var(--muted)">Status: <span style="color:var(--red);letter-spacing:2px;font-size:10px">ACCESS LOGGED — TRAFFIC MONITORED</span></div>
     </div>
   </div>
 </section>
@@ -509,6 +662,46 @@
         </div>
       </div>
     </div>
+  </div>
+</section>
+
+<!-- THREAT MAPS / GLOBAL INTEL -->
+<section id="threat-maps">
+  <div class="section-label">Live Threat Intelligence</div>
+  <h2>Global Attack Visibility</h2>
+  <div class="maps-grid">
+    <a class="map-card" href="https://threatmap.bitdefender.com/" target="_blank" rel="noopener">
+      <div class="map-thumb">🛡️</div>
+      <div class="map-info">
+        <div class="map-name">Bitdefender Threat Map</div>
+        <div class="map-desc">Real-time global cyberattack visualization — malware, spam, exploits, and network attacks by geography.</div>
+        <div class="map-cta">► View Live Map</div>
+      </div>
+    </a>
+    <a class="map-card" href="https://cybermap.kaspersky.com/" target="_blank" rel="noopener">
+      <div class="map-thumb">🌐</div>
+      <div class="map-info">
+        <div class="map-name">Kaspersky Cybermap</div>
+        <div class="map-desc">Live 3D globe showing attacks detected by Kaspersky's global sensor network. Real-time data by type and nation-state.</div>
+        <div class="map-cta">► View Live Map</div>
+      </div>
+    </a>
+    <a class="map-card" href="https://threatmap.fortiguard.com/" target="_blank" rel="noopener">
+      <div class="map-thumb">⚡</div>
+      <div class="map-info">
+        <div class="map-name">FortiGuard Threat Map</div>
+        <div class="map-desc">Fortinet enterprise-scale live attack origins, targets, and vectors from global perimeter telemetry.</div>
+        <div class="map-cta">► View Live Map</div>
+      </div>
+    </a>
+    <a class="map-card" href="https://threatmap.checkpoint.com/" target="_blank" rel="noopener">
+      <div class="map-thumb">🔒</div>
+      <div class="map-info">
+        <div class="map-name">Check Point Live Map</div>
+        <div class="map-desc">Real-time global threat intelligence from Check Point ThreatCloud. Attack origins, targets, and active malware families.</div>
+        <div class="map-cta">► View Live Map</div>
+      </div>
+    </a>
   </div>
 </section>
 
@@ -931,6 +1124,191 @@
   {% if show_modal %}
   document.addEventListener('DOMContentLoaded', () => openLogin());
   {% endif %}
+
+  // ── Visitor tracking panel ──
+  (function() {
+    const ua = navigator.userAgent;
+    // browser detect
+    let browser = 'Unknown';
+    if (/Edg\//.test(ua)) browser = 'Microsoft Edge';
+    else if (/OPR\/|Opera/.test(ua)) browser = 'Opera';
+    else if (/Chrome\//.test(ua) && !/Chromium/.test(ua)) browser = 'Google Chrome';
+    else if (/Firefox\//.test(ua)) browser = 'Mozilla Firefox';
+    else if (/Safari\//.test(ua) && !/Chrome/.test(ua)) browser = 'Apple Safari';
+    else if (/MSIE|Trident/.test(ua)) browser = 'Internet Explorer';
+    // get version
+    const verM = ua.match(/(Chrome|Firefox|Safari|Edg|OPR)\/([0-9]+)/);
+    if (verM) browser += ' ' + verM[2];
+    // OS detect
+    let os = 'Unknown';
+    if (/iPhone/.test(ua)) os = 'iOS (iPhone)';
+    else if (/iPad/.test(ua)) os = 'iOS (iPad)';
+    else if (/Android/.test(ua)) {
+      const v = ua.match(/Android ([0-9.]+)/);
+      os = 'Android' + (v ? ' ' + v[1] : '');
+    } else if (/Win/.test(ua)) {
+      if (/Windows NT 10/.test(ua)) os = 'Windows 10/11';
+      else if (/Windows NT 6\.3/.test(ua)) os = 'Windows 8.1';
+      else os = 'Windows';
+    } else if (/Mac OS X/.test(ua)) {
+      const v = ua.match(/Mac OS X ([0-9_]+)/);
+      os = 'macOS' + (v ? ' ' + v[1].replace(/_/g,'.') : '');
+    } else if (/Linux/.test(ua)) os = 'Linux';
+    else if (/CrOS/.test(ua)) os = 'Chrome OS';
+    // device
+    let device = 'Desktop';
+    if (/iPhone|Android.*Mobile|Windows Phone/.test(ua)) device = 'Mobile';
+    else if (/iPad|Android(?!.*Mobile)/.test(ua)) device = 'Tablet';
+    const el = id => document.getElementById(id);
+    if (el('vis-browser')) el('vis-browser').textContent = browser;
+    if (el('vis-os'))      el('vis-os').textContent = os;
+    if (el('vis-device'))  el('vis-device').textContent = device;
+    // IP via ipify
+    fetch('https://api.ipify.org?format=json')
+      .then(r => r.json())
+      .then(d => { if (el('vis-ip')) el('vis-ip').textContent = d.ip; })
+      .catch(() => { if (el('vis-ip')) el('vis-ip').textContent = '[classified]'; });
+  })();
+
+  // ── Matrix rain ──
+  (function() {
+    const canvas = document.getElementById('matrix-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const chars = '01アイウエオカキクケコサシスセソタチツテトナニ';
+    let cols, drops;
+    function resize() {
+      canvas.width  = canvas.offsetWidth  || 800;
+      canvas.height = canvas.offsetHeight || 600;
+      cols  = Math.floor(canvas.width / 14);
+      drops = Array(cols).fill(1);
+    }
+    resize();
+    window.addEventListener('resize', resize);
+    setInterval(function() {
+      ctx.fillStyle = 'rgba(8,11,15,0.05)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#00ff88';
+      ctx.font = '11px Courier New';
+      for (let i = 0; i < drops.length; i++) {
+        ctx.fillText(chars[Math.floor(Math.random() * chars.length)], i * 14, drops[i] * 14);
+        if (drops[i] * 14 > canvas.height && Math.random() > 0.975) drops[i] = 0;
+        drops[i]++;
+      }
+    }, 65);
+  })();
+
+  // ── Attack log widget ──
+  (function() {
+    const container = document.getElementById('al-entries');
+    if (!container) return;
+    const ipBases = [
+      '185.234.219','45.129.33','193.32.162','91.240.118','103.73.65',
+      '5.188.86','194.165.16','62.204.41','212.34.158','80.66.88',
+      '51.77.135','178.128.55','164.92.188','147.182.229','159.65.12'
+    ];
+    const events = [
+      ['type-blocked','BLOCKED','SSH_SCAN'],
+      ['type-trapped','TRAPPED','HONEYPOT_HIT'],
+      ['type-banned','BANNED','CRED_STUFF'],
+      ['type-blocked','BLOCKED','PORT_SCAN'],
+      ['type-trapped','TRAPPED','ENV_PROBE'],
+      ['type-blocked','BLOCKED','BRUTE_FORCE'],
+      ['type-banned','BANNED','CVE_SCAN'],
+      ['type-trapped','TRAPPED','ADMIN_PANEL'],
+      ['type-blocked','BLOCKED','RCE_ATTEMPT'],
+      ['type-banned','BANNED','BOT_CRAWL'],
+      ['type-trapped','TRAPPED','XMLRPC_BF'],
+      ['type-blocked','BLOCKED','K8S_PROBE']
+    ];
+    function randIp() {
+      const b = ipBases[Math.floor(Math.random() * ipBases.length)];
+      return b + '.' + (Math.floor(Math.random() * 253) + 1);
+    }
+    const MAX = 7;
+    function addEntry() {
+      const [cls, tag, action] = events[Math.floor(Math.random() * events.length)];
+      const el = document.createElement('div');
+      el.className = 'al-entry ' + cls;
+      el.innerHTML = '<span class="al-tag ' + cls + '">' + tag + '</span>'
+        + '<span class="al-ip">' + randIp() + '</span>'
+        + '<span class="al-action">' + action + '</span>';
+      container.insertBefore(el, container.firstChild);
+      while (container.children.length > MAX) container.removeChild(container.lastChild);
+      setTimeout(addEntry, 1600 + Math.random() * 2400);
+    }
+    // seed
+    for (let i = 0; i < 6; i++) {
+      const [cls, tag, action] = events[Math.floor(Math.random() * events.length)];
+      const el = document.createElement('div');
+      el.className = 'al-entry ' + cls;
+      el.innerHTML = '<span class="al-tag ' + cls + '">' + tag + '</span>'
+        + '<span class="al-ip">' + randIp() + '</span>'
+        + '<span class="al-action">' + action + '</span>';
+      container.appendChild(el);
+    }
+    setTimeout(addEntry, 1200);
+  })();
+
+  // ── Threat toast ──
+  (function() {
+    const toast = document.getElementById('threat-toast');
+    const wrap  = document.getElementById('toast-wrap');
+    const head  = document.getElementById('toast-head');
+    const body  = document.getElementById('toast-body');
+    const bar   = document.getElementById('toast-bar');
+    if (!toast) return;
+    const ipBases = ['185.234.219','45.129.33','103.73.65','91.240.118','193.32.162','5.188.86','194.165.16','62.204.41'];
+    const attacks = [
+      ['BRUTE_FORCE_SSH',  'Credential brute force on SSH service'],
+      ['CVE_EXPLOIT',      'Attempted exploitation of known vulnerability'],
+      ['CRED_STUFFING',    'Automated credential stuffing attack'],
+      ['RCE_PROBE',        'Remote code execution probe detected'],
+      ['SCANNER_BOT',      'Automated infrastructure scanner'],
+      ['HONEYPOT_LURE',    'Caught in deception layer trap'],
+      ['C2_CALLBACK',      'Suspected C2 beacon callback attempt'],
+      ['SQLI_PROBE',       'SQL injection probe on application layer'],
+      ['K8S_API_SCAN',     'Kubernetes API enumeration attempt'],
+      ['DOCKER_EXPOSURE',  'Docker socket exposure probe']
+    ];
+    function randIp() {
+      return ipBases[Math.floor(Math.random()*ipBases.length)] + '.' + (Math.floor(Math.random()*253)+1);
+    }
+    function showThreat() {
+      const ip = randIp();
+      const [type] = attacks[Math.floor(Math.random() * attacks.length)];
+      wrap.className = 'toast-wrap detecting';
+      head.textContent = '⚠  THREAT DETECTED';
+      body.innerHTML = '<div>IP:&nbsp;&nbsp;&nbsp; <span class="toast-ip-val">' + ip + '</span></div>'
+        + '<div>Type:&nbsp; ' + type + '</div>'
+        + '<div>Status: <span class="toast-act-val">ANALYZING...</span></div>';
+      bar.style.transition = 'none';
+      bar.style.width = '100%';
+      toast.classList.add('visible');
+      setTimeout(function() {
+        bar.style.transition = 'width 2.4s linear';
+        bar.style.width = '0%';
+      }, 60);
+      setTimeout(function() {
+        wrap.className = 'toast-wrap neutralized';
+        head.textContent = '✓  THREAT NEUTRALIZED';
+        body.innerHTML = '<div>IP:&nbsp;&nbsp;&nbsp; <span class="toast-ip-val">' + ip + '</span></div>'
+          + '<div>Type:&nbsp; ' + type + '</div>'
+          + '<div>Action: <span class="toast-act-val ok">BLACKLISTED + BANNED</span></div>';
+        bar.style.transition = 'none';
+        bar.style.width = '100%';
+        setTimeout(function() {
+          bar.style.transition = 'width 2s linear';
+          bar.style.width = '0%';
+        }, 60);
+      }, 2800);
+      setTimeout(function() {
+        toast.classList.remove('visible');
+        setTimeout(showThreat, 16000 + Math.random() * 24000);
+      }, 5500);
+    }
+    setTimeout(showThreat, 6000 + Math.random() * 8000);
+  })();
 </script>
 </body>
 </html>
