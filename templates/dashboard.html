@@ -50,7 +50,7 @@
   <button class="tab"         data-tab="command">  🖥 Command Center</button>
   <button class="tab"         data-tab="cyber">    🛡 Cyber Ops</button>
   <button class="tab"         data-tab="weather">  🌩 Weather Ops</button>
-  <button class="tab"         data-tab="comms">    📋 Comms</button>
+  <button class="tab"         data-tab="comms">    🩺 Personal</button>
   <button class="tab desktop-mode-btn" id="desktop-mode-btn" onclick="toggleDesktopMode()" title="Switch between mobile and desktop layout">📱 Mobile</button>
 </nav>
 
@@ -1300,8 +1300,148 @@
 
 </div>
 
-<!-- ══════════════════════════════════════════════════════ COMMS ═══ -->
+<!-- ══════════════════════════════════════════════════════ PERSONAL ═══ -->
 <div id="tab-comms" class="tab-content">
+
+  <!-- ── MEDICATIONS ── -->
+  <div class="panel-row" id="meds-row">
+    <!-- Skyrizi -->
+    <div class="panel" id="med-skyrizi-panel">
+      <div class="panel-header">
+        <span>💉 Skyrizi</span>
+        <button class="refresh-btn" onclick="logDose('skyrizi')">+ Log Dose</button>
+      </div>
+      <div id="med-skyrizi-content" class="loading">Loading...</div>
+    </div>
+    <!-- Zepbound -->
+    <div class="panel" id="med-zepbound-panel">
+      <div class="panel-header">
+        <span>💉 Zepbound</span>
+        <button class="refresh-btn" onclick="logDose('zepbound')">+ Log Dose</button>
+      </div>
+      <div id="med-zepbound-content" class="loading">Loading...</div>
+    </div>
+  </div>
+
+  <!-- ── WEIGHT & BMI ── -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>⚖️ Weight & BMI</span>
+      <button class="refresh-btn" onclick="loadHealth()">⟳</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;padding:12px 14px;" id="weight-section">
+      <!-- Input form -->
+      <div>
+        <div style="font-size:11px;color:var(--text-dim);letter-spacing:1px;margin-bottom:10px">LOG ENTRY</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;gap:8px;align-items:center">
+            <label style="font-size:11px;color:var(--text-dim);min-width:70px">Weight (lbs)</label>
+            <input type="number" id="wt-lbs" step="0.1" placeholder="185.0"
+              style="flex:1;background:var(--bg2);border:1px solid var(--border2);color:var(--text);font-size:12px;padding:5px 8px;font-family:var(--font-m);outline:none;border-radius:2px">
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <label style="font-size:11px;color:var(--text-dim);min-width:70px">Height (in)</label>
+            <input type="number" id="wt-height" step="0.5" placeholder="70"
+              style="flex:1;background:var(--bg2);border:1px solid var(--border2);color:var(--text);font-size:12px;padding:5px 8px;font-family:var(--font-m);outline:none;border-radius:2px">
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <label style="font-size:11px;color:var(--text-dim);min-width:70px">Date</label>
+            <input type="date" id="wt-date"
+              style="flex:1;background:var(--bg2);border:1px solid var(--border2);color:var(--text);font-size:12px;padding:5px 8px;font-family:var(--font-m);outline:none;border-radius:2px">
+          </div>
+          <input type="text" id="wt-notes" placeholder="Notes (optional)"
+            style="background:var(--bg2);border:1px solid var(--border2);color:var(--text);font-size:12px;padding:5px 8px;font-family:var(--font-m);outline:none;border-radius:2px">
+          <button class="refresh-btn full-btn" onclick="logWeight()">+ Log Weight</button>
+          <div id="bmi-result" style="text-align:center;padding:8px;background:var(--bg2);border:1px solid var(--border2);font-size:11px;display:none"></div>
+        </div>
+      </div>
+      <!-- History -->
+      <div>
+        <div style="font-size:11px;color:var(--text-dim);letter-spacing:1px;margin-bottom:10px">HISTORY</div>
+        <div id="weight-history"></div>
+        <!-- Mini chart -->
+        <canvas id="weight-chart" height="80" style="width:100%;margin-top:12px;display:none"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SKIN & SHOWER ROW ── -->
+  <div class="panel-row">
+    <!-- Psoriasis Log -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>🔬 Psoriasis Log</span>
+        <button class="refresh-btn" onclick="loadSkinLog()">⟳</button>
+      </div>
+      <div style="padding:12px 14px;display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;gap:8px;align-items:center">
+          <label style="font-size:11px;color:var(--text-dim);min-width:60px">Date</label>
+          <input type="date" id="skin-date"
+            style="flex:1;background:var(--bg2);border:1px solid var(--border2);color:var(--text);font-size:12px;padding:4px 8px;font-family:var(--font-m);outline:none;border-radius:2px">
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px">SEVERITY (1=clear, 10=severe)</div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap" id="skin-severity-btns">
+            <!-- rendered by JS -->
+          </div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px">AFFECTED AREAS</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap" id="skin-area-checks"></div>
+        </div>
+        <input type="text" id="skin-notes" placeholder="Notes..."
+          style="background:var(--bg2);border:1px solid var(--border2);color:var(--text);font-size:12px;padding:5px 8px;font-family:var(--font-m);outline:none;border-radius:2px">
+        <button class="refresh-btn full-btn" onclick="logSkin()">+ Log Entry</button>
+      </div>
+      <div id="skin-log-list" style="padding:0 14px 12px;max-height:220px;overflow-y:auto"></div>
+    </div>
+
+    <!-- Shower Log -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>🚿 Shower Log</span>
+        <button class="refresh-btn" onclick="loadShowerLog()">⟳</button>
+      </div>
+      <div style="padding:12px 14px;display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;gap:8px">
+          <input type="date" id="shower-date"
+            style="flex:1;background:var(--bg2);border:1px solid var(--border2);color:var(--text);font-size:12px;padding:5px 8px;font-family:var(--font-m);outline:none;border-radius:2px">
+          <input type="time" id="shower-time"
+            style="width:90px;background:var(--bg2);border:1px solid var(--border2);color:var(--text);font-size:12px;padding:5px 8px;font-family:var(--font-m);outline:none;border-radius:2px">
+        </div>
+        <input type="text" id="shower-notes" placeholder="Notes (optional)"
+          style="background:var(--bg2);border:1px solid var(--border2);color:var(--text);font-size:12px;padding:5px 8px;font-family:var(--font-m);outline:none;border-radius:2px">
+        <button class="refresh-btn full-btn" onclick="logShower()">+ Log Shower</button>
+        <div style="font-size:10px;color:var(--text-dim);margin-top:2px" id="shower-streak"></div>
+      </div>
+      <div id="shower-log-list" style="padding:0 14px 12px;max-height:240px;overflow-y:auto"></div>
+    </div>
+  </div>
+
+  <!-- ── WELLNESS / HEALTH LOG ── -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>📓 Daily Health Log</span>
+      <button class="refresh-btn" onclick="loadHealthLog()">⟳</button>
+    </div>
+    <div style="padding:12px 14px;display:flex;gap:8px;flex-wrap:wrap">
+      <input type="date" id="hlog-date"
+        style="background:var(--bg2);border:1px solid var(--border2);color:var(--text);font-size:12px;padding:5px 8px;font-family:var(--font-m);outline:none;border-radius:2px">
+      <input type="text" id="hlog-notes" placeholder="How are you feeling, symptoms, energy level..."
+        style="flex:1;min-width:200px;background:var(--bg2);border:1px solid var(--border2);color:var(--text);font-size:12px;padding:5px 8px;font-family:var(--font-m);outline:none;border-radius:2px">
+      <button class="refresh-btn" onclick="logHealthEntry()">+ Log</button>
+    </div>
+    <div id="health-log-list" style="padding:0 14px 12px;max-height:200px;overflow-y:auto"></div>
+  </div>
+
+  <!-- ── HEALTH & FITNESS NEWS ── -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>💪 Health & Fitness News</span>
+      <button class="refresh-btn" onclick="loadPersonalNews(true)">⟳</button>
+    </div>
+    <div id="personal-news-feed" class="loading">Loading...</div>
+  </div>
 
   <!-- Top row: Notepad + Reminders -->
   <div class="panel-row">

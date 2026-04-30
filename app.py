@@ -2381,6 +2381,218 @@ def api_reminders():
         return jsonify({"status":"deleted"})
     return jsonify({"reminders": reminders})
 
+# ══════════════════════════════════════════════════════════ PERSONAL HEALTH ═══
+
+HEALTH_FILE = f"{DATA_DIR}/personal_health.json"
+
+def _load_health():
+    try:
+        with open(HEALTH_FILE) as f:
+            return json.load(f)
+    except Exception:
+        return {
+            "height_in": 70,
+            "medications": {
+                "skyrizi": {"label": "Skyrizi", "interval_days": 84, "indication": "Plaque Psoriasis", "doses": []},
+                "zepbound": {"label": "Zepbound", "interval_days": 7,  "indication": "Weight Management",  "doses": []},
+            },
+            "weight_log": [],
+            "shower_log": [],
+            "skin_log": [],
+            "health_log": [],
+        }
+
+def _save_health(data):
+    with open(HEALTH_FILE, "w") as f:
+        json.dump(data, f, indent=2)
+
+@app.route("/api/personal/health", methods=["GET"])
+@login_required
+def api_personal_health():
+    return jsonify(_load_health())
+
+@app.route("/api/personal/meds", methods=["POST"])
+@login_required
+@csrf_required
+def api_personal_meds_log():
+    data = _load_health()
+    med   = (request.json or {}).get("med", "")
+    date  = (request.json or {}).get("date", datetime.date.today().isoformat())
+    notes = (request.json or {}).get("notes", "")
+    if med not in data["medications"]:
+        return jsonify({"error": "unknown medication"}), 400
+    data["medications"][med]["doses"].append({"date": date, "notes": notes})
+    data["medications"][med]["doses"].sort(key=lambda x: x["date"])
+    _save_health(data)
+    return jsonify({"ok": True, "last": date})
+
+@app.route("/api/personal/meds/<med>/<int:idx>", methods=["DELETE"])
+@login_required
+@csrf_required
+def api_personal_meds_delete(med, idx):
+    data = _load_health()
+    if med in data["medications"]:
+        try:
+            data["medications"][med]["doses"].pop(idx)
+            _save_health(data)
+        except IndexError:
+            pass
+    return jsonify({"ok": True})
+
+@app.route("/api/personal/weight", methods=["POST"])
+@login_required
+@csrf_required
+def api_personal_weight_add():
+    data    = _load_health()
+    body    = request.json or {}
+    wlbs    = float(body.get("weight_lbs", 0))
+    h_in    = float(body.get("height_in") or data.get("height_in") or 70)
+    bmi     = round((wlbs / (h_in ** 2)) * 703, 1) if h_in and wlbs else 0
+    date    = body.get("date", datetime.date.today().isoformat())
+    data["height_in"] = h_in
+    record  = {"date": date, "weight_lbs": wlbs, "bmi": bmi, "notes": body.get("notes", "")}
+    dates   = [w["date"] for w in data["weight_log"]]
+    if date in dates:
+        data["weight_log"][dates.index(date)] = record
+    else:
+        data["weight_log"].append(record)
+    data["weight_log"].sort(key=lambda x: x["date"])
+    _save_health(data)
+    return jsonify({"ok": True, "bmi": bmi})
+
+@app.route("/api/personal/weight/<date>", methods=["DELETE"])
+@login_required
+@csrf_required
+def api_personal_weight_delete(date):
+    data = _load_health()
+    data["weight_log"] = [w for w in data["weight_log"] if w["date"] != date]
+    _save_health(data)
+    return jsonify({"ok": True})
+
+@app.route("/api/personal/shower", methods=["POST"])
+@login_required
+@csrf_required
+def api_personal_shower_log():
+    data  = _load_health()
+    body  = request.json or {}
+    entry = {
+        "date":  body.get("date",  datetime.date.today().isoformat()),
+        "time":  body.get("time",  datetime.datetime.now().strftime("%H:%M")),
+        "notes": body.get("notes", ""),
+    }
+    data["shower_log"].append(entry)
+    data["shower_log"] = sorted(data["shower_log"], key=lambda x: x["date"] + x.get("time",""))[-90:]
+    _save_health(data)
+    return jsonify({"ok": True})
+
+@app.route("/api/personal/shower/<int:idx>", methods=["DELETE"])
+@login_required
+@csrf_required
+def api_personal_shower_delete(idx):
+    data = _load_health()
+    try:
+        data["shower_log"].pop(idx)
+        _save_health(data)
+    except IndexError:
+        pass
+    return jsonify({"ok": True})
+
+@app.route("/api/personal/skin", methods=["POST"])
+@login_required
+@csrf_required
+def api_personal_skin_log():
+    data  = _load_health()
+    body  = request.json or {}
+    entry = {
+        "date":     body.get("date",     datetime.date.today().isoformat()),
+        "severity": int(body.get("severity", 5)),
+        "areas":    body.get("areas",    []),
+        "notes":    body.get("notes",    ""),
+    }
+    data["skin_log"].append(entry)
+    data["skin_log"].sort(key=lambda x: x["date"])
+    _save_health(data)
+    return jsonify({"ok": True})
+
+@app.route("/api/personal/skin/<int:idx>", methods=["DELETE"])
+@login_required
+@csrf_required
+def api_personal_skin_delete(idx):
+    data = _load_health()
+    try:
+        data["skin_log"].pop(idx)
+        _save_health(data)
+    except IndexError:
+        pass
+    return jsonify({"ok": True})
+
+@app.route("/api/personal/log", methods=["POST"])
+@login_required
+@csrf_required
+def api_personal_log_add():
+    data  = _load_health()
+    body  = request.json or {}
+    entry = {"date": body.get("date", datetime.date.today().isoformat()), "notes": body.get("notes", "")}
+    data["health_log"].append(entry)
+    data["health_log"].sort(key=lambda x: x["date"])
+    _save_health(data)
+    return jsonify({"ok": True})
+
+@app.route("/api/personal/log/<int:idx>", methods=["DELETE"])
+@login_required
+@csrf_required
+def api_personal_log_delete(idx):
+    data = _load_health()
+    try:
+        data["health_log"].pop(idx)
+        _save_health(data)
+    except IndexError:
+        pass
+    return jsonify({"ok": True})
+
+@app.route("/api/personal/height", methods=["POST"])
+@login_required
+@csrf_required
+def api_personal_height():
+    data = _load_health()
+    data["height_in"] = float((request.json or {}).get("height_in", 70))
+    _save_health(data)
+    return jsonify({"ok": True})
+
+@app.route("/api/personal/news")
+@login_required
+def api_personal_news():
+    cached = cache_get("personal_news", ttl=7200)
+    if cached:
+        return jsonify(cached)
+    feeds = [
+        ("Bodybuilding.com",    "https://www.bodybuilding.com/rss/articles.xml"),
+        ("Muscle & Fitness",    "https://www.muscleandfitness.com/feed/"),
+        ("Men's Health",        "https://www.menshealth.com/rss/all.xml"),
+        ("T-Nation",            "https://www.t-nation.com/feed/"),
+        ("Healthline",          "https://www.healthline.com/rss/health-news"),
+        ("Psoriasis Foundation","https://www.psoriasis.org/rss"),
+        ("Breaking Muscle",     "https://breakingmuscle.com/feed/"),
+    ]
+    from concurrent.futures import ThreadPoolExecutor as _TPE
+    articles = []
+    def _fetch(item):
+        src, url = item
+        try:
+            f = feedparser.parse(url)
+            return [{"source": src, "title": e.get("title","")[:120], "link": e.get("link","#"),
+                     "published": e.get("published","")[:25],
+                     "summary": re.sub(r"<[^>]+>","",e.get("summary",""))[:200]}
+                    for e in f.entries[:5]]
+        except Exception:
+            return []
+    with _TPE(max_workers=7) as ex:
+        for results in ex.map(_fetch, feeds):
+            articles.extend(results)
+    result = {"articles": articles}
+    cache_set("personal_news", result)
+    return jsonify(result)
+
 def _glerl_cache_key():
     """Return YYYY-MM-DD-HH rounded to 6-hour blocks (00, 06, 12, 18)."""
     now = datetime.datetime.utcnow()

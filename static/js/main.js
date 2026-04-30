@@ -94,7 +94,7 @@ function loadTab(tab) {
   if (tab === 'command') { loadServerStats(); loadProxmox(); loadExtServices(); loadTarpitStats(); buildSvcControlGrid(); loadGoals(); loadDjStatus(); }
   if (tab === 'cyber')   { loadCVEs(); loadFirewallDrops(); loadSWPC(); loadServerHealth(); loadJailSummary(); }
   if (tab === 'weather') { loadGarden(); loadWeather(); loadEarthquakes(); loadGDACS(); loadLakeMichigan(); loadAirNow(); loadWildfires(); loadSWPC(); loadMETAR(); initWi511Map(); loadWIWarnings(); loadLNM(); loadGlerlImages(); loadBurnBan(); }
-  if (tab === 'comms')   { loadNotepad(); loadReminders(); loadNotesList(); loadMemos(); }
+  if (tab === 'comms')   { loadHealth(); loadSkinLog(); loadShowerLog(); loadHealthLog(); loadPersonalNews(); loadNotepad(); loadReminders(); loadNotesList(); loadMemos(); }
 }
 function refreshAllCommand() {
   const btn = document.querySelector('[onclick="refreshAllCommand()"]');
@@ -3459,4 +3459,379 @@ function djSpotifyRefresh() {
       if (statusEl) { statusEl.textContent = `❌ ${data.error}`; statusEl.style.color = 'var(--danger, #f87171)'; }
     }
   }).catch(e => { if (statusEl) statusEl.textContent = '❌ Error: ' + e; });
+}
+
+// ══════════════════════════════════════════════════════ PERSONAL / HEALTH ════
+
+let _healthData = null;
+
+function loadHealth(force) {
+  fetch('/api/personal/health').then(r => r.json()).then(d => {
+    _healthData = d;
+    renderMedCard('skyrizi', d);
+    renderMedCard('zepbound', d);
+    renderWeightHistory(d);
+    // prefill height
+    const hi = document.getElementById('wt-height');
+    if (hi && !hi.value && d.height_in) hi.value = d.height_in;
+  }).catch(() => {});
+}
+
+// ── Medication cards ──
+function renderMedCard(med, d) {
+  const el = document.getElementById('med-' + med + '-content');
+  if (!el) return;
+  const cfg = d.medications[med];
+  if (!cfg) return;
+  const doses = cfg.doses || [];
+  const last = doses.length ? doses[doses.length - 1] : null;
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  let html = '';
+  if (last) {
+    const lastDate = new Date(last.date + 'T00:00:00');
+    const daysSince = Math.floor((today - lastDate) / 86400000);
+    const interval = cfg.interval_days;
+    const daysLeft = interval - daysSince;
+    const pct = Math.min(100, Math.round((daysSince / interval) * 100));
+    const nextDate = new Date(lastDate); nextDate.setDate(nextDate.getDate() + interval);
+    const nextStr = nextDate.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+    const overdue = daysLeft < 0;
+    const due_soon = daysLeft >= 0 && daysLeft <= (med === 'zepbound' ? 1 : 7);
+    const barColor = overdue ? 'var(--danger,#f87171)' : due_soon ? '#f59e0b' : 'var(--green,#4ade80)';
+    const badge = overdue
+      ? `<span style="color:var(--danger,#f87171);font-weight:700">${Math.abs(daysLeft)}d OVERDUE</span>`
+      : due_soon
+        ? `<span style="color:#f59e0b;font-weight:700">DUE ${daysLeft === 0 ? 'TODAY' : 'IN ' + daysLeft + 'd'}</span>`
+        : `<span style="color:var(--green,#4ade80)">${daysLeft}d remaining</span>`;
+
+    html += `<div style="padding:12px 14px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:10px;font-size:12px">
+        <span style="color:var(--text-dim)">Last dose: <b style="color:var(--text)">${last.date}</b></span>
+        <span style="color:var(--text-dim)">Next: <b style="color:var(--text)">${nextStr}</b></span>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:3px;height:8px;margin-bottom:8px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:${barColor};transition:width .4s"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:11px">
+        <span style="color:var(--text-dim)">${cfg.indication} · every ${interval}d</span>
+        ${badge}
+      </div>
+    </div>
+    <div style="border-top:1px solid var(--border2);padding:10px 14px">
+      <div style="font-size:10px;color:var(--text-dim);letter-spacing:1px;margin-bottom:6px">DOSE HISTORY (last 5)</div>
+      <div style="display:flex;flex-direction:column;gap:3px">`;
+    const recent = doses.slice(-5).reverse();
+    recent.forEach((dose, i) => {
+      html += `<div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;border-bottom:1px solid var(--border2)">
+        <span style="color:var(--text)">${dose.date}</span>
+        <span style="color:var(--text-dim)">${dose.notes || '—'}</span>
+        <button style="background:none;border:none;color:var(--danger,#f87171);cursor:pointer;font-size:10px;padding:0"
+          onclick="deleteDose('${med}', ${doses.length - 1 - i})">✕</button>
+      </div>`;
+    });
+    html += `</div></div>`;
+  } else {
+    html = `<div style="padding:16px 14px;color:var(--text-dim);font-size:12px">No doses logged yet. Click <b>+ Log Dose</b> to record your first injection.</div>`;
+  }
+  el.innerHTML = html;
+  el.classList.remove('loading');
+}
+
+function logDose(med) {
+  const date = prompt('Dose date (YYYY-MM-DD):', new Date().toISOString().slice(0,10));
+  if (!date) return;
+  const notes = prompt('Notes (optional, press Enter to skip):', '') || '';
+  _csrfPost('/api/personal/meds', {med, date, notes}).then(r => r.json()).then(d => {
+    if (d.ok) loadHealth();
+    else alert('Error: ' + (d.error || 'unknown'));
+  });
+}
+
+function deleteDose(med, idx) {
+  if (!confirm('Delete this dose entry?')) return;
+  fetch('/api/personal/meds/' + med + '/' + idx, {
+    method: 'DELETE',
+    headers: {'X-CSRF-Token': (document.querySelector('meta[name="csrf-token"]') || {}).content || ''}
+  }).then(() => loadHealth());
+}
+
+// ── Weight & BMI ──
+const _BMI_CATS = [
+  [18.5, 'Underweight', '#60a5fa'],
+  [25,   'Normal',      '#4ade80'],
+  [30,   'Overweight',  '#f59e0b'],
+  [999,  'Obese',       '#f87171'],
+];
+function _bmiCat(bmi) {
+  for (const [limit, label, color] of _BMI_CATS) if (bmi < limit) return {label, color};
+  return {label:'Obese', color:'#f87171'};
+}
+
+function logWeight() {
+  const lbs = parseFloat(document.getElementById('wt-lbs').value);
+  const hin = parseFloat(document.getElementById('wt-height').value);
+  const date = document.getElementById('wt-date').value || new Date().toISOString().slice(0,10);
+  const notes = document.getElementById('wt-notes').value || '';
+  if (!lbs || !hin) { alert('Enter weight and height.'); return; }
+  _csrfPost('/api/personal/weight', {weight_lbs: lbs, height_in: hin, date, notes})
+    .then(r => r.json()).then(d => {
+      if (d.ok) {
+        const cat = _bmiCat(d.bmi);
+        const res = document.getElementById('bmi-result');
+        res.style.display = 'block';
+        res.innerHTML = `BMI: <b style="color:${cat.color}">${d.bmi}</b> — <span style="color:${cat.color}">${cat.label}</span>`;
+        document.getElementById('wt-lbs').value = '';
+        document.getElementById('wt-notes').value = '';
+        loadHealth();
+      }
+    });
+}
+
+function deleteWeight(date) {
+  fetch('/api/personal/weight/' + date, {
+    method: 'DELETE',
+    headers: {'X-CSRF-Token': (document.querySelector('meta[name="csrf-token"]') || {}).content || ''}
+  }).then(() => loadHealth());
+}
+
+function renderWeightHistory(d) {
+  const el = document.getElementById('weight-history');
+  if (!el) return;
+  const log = (d.weight_log || []).slice(-10).reverse();
+  if (!log.length) { el.innerHTML = '<div style="color:var(--text-dim);font-size:12px;padding:4px 0">No entries yet.</div>'; return; }
+  let html = `<table style="width:100%;border-collapse:collapse;font-size:11px">
+    <tr style="color:var(--text-dim);border-bottom:1px solid var(--border2)">
+      <th style="text-align:left;padding:3px 6px;font-weight:400">Date</th>
+      <th style="text-align:right;padding:3px 6px;font-weight:400">Weight</th>
+      <th style="text-align:right;padding:3px 6px;font-weight:400">BMI</th>
+      <th style="text-align:right;padding:3px 6px;font-weight:400">Notes</th>
+      <th style="padding:3px 6px"></th>
+    </tr>`;
+  log.forEach(w => {
+    const cat = _bmiCat(w.bmi);
+    html += `<tr style="border-bottom:1px solid var(--border2)">
+      <td style="padding:4px 6px;color:var(--text)">${w.date}</td>
+      <td style="padding:4px 6px;color:var(--text);text-align:right">${w.weight_lbs} lbs</td>
+      <td style="padding:4px 6px;text-align:right;color:${cat.color}">${w.bmi} <span style="color:var(--text-dim);font-size:10px">${cat.label}</span></td>
+      <td style="padding:4px 6px;color:var(--text-dim);text-align:right">${w.notes || '—'}</td>
+      <td style="padding:4px 6px;text-align:right"><button onclick="deleteWeight('${w.date}')" style="background:none;border:none;color:var(--danger,#f87171);cursor:pointer;font-size:10px">✕</button></td>
+    </tr>`;
+  });
+  html += '</table>';
+  el.innerHTML = html;
+  renderWeightChart(d.weight_log || []);
+}
+
+function renderWeightChart(log) {
+  const canvas = document.getElementById('weight-chart');
+  if (!canvas || log.length < 2) return;
+  canvas.style.display = 'block';
+  canvas.width = canvas.offsetWidth || 400;
+  const ctx = canvas.getContext('2d');
+  const recent = log.slice(-20);
+  const weights = recent.map(w => w.weight_lbs);
+  const min = Math.min(...weights) - 2, max = Math.max(...weights) + 2;
+  const W = canvas.width, H = 80, pad = 8;
+  ctx.clearRect(0, 0, W, H);
+  ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 2;
+  ctx.beginPath();
+  recent.forEach((w, i) => {
+    const x = pad + (i / (recent.length - 1)) * (W - pad * 2);
+    const y = H - pad - ((w.weight_lbs - min) / (max - min)) * (H - pad * 2);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+  // dots
+  ctx.fillStyle = '#4ade80';
+  recent.forEach((w, i) => {
+    const x = pad + (i / (recent.length - 1)) * (W - pad * 2);
+    const y = H - pad - ((w.weight_lbs - min) / (max - min)) * (H - pad * 2);
+    ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
+  });
+}
+
+// ── Psoriasis Log ──
+(function initSkinUI() {
+  setTimeout(() => {
+    // severity buttons 1-10
+    const sb = document.getElementById('skin-severity-btns');
+    if (sb) {
+      for (let i = 1; i <= 10; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = i;
+        btn.dataset.val = i;
+        const hue = Math.round(120 - (i-1)*12); // green→red
+        btn.style.cssText = `background:hsl(${hue},70%,30%);border:1px solid hsl(${hue},70%,45%);color:#fff;width:28px;height:28px;cursor:pointer;font-size:11px;font-family:var(--font-m);border-radius:2px`;
+        btn.onclick = function() {
+          sb.querySelectorAll('button').forEach(b => b.style.outline = 'none');
+          this.style.outline = '2px solid #fff';
+          sb.dataset.selected = this.dataset.val;
+        };
+        sb.appendChild(btn);
+      }
+    }
+    // area checkboxes
+    const ac = document.getElementById('skin-area-checks');
+    const areas = ['Scalp','Face','Neck','Chest','Back','Arms','Elbows','Hands','Legs','Knees','Feet'];
+    if (ac) areas.forEach(a => {
+      const label = document.createElement('label');
+      label.style.cssText = 'display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-dim);cursor:pointer;white-space:nowrap';
+      label.innerHTML = `<input type="checkbox" value="${a}" style="accent-color:var(--green,#4ade80)"> ${a}`;
+      ac.appendChild(label);
+    });
+    // default today
+    const sd = document.getElementById('skin-date');
+    const shd = document.getElementById('shower-date');
+    const wtd = document.getElementById('wt-date');
+    const hld = document.getElementById('hlog-date');
+    const today = new Date().toISOString().slice(0,10);
+    if (sd)  sd.value  = today;
+    if (shd) shd.value = today;
+    if (wtd) wtd.value = today;
+    if (hld) hld.value = today;
+    // default shower time
+    const sht = document.getElementById('shower-time');
+    if (sht) sht.value = new Date().toTimeString().slice(0,5);
+  }, 300);
+})();
+
+function logSkin() {
+  const sb = document.getElementById('skin-severity-btns');
+  const severity = parseInt(sb && sb.dataset.selected) || 0;
+  if (!severity) { alert('Select a severity level (1–10).'); return; }
+  const date = document.getElementById('skin-date').value || new Date().toISOString().slice(0,10);
+  const areas = [...document.querySelectorAll('#skin-area-checks input:checked')].map(c => c.value);
+  const notes = document.getElementById('skin-notes').value || '';
+  _csrfPost('/api/personal/skin', {date, severity, areas, notes}).then(r => r.json()).then(d => {
+    if (d.ok) { loadSkinLog(); document.getElementById('skin-notes').value = ''; }
+  });
+}
+
+function loadSkinLog() {
+  if (!_healthData) { fetch('/api/personal/health').then(r=>r.json()).then(d => { _healthData=d; renderSkinLog(d); }); return; }
+  renderSkinLog(_healthData);
+}
+
+function renderSkinLog(d) {
+  const el = document.getElementById('skin-log-list');
+  if (!el) return;
+  const log = (d.skin_log || []).slice().reverse().slice(0, 20);
+  if (!log.length) { el.innerHTML = '<div style="color:var(--text-dim);font-size:12px">No entries yet.</div>'; return; }
+  const hue = s => Math.round(120 - (s-1)*12);
+  el.innerHTML = log.map((e, i) => `
+    <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border2);font-size:11px">
+      <span style="min-width:82px;color:var(--text)">${e.date}</span>
+      <span style="background:hsl(${hue(e.severity)},70%,30%);border:1px solid hsl(${hue(e.severity)},70%,45%);color:#fff;padding:1px 7px;font-size:10px">${e.severity}/10</span>
+      <span style="color:var(--text-dim);flex:1">${e.areas && e.areas.length ? e.areas.join(', ') : '—'}</span>
+      <span style="color:var(--text-dim)">${e.notes || ''}</span>
+      <button onclick="deleteSkin(${(d.skin_log||[]).length-1-i})" style="background:none;border:none;color:var(--danger,#f87171);cursor:pointer;font-size:10px">✕</button>
+    </div>`).join('');
+}
+
+function deleteSkin(idx) {
+  fetch('/api/personal/skin/' + idx, {
+    method:'DELETE',
+    headers:{'X-CSRF-Token':(document.querySelector('meta[name="csrf-token"]')||{}).content||''}
+  }).then(()=>{ _healthData=null; loadSkinLog(); });
+}
+
+// ── Shower Log ──
+function logShower() {
+  const date  = document.getElementById('shower-date').value || new Date().toISOString().slice(0,10);
+  const time  = document.getElementById('shower-time').value || new Date().toTimeString().slice(0,5);
+  const notes = document.getElementById('shower-notes').value || '';
+  _csrfPost('/api/personal/shower', {date, time, notes}).then(r => r.json()).then(d => {
+    if (d.ok) { _healthData = null; loadShowerLog(); document.getElementById('shower-notes').value = ''; }
+  });
+}
+
+function loadShowerLog() {
+  fetch('/api/personal/health').then(r => r.json()).then(d => {
+    _healthData = d;
+    const el = document.getElementById('shower-log-list');
+    if (!el) return;
+    const log = (d.shower_log || []).slice().reverse().slice(0, 30);
+    if (!log.length) { el.innerHTML = '<div style="color:var(--text-dim);font-size:12px;padding:4px 0">No showers logged yet.</div>'; return; }
+    // streak calc
+    const today = new Date().toISOString().slice(0,10);
+    const dates = [...new Set((d.shower_log||[]).map(e=>e.date))].sort().reverse();
+    let streak = 0;
+    let check = new Date(); check.setHours(0,0,0,0);
+    for (const dt of dates) {
+      const d2 = new Date(dt+'T00:00:00'); d2.setHours(0,0,0,0);
+      if (d2.getTime() === check.getTime()) { streak++; check.setDate(check.getDate()-1); }
+      else if (d2.getTime() < check.getTime()) break;
+    }
+    const streakEl = document.getElementById('shower-streak');
+    if (streakEl) streakEl.textContent = streak > 1 ? `🔥 ${streak}-day streak` : '';
+    el.innerHTML = log.map((e, i) => `
+      <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border2);font-size:11px">
+        <span style="min-width:82px;color:var(--text)">${e.date}</span>
+        <span style="color:var(--text-dim)">${e.time||''}</span>
+        <span style="color:var(--text-dim);flex:1">${e.notes||''}</span>
+        <button onclick="deleteShower(${(d.shower_log||[]).length-1-i})" style="background:none;border:none;color:var(--danger,#f87171);cursor:pointer;font-size:10px">✕</button>
+      </div>`).join('');
+  });
+}
+
+function deleteShower(idx) {
+  fetch('/api/personal/shower/' + idx, {
+    method:'DELETE',
+    headers:{'X-CSRF-Token':(document.querySelector('meta[name="csrf-token"]')||{}).content||''}
+  }).then(()=>loadShowerLog());
+}
+
+// ── Health Log ──
+function logHealthEntry() {
+  const date  = document.getElementById('hlog-date').value || new Date().toISOString().slice(0,10);
+  const notes = document.getElementById('hlog-notes').value || '';
+  if (!notes.trim()) return;
+  _csrfPost('/api/personal/log', {date, notes}).then(r => r.json()).then(d => {
+    if (d.ok) { _healthData=null; loadHealthLog(); document.getElementById('hlog-notes').value = ''; }
+  });
+}
+
+function loadHealthLog() {
+  fetch('/api/personal/health').then(r=>r.json()).then(d => {
+    _healthData = d;
+    const el = document.getElementById('health-log-list');
+    if (!el) return;
+    const log = (d.health_log||[]).slice().reverse().slice(0,30);
+    if (!log.length) { el.innerHTML='<div style="color:var(--text-dim);font-size:12px;padding:4px 0">No entries yet.</div>'; return; }
+    el.innerHTML = log.map((e,i) => `
+      <div style="display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid var(--border2);font-size:11px">
+        <span style="min-width:82px;color:var(--text);flex-shrink:0">${e.date}</span>
+        <span style="color:var(--text-dim);flex:1;line-height:1.6">${e.notes}</span>
+        <button onclick="deleteHealthLog(${(d.health_log||[]).length-1-i})" style="background:none;border:none;color:var(--danger,#f87171);cursor:pointer;font-size:10px;flex-shrink:0">✕</button>
+      </div>`).join('');
+  });
+}
+
+function deleteHealthLog(idx) {
+  fetch('/api/personal/log/' + idx, {
+    method:'DELETE',
+    headers:{'X-CSRF-Token':(document.querySelector('meta[name="csrf-token"]')||{}).content||''}
+  }).then(()=>loadHealthLog());
+}
+
+// ── Health & Fitness News ──
+function loadPersonalNews(force) {
+  const el = document.getElementById('personal-news-feed');
+  if (!el) return;
+  const url = force ? '/api/personal/news?force=1' : '/api/personal/news';
+  el.innerHTML = '<div class="loading">Loading health & fitness news...</div>';
+  fetch(url).then(r=>r.json()).then(d => {
+    const arts = d.articles || [];
+    if (!arts.length) { el.innerHTML='<div style="color:var(--text-dim);padding:12px">No articles loaded.</div>'; return; }
+    el.innerHTML = arts.map(a => `
+      <div style="padding:10px 14px;border-bottom:1px solid var(--border2)">
+        <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">
+          <span style="font-size:9px;letter-spacing:2px;color:var(--accent,#818cf8);text-transform:uppercase">${a.source}</span>
+          <span style="font-size:10px;color:var(--text-dim)">${a.published}</span>
+        </div>
+        <a href="${a.link}" target="_blank" rel="noopener" style="color:var(--text);text-decoration:none;font-size:13px;font-weight:600;line-height:1.4;display:block;margin-bottom:4px">${a.title}</a>
+        <div style="font-size:11px;color:var(--text-dim);line-height:1.6">${a.summary}</div>
+      </div>`).join('');
+  }).catch(() => { el.innerHTML='<div style="color:var(--text-dim);padding:12px">Failed to load news.</div>'; });
 }
