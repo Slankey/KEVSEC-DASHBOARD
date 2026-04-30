@@ -77,26 +77,17 @@
   <div class="panel">
     <div class="panel-header">🔗 Quick Links</div>
     <div class="quick-access-grid">
-      <a href="https://tv.kevsec.com" target="_blank" class="qa-btn">
-        <div class="qa-icon">🎬</div>Jellyfin<span>tv.kevsec.com</span>
+      <a href="#" target="_blank" class="qa-btn">
+        <div class="qa-icon">🎬</div>Media Server<span>configure in .env</span>
       </a>
-      <a href="https://seed.kevsec.com/rutorrent" target="_blank" class="qa-btn">
-        <div class="qa-icon">🌱</div>ruTorrent<span>seed.kevsec.com</span>
+      <a href="#" target="_blank" class="qa-btn">
+        <div class="qa-icon">🌱</div>Torrent Client<span>configure in .env</span>
       </a>
-      <a href="https://www.iptorrents.com/t" target="_blank" class="qa-btn">
-        <div class="qa-icon">🧲</div>IPTorrents<span>iptorrents.com</span>
-      </a>
-      <a href="http://69.30.236.220:7474" target="_blank" class="qa-btn">
-        <div class="qa-icon">⚙</div>Autobrr<span>:7474</span>
-      </a>
-      <a href="https://server.kevsec.com" target="_blank" class="qa-btn">
-        <div class="qa-icon">🖥</div>Server Portal<span>server.kevsec.com</span>
-      </a>
-      <a href="https://69.30.236.218:8006" target="_blank" class="qa-btn">
-        <div class="qa-icon">🏗</div>Proxmox<span>69.30.236.218:8006</span>
+      <a href="#" target="_blank" class="qa-btn">
+        <div class="qa-icon">🏗</div>Hypervisor<span>configure in .env</span>
       </a>
       <div class="qa-btn" onclick="copySSH()">
-        <div class="qa-icon">🔐</div>SSH Swizzin<span id="ssh-btn-sub2">Click to copy</span>
+        <div class="qa-icon">🔐</div>SSH<span id="ssh-btn-sub2">Click to copy</span>
       </div>
       <a href="https://www.cisa.gov/news-events/cybersecurity-advisories" target="_blank" class="qa-btn">
         <div class="qa-icon">🛡</div>CISA Advisories<span>cisa.gov</span>
@@ -1307,19 +1298,23 @@
   <div class="panel-row" id="meds-row">
     <!-- Skyrizi -->
     <div class="panel" id="med-skyrizi-panel">
-      <div class="panel-header">
-        <span>💉 Skyrizi</span>
+      <div class="panel-header"><span>💉 Skyrizi</span></div>
+      <div id="med-skyrizi-content" class="loading">Loading...</div>
+      <div style="padding:10px 14px;border-top:1px solid var(--border2);display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input type="date" id="med-skyrizi-date" style="background:var(--bg2);border:1px solid var(--border2);color:var(--text);padding:4px 8px;font-size:12px;width:140px">
+        <input type="text" id="med-skyrizi-notes" placeholder="Notes (optional)" style="background:var(--bg2);border:1px solid var(--border2);color:var(--text);padding:4px 8px;font-size:12px;flex:1;min-width:120px">
         <button class="refresh-btn" onclick="logDose('skyrizi')">+ Log Dose</button>
       </div>
-      <div id="med-skyrizi-content" class="loading">Loading...</div>
     </div>
     <!-- Zepbound -->
     <div class="panel" id="med-zepbound-panel">
-      <div class="panel-header">
-        <span>💉 Zepbound</span>
+      <div class="panel-header"><span>💉 Zepbound</span></div>
+      <div id="med-zepbound-content" class="loading">Loading...</div>
+      <div style="padding:10px 14px;border-top:1px solid var(--border2);display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input type="date" id="med-zepbound-date" style="background:var(--bg2);border:1px solid var(--border2);color:var(--text);padding:4px 8px;font-size:12px;width:140px">
+        <input type="text" id="med-zepbound-notes" placeholder="Notes (optional)" style="background:var(--bg2);border:1px solid var(--border2);color:var(--text);padding:4px 8px;font-size:12px;flex:1;min-width:120px">
         <button class="refresh-btn" onclick="logDose('zepbound')">+ Log Dose</button>
       </div>
-      <div id="med-zepbound-content" class="loading">Loading...</div>
     </div>
   </div>
 

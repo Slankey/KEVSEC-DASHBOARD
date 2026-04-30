@@ -1,4 +1,4 @@
-import os, json, time, hashlib, secrets, datetime, subprocess, re, threading, random, logging
+import os, json, time, hashlib, secrets, datetime, subprocess, re, threading, random, logging, sqlite3
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import wraps
 from flask import Flask, render_template, request, session, redirect, url_for, jsonify, send_file
@@ -16,7 +16,7 @@ app.secret_key = os.environ.get("SECRET_KEY", "kev-sec-dash-2026-xK9mPqR7vL2nW5s
 
 # Security logging — fail2ban watches this file
 _sec_log = logging.getLogger("kevsec.security")
-_sec_handler = logging.FileHandler("/var/log/kevsec-auth.log")
+_sec_handler = logging.FileHandler("/mnt/hdd/logs/kevsec-auth.log")
 _sec_handler.setFormatter(logging.Formatter("%(asctime)s %(message)s"))
 _sec_log.addHandler(_sec_handler)
 _sec_log.setLevel(logging.WARNING)
@@ -46,7 +46,7 @@ ENV_FILE          = os.path.join(os.path.dirname(__file__), ".env")
 os.makedirs(MEMOS_DIR, exist_ok=True)
 os.makedirs(NOTES_DIR, exist_ok=True)
 
-HDRS = {"User-Agent": "KEVSec/1.0 ops@kevsec.com"}
+HDRS = {"User-Agent": "KEVSec/1.0"}
 
 # Presidential schedule regex — compiled once at module level
 _DATE_PAT = re.compile(
@@ -159,7 +159,7 @@ def csrf_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         if request.method in ("POST", "PUT", "DELETE", "PATCH"):
-            token = (request.json or {}).get("_csrf") or request.headers.get("X-CSRF-Token", "")
+            token = (request.get_json(silent=True) or {}).get("_csrf") or request.headers.get("X-CSRF-Token", "")
             if not token or token != session.get("csrf_token"):
                 return jsonify({"error": "invalid csrf token"}), 403
         return f(*args, **kwargs)
@@ -2384,27 +2384,124 @@ def api_reminders():
 # ══════════════════════════════════════════════════════════ PERSONAL HEALTH ═══
 
 HEALTH_FILE = f"{DATA_DIR}/personal_health.json"
+HEALTH_DB   = f"{DATA_DIR}/health.db"
 
-def _load_health():
+def _db():
+    conn = sqlite3.connect(HEALTH_DB)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def _init_health_db():
+    with _db() as conn:
+        conn.executescript("""
+        CREATE TABLE IF NOT EXISTS config (
+            key   TEXT PRIMARY KEY,
+            value TEXT
+        );
+        CREATE TABLE IF NOT EXISTS medications (
+            med_id        TEXT PRIMARY KEY,
+            label         TEXT,
+            interval_days INTEGER,
+            indication    TEXT
+        );
+        CREATE TABLE IF NOT EXISTS doses (
+            id     INTEGER PRIMARY KEY AUTOINCREMENT,
+            med_id TEXT,
+            date   TEXT,
+            notes  TEXT
+        );
+        CREATE TABLE IF NOT EXISTS weight_log (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            date       TEXT UNIQUE,
+            weight_lbs REAL,
+            bmi        REAL,
+            notes      TEXT
+        );
+        CREATE TABLE IF NOT EXISTS shower_log (
+            id    INTEGER PRIMARY KEY AUTOINCREMENT,
+            date  TEXT,
+            time  TEXT,
+            notes TEXT
+        );
+        CREATE TABLE IF NOT EXISTS skin_log (
+            id       INTEGER PRIMARY KEY AUTOINCREMENT,
+            date     TEXT,
+            severity INTEGER,
+            areas    TEXT,
+            notes    TEXT
+        );
+        CREATE TABLE IF NOT EXISTS health_log (
+            id    INTEGER PRIMARY KEY AUTOINCREMENT,
+            date  TEXT,
+            notes TEXT
+        );
+        """)
+        # Seed default medications if missing
+        for med_id, label, interval, indication in [
+            ("skyrizi", "Skyrizi", 84, "Plaque Psoriasis"),
+            ("zepbound", "Zepbound", 7, "Weight Management"),
+        ]:
+            conn.execute(
+                "INSERT OR IGNORE INTO medications (med_id, label, interval_days, indication) VALUES (?,?,?,?)",
+                (med_id, label, interval, indication)
+            )
+        # Migrate from JSON if it exists and DB is empty
+        _migrate_json_to_db(conn)
+
+def _migrate_json_to_db(conn):
+    if not os.path.exists(HEALTH_FILE):
+        return
     try:
         with open(HEALTH_FILE) as f:
-            return json.load(f)
+            data = json.load(f)
     except Exception:
-        return {
-            "height_in": 70,
-            "medications": {
-                "skyrizi": {"label": "Skyrizi", "interval_days": 84, "indication": "Plaque Psoriasis", "doses": []},
-                "zepbound": {"label": "Zepbound", "interval_days": 7,  "indication": "Weight Management",  "doses": []},
-            },
-            "weight_log": [],
-            "shower_log": [],
-            "skin_log": [],
-            "health_log": [],
-        }
+        return
+    # Only migrate if all tables are empty (fresh DB)
+    count = conn.execute("SELECT COUNT(*) FROM doses").fetchone()[0]
+    if count > 0:
+        return
+    if data.get("height_in"):
+        conn.execute("INSERT OR REPLACE INTO config VALUES ('height_in', ?)", (str(data["height_in"]),))
+    for med_id, cfg in data.get("medications", {}).items():
+        conn.execute("INSERT OR REPLACE INTO medications VALUES (?,?,?,?)",
+                     (med_id, cfg["label"], cfg["interval_days"], cfg["indication"]))
+        for dose in cfg.get("doses", []):
+            conn.execute("INSERT INTO doses (med_id, date, notes) VALUES (?,?,?)",
+                         (med_id, dose["date"], dose.get("notes", "")))
+    for w in data.get("weight_log", []):
+        conn.execute("INSERT OR IGNORE INTO weight_log (date, weight_lbs, bmi, notes) VALUES (?,?,?,?)",
+                     (w["date"], w["weight_lbs"], w["bmi"], w.get("notes", "")))
+    for s in data.get("shower_log", []):
+        conn.execute("INSERT INTO shower_log (date, time, notes) VALUES (?,?,?)",
+                     (s["date"], s.get("time", ""), s.get("notes", "")))
+    for sk in data.get("skin_log", []):
+        conn.execute("INSERT INTO skin_log (date, severity, areas, notes) VALUES (?,?,?,?)",
+                     (sk["date"], sk["severity"], json.dumps(sk.get("areas", [])), sk.get("notes", "")))
+    for h in data.get("health_log", []):
+        conn.execute("INSERT INTO health_log (date, notes) VALUES (?,?)",
+                     (h["date"], h.get("notes", "")))
+    logging.getLogger(__name__).info("health: migrated JSON to SQLite")
 
-def _save_health(data):
-    with open(HEALTH_FILE, "w") as f:
-        json.dump(data, f, indent=2)
+_init_health_db()
+
+def _load_health():
+    with _db() as conn:
+        height_in = float((conn.execute("SELECT value FROM config WHERE key='height_in'").fetchone() or ("70",))[0])
+        meds = {}
+        for m in conn.execute("SELECT * FROM medications"):
+            doses = [{"date": d["date"], "notes": d["notes"]}
+                     for d in conn.execute("SELECT date, notes FROM doses WHERE med_id=? ORDER BY date", (m["med_id"],))]
+            meds[m["med_id"]] = {"label": m["label"], "interval_days": m["interval_days"],
+                                  "indication": m["indication"], "doses": doses}
+        weight_log = [dict(r) for r in conn.execute("SELECT date, weight_lbs, bmi, notes FROM weight_log ORDER BY date")]
+        shower_log = [dict(r) for r in conn.execute("SELECT id, date, time, notes FROM shower_log ORDER BY date, time")]
+        skin_log   = [{"id": r["id"], "date": r["date"], "severity": r["severity"],
+                        "areas": json.loads(r["areas"] or "[]"), "notes": r["notes"]}
+                      for r in conn.execute("SELECT * FROM skin_log ORDER BY date")]
+        health_log = [dict(r) for r in conn.execute("SELECT id, date, notes FROM health_log ORDER BY date")]
+    return {"height_in": height_in, "medications": meds,
+            "weight_log": weight_log, "shower_log": shower_log,
+            "skin_log": skin_log, "health_log": health_log}
 
 @app.route("/api/personal/health", methods=["GET"])
 @login_required
@@ -2415,148 +2512,121 @@ def api_personal_health():
 @login_required
 @csrf_required
 def api_personal_meds_log():
-    data = _load_health()
-    med   = (request.json or {}).get("med", "")
-    date  = (request.json or {}).get("date", datetime.date.today().isoformat())
-    notes = (request.json or {}).get("notes", "")
-    if med not in data["medications"]:
-        return jsonify({"error": "unknown medication"}), 400
-    data["medications"][med]["doses"].append({"date": date, "notes": notes})
-    data["medications"][med]["doses"].sort(key=lambda x: x["date"])
-    _save_health(data)
+    body  = request.json or {}
+    med   = body.get("med", "")
+    date  = body.get("date", datetime.date.today().isoformat())
+    notes = body.get("notes", "")
+    with _db() as conn:
+        exists = conn.execute("SELECT 1 FROM medications WHERE med_id=?", (med,)).fetchone()
+        if not exists:
+            return jsonify({"error": "unknown medication"}), 400
+        conn.execute("INSERT INTO doses (med_id, date, notes) VALUES (?,?,?)", (med, date, notes))
     return jsonify({"ok": True, "last": date})
 
 @app.route("/api/personal/meds/<med>/<int:idx>", methods=["DELETE"])
 @login_required
 @csrf_required
 def api_personal_meds_delete(med, idx):
-    data = _load_health()
-    if med in data["medications"]:
-        try:
-            data["medications"][med]["doses"].pop(idx)
-            _save_health(data)
-        except IndexError:
-            pass
+    with _db() as conn:
+        rows = conn.execute("SELECT id FROM doses WHERE med_id=? ORDER BY date", (med,)).fetchall()
+        if 0 <= idx < len(rows):
+            conn.execute("DELETE FROM doses WHERE id=?", (rows[idx]["id"],))
     return jsonify({"ok": True})
 
 @app.route("/api/personal/weight", methods=["POST"])
 @login_required
 @csrf_required
 def api_personal_weight_add():
-    data    = _load_health()
-    body    = request.json or {}
-    wlbs    = float(body.get("weight_lbs", 0))
-    h_in    = float(body.get("height_in") or data.get("height_in") or 70)
-    bmi     = round((wlbs / (h_in ** 2)) * 703, 1) if h_in and wlbs else 0
-    date    = body.get("date", datetime.date.today().isoformat())
-    data["height_in"] = h_in
-    record  = {"date": date, "weight_lbs": wlbs, "bmi": bmi, "notes": body.get("notes", "")}
-    dates   = [w["date"] for w in data["weight_log"]]
-    if date in dates:
-        data["weight_log"][dates.index(date)] = record
-    else:
-        data["weight_log"].append(record)
-    data["weight_log"].sort(key=lambda x: x["date"])
-    _save_health(data)
+    body = request.json or {}
+    wlbs = float(body.get("weight_lbs", 0))
+    with _db() as conn:
+        h_in = float((conn.execute("SELECT value FROM config WHERE key='height_in'").fetchone() or ("70",))[0])
+        h_in = float(body.get("height_in") or h_in)
+        bmi  = round((wlbs / (h_in ** 2)) * 703, 1) if h_in and wlbs else 0
+        date = body.get("date", datetime.date.today().isoformat())
+        conn.execute("INSERT OR REPLACE INTO config VALUES ('height_in', ?)", (str(h_in),))
+        conn.execute("INSERT OR REPLACE INTO weight_log (date, weight_lbs, bmi, notes) VALUES (?,?,?,?)",
+                     (date, wlbs, bmi, body.get("notes", "")))
     return jsonify({"ok": True, "bmi": bmi})
 
 @app.route("/api/personal/weight/<date>", methods=["DELETE"])
 @login_required
 @csrf_required
 def api_personal_weight_delete(date):
-    data = _load_health()
-    data["weight_log"] = [w for w in data["weight_log"] if w["date"] != date]
-    _save_health(data)
+    with _db() as conn:
+        conn.execute("DELETE FROM weight_log WHERE date=?", (date,))
     return jsonify({"ok": True})
 
 @app.route("/api/personal/shower", methods=["POST"])
 @login_required
 @csrf_required
 def api_personal_shower_log():
-    data  = _load_health()
-    body  = request.json or {}
-    entry = {
-        "date":  body.get("date",  datetime.date.today().isoformat()),
-        "time":  body.get("time",  datetime.datetime.now().strftime("%H:%M")),
-        "notes": body.get("notes", ""),
-    }
-    data["shower_log"].append(entry)
-    data["shower_log"] = sorted(data["shower_log"], key=lambda x: x["date"] + x.get("time",""))[-90:]
-    _save_health(data)
+    body = request.json or {}
+    with _db() as conn:
+        conn.execute("INSERT INTO shower_log (date, time, notes) VALUES (?,?,?)", (
+            body.get("date",  datetime.date.today().isoformat()),
+            body.get("time",  datetime.datetime.now().strftime("%H:%M")),
+            body.get("notes", ""),
+        ))
     return jsonify({"ok": True})
 
-@app.route("/api/personal/shower/<int:idx>", methods=["DELETE"])
+@app.route("/api/personal/shower/<int:row_id>", methods=["DELETE"])
 @login_required
 @csrf_required
-def api_personal_shower_delete(idx):
-    data = _load_health()
-    try:
-        data["shower_log"].pop(idx)
-        _save_health(data)
-    except IndexError:
-        pass
+def api_personal_shower_delete(row_id):
+    with _db() as conn:
+        conn.execute("DELETE FROM shower_log WHERE id=?", (row_id,))
     return jsonify({"ok": True})
 
 @app.route("/api/personal/skin", methods=["POST"])
 @login_required
 @csrf_required
 def api_personal_skin_log():
-    data  = _load_health()
-    body  = request.json or {}
-    entry = {
-        "date":     body.get("date",     datetime.date.today().isoformat()),
-        "severity": int(body.get("severity", 5)),
-        "areas":    body.get("areas",    []),
-        "notes":    body.get("notes",    ""),
-    }
-    data["skin_log"].append(entry)
-    data["skin_log"].sort(key=lambda x: x["date"])
-    _save_health(data)
+    body = request.json or {}
+    with _db() as conn:
+        conn.execute("INSERT INTO skin_log (date, severity, areas, notes) VALUES (?,?,?,?)", (
+            body.get("date",     datetime.date.today().isoformat()),
+            int(body.get("severity", 5)),
+            json.dumps(body.get("areas", [])),
+            body.get("notes", ""),
+        ))
     return jsonify({"ok": True})
 
-@app.route("/api/personal/skin/<int:idx>", methods=["DELETE"])
+@app.route("/api/personal/skin/<int:row_id>", methods=["DELETE"])
 @login_required
 @csrf_required
-def api_personal_skin_delete(idx):
-    data = _load_health()
-    try:
-        data["skin_log"].pop(idx)
-        _save_health(data)
-    except IndexError:
-        pass
+def api_personal_skin_delete(row_id):
+    with _db() as conn:
+        conn.execute("DELETE FROM skin_log WHERE id=?", (row_id,))
     return jsonify({"ok": True})
 
 @app.route("/api/personal/log", methods=["POST"])
 @login_required
 @csrf_required
 def api_personal_log_add():
-    data  = _load_health()
-    body  = request.json or {}
-    entry = {"date": body.get("date", datetime.date.today().isoformat()), "notes": body.get("notes", "")}
-    data["health_log"].append(entry)
-    data["health_log"].sort(key=lambda x: x["date"])
-    _save_health(data)
+    body = request.json or {}
+    with _db() as conn:
+        conn.execute("INSERT INTO health_log (date, notes) VALUES (?,?)", (
+            body.get("date", datetime.date.today().isoformat()),
+            body.get("notes", ""),
+        ))
     return jsonify({"ok": True})
 
-@app.route("/api/personal/log/<int:idx>", methods=["DELETE"])
+@app.route("/api/personal/log/<int:row_id>", methods=["DELETE"])
 @login_required
 @csrf_required
-def api_personal_log_delete(idx):
-    data = _load_health()
-    try:
-        data["health_log"].pop(idx)
-        _save_health(data)
-    except IndexError:
-        pass
+def api_personal_log_delete(row_id):
+    with _db() as conn:
+        conn.execute("DELETE FROM health_log WHERE id=?", (row_id,))
     return jsonify({"ok": True})
 
 @app.route("/api/personal/height", methods=["POST"])
 @login_required
 @csrf_required
 def api_personal_height():
-    data = _load_health()
-    data["height_in"] = float((request.json or {}).get("height_in", 70))
-    _save_health(data)
+    with _db() as conn:
+        conn.execute("INSERT OR REPLACE INTO config VALUES ('height_in', ?)",
+                     (str(float((request.json or {}).get("height_in", 70))),))
     return jsonify({"ok": True})
 
 @app.route("/api/personal/news")
@@ -4145,7 +4215,7 @@ import base64, urllib.parse
 
 SPOTIFY_CLIENT_ID     = "5a47aaeae39d45c092986e5ea0d419fd"
 SPOTIFY_CLIENT_SECRET = "86e0076e3a1443088971bda52f82d8d2"
-SPOTIFY_REDIRECT_URI  = "https://kevsec.com/spotify-callback"
+SPOTIFY_REDIRECT_URI  = os.environ.get("SPOTIFY_REDIRECT_URI", "")
 SPOTIFY_TOKEN_FILE    = "/opt/dj-atticus/spotify_token.json"
 SPOTIFY_CONF_FILE     = "/opt/dj-atticus/spotifyd.conf"
 

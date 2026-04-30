@@ -3160,7 +3160,7 @@ document.getElementById('nuke-modal').addEventListener('click', function(e) {
 
 // ── SSH Copy ───────────────────────────────────────────────
 function copySSH() {
-  navigator.clipboard.writeText('ssh slankey@69.30.236.220').then(() => {
+  navigator.clipboard.writeText('ssh user@your-server').then(() => {
     const el = document.getElementById('ssh-btn-sub2');
     if (el) { el.textContent = '✓ Copied!'; setTimeout(() => el.textContent = 'Click to copy', 2000); }
   });
@@ -3354,11 +3354,21 @@ function loadJailSummary() {
 // Helper: POST with CSRF token
 function _csrfPost(url, body, cb) {
   const token = document.querySelector('meta[name="csrf-token"]');
-  fetch(url, {
+  const p = fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': token ? token.content : '' },
     body: JSON.stringify(body)
-  }).then(r => r.json()).then(cb).catch(e => { console.error(url, e); });
+  });
+  if (typeof cb === 'function') { p.then(r => r.json()).then(cb).catch(e => console.error(url, e)); }
+  return p;
+}
+
+function _csrfDelete(url) {
+  const token = document.querySelector('meta[name="csrf-token"]');
+  return fetch(url, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': token ? token.content : '' }
+  });
 }
 
 // ── Server Health + Network ─────────────────────────────────────
@@ -3539,21 +3549,22 @@ function renderMedCard(med, d) {
 }
 
 function logDose(med) {
-  const date = prompt('Dose date (YYYY-MM-DD):', new Date().toISOString().slice(0,10));
-  if (!date) return;
-  const notes = prompt('Notes (optional, press Enter to skip):', '') || '';
+  const dateEl  = document.getElementById('med-' + med + '-date');
+  const notesEl = document.getElementById('med-' + med + '-notes');
+  const date  = (dateEl && dateEl.value)  || new Date().toISOString().slice(0, 10);
+  const notes = (notesEl && notesEl.value) || '';
   _csrfPost('/api/personal/meds', {med, date, notes}).then(r => r.json()).then(d => {
-    if (d.ok) loadHealth();
-    else alert('Error: ' + (d.error || 'unknown'));
+    if (d.ok) {
+      if (dateEl)  dateEl.value  = '';
+      if (notesEl) notesEl.value = '';
+      loadHealth();
+    } else alert('Error: ' + (d.error || 'unknown'));
   });
 }
 
 function deleteDose(med, idx) {
   if (!confirm('Delete this dose entry?')) return;
-  fetch('/api/personal/meds/' + med + '/' + idx, {
-    method: 'DELETE',
-    headers: {'X-CSRF-Token': (document.querySelector('meta[name="csrf-token"]') || {}).content || ''}
-  }).then(() => loadHealth());
+  _csrfDelete('/api/personal/meds/' + med + '/' + idx).then(() => loadHealth());
 }
 
 // ── Weight & BMI ──
@@ -3704,7 +3715,7 @@ function logSkin() {
   const areas = [...document.querySelectorAll('#skin-area-checks input:checked')].map(c => c.value);
   const notes = document.getElementById('skin-notes').value || '';
   _csrfPost('/api/personal/skin', {date, severity, areas, notes}).then(r => r.json()).then(d => {
-    if (d.ok) { loadSkinLog(); document.getElementById('skin-notes').value = ''; }
+    if (d.ok) { _healthData = null; loadSkinLog(); document.getElementById('skin-notes').value = ''; }
   });
 }
 
@@ -3725,15 +3736,12 @@ function renderSkinLog(d) {
       <span style="background:hsl(${hue(e.severity)},70%,30%);border:1px solid hsl(${hue(e.severity)},70%,45%);color:#fff;padding:1px 7px;font-size:10px">${e.severity}/10</span>
       <span style="color:var(--text-dim);flex:1">${e.areas && e.areas.length ? e.areas.join(', ') : '—'}</span>
       <span style="color:var(--text-dim)">${e.notes || ''}</span>
-      <button onclick="deleteSkin(${(d.skin_log||[]).length-1-i})" style="background:none;border:none;color:var(--danger,#f87171);cursor:pointer;font-size:10px">✕</button>
+      <button onclick="deleteSkin(${e.id})" style="background:none;border:none;color:var(--danger,#f87171);cursor:pointer;font-size:10px">✕</button>
     </div>`).join('');
 }
 
 function deleteSkin(idx) {
-  fetch('/api/personal/skin/' + idx, {
-    method:'DELETE',
-    headers:{'X-CSRF-Token':(document.querySelector('meta[name="csrf-token"]')||{}).content||''}
-  }).then(()=>{ _healthData=null; loadSkinLog(); });
+  _csrfDelete('/api/personal/skin/' + idx).then(() => { _healthData = null; loadSkinLog(); });
 }
 
 // ── Shower Log ──
@@ -3770,16 +3778,13 @@ function loadShowerLog() {
         <span style="min-width:82px;color:var(--text)">${e.date}</span>
         <span style="color:var(--text-dim)">${e.time||''}</span>
         <span style="color:var(--text-dim);flex:1">${e.notes||''}</span>
-        <button onclick="deleteShower(${(d.shower_log||[]).length-1-i})" style="background:none;border:none;color:var(--danger,#f87171);cursor:pointer;font-size:10px">✕</button>
+        <button onclick="deleteShower(${e.id})" style="background:none;border:none;color:var(--danger,#f87171);cursor:pointer;font-size:10px">✕</button>
       </div>`).join('');
   });
 }
 
 function deleteShower(idx) {
-  fetch('/api/personal/shower/' + idx, {
-    method:'DELETE',
-    headers:{'X-CSRF-Token':(document.querySelector('meta[name="csrf-token"]')||{}).content||''}
-  }).then(()=>loadShowerLog());
+  _csrfDelete('/api/personal/shower/' + idx).then(() => loadShowerLog());
 }
 
 // ── Health Log ──
@@ -3803,16 +3808,13 @@ function loadHealthLog() {
       <div style="display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid var(--border2);font-size:11px">
         <span style="min-width:82px;color:var(--text);flex-shrink:0">${e.date}</span>
         <span style="color:var(--text-dim);flex:1;line-height:1.6">${e.notes}</span>
-        <button onclick="deleteHealthLog(${(d.health_log||[]).length-1-i})" style="background:none;border:none;color:var(--danger,#f87171);cursor:pointer;font-size:10px;flex-shrink:0">✕</button>
+        <button onclick="deleteHealthLog(${e.id})" style="background:none;border:none;color:var(--danger,#f87171);cursor:pointer;font-size:10px;flex-shrink:0">✕</button>
       </div>`).join('');
   });
 }
 
 function deleteHealthLog(idx) {
-  fetch('/api/personal/log/' + idx, {
-    method:'DELETE',
-    headers:{'X-CSRF-Token':(document.querySelector('meta[name="csrf-token"]')||{}).content||''}
-  }).then(()=>loadHealthLog());
+  _csrfDelete('/api/personal/log/' + idx).then(() => loadHealthLog());
 }
 
 // ── Health & Fitness News ──
