@@ -91,7 +91,7 @@ document.querySelectorAll('.tab[data-tab]').forEach(btn => {
 
 function loadTab(tab) {
   if (tab === 'intel')   { loadNews(); loadThreatLevel(); loadWikipedia(); loadAPOD(); loadStocks(false,'intel'); loadOzaukeeAlerts(); loadPresidentIntel(); loadCongressStatus(); loadMidtermIntel(); loadPolls(); loadF1(); loadPolTweets(); loadGovtIntel(); }
-  if (tab === 'command') { loadServerStats(); loadProxmox(); loadBigFiles(); loadExtServices(); loadTarpitStats(); buildSvcControlGrid(); loadGoals(); loadDjStatus(); }
+  if (tab === 'command') { loadServerStats(); loadProxmox(); loadExtServices(); loadTarpitStats(); buildSvcControlGrid(); loadGoals(); loadDjStatus(); }
   if (tab === 'cyber')   { loadCVEs(); loadFirewallDrops(); loadSWPC(); loadServerHealth(); loadJailSummary(); }
   if (tab === 'weather') { loadGarden(); loadWeather(); loadEarthquakes(); loadGDACS(); loadLakeMichigan(); loadAirNow(); loadWildfires(); loadSWPC(); loadMETAR(); initWi511Map(); loadWIWarnings(); loadLNM(); loadGlerlImages(); loadBurnBan(); }
   if (tab === 'comms')   { loadNotepad(); loadReminders(); loadNotesList(); loadMemos(); }
@@ -99,7 +99,7 @@ function loadTab(tab) {
 function refreshAllCommand() {
   const btn = document.querySelector('[onclick="refreshAllCommand()"]');
   if (btn) { btn.textContent = '⟳ REFRESHING...'; btn.disabled = true; }
-  loadServerStats(true); loadProxmox(true); loadBigFiles(true); loadExtServices(true);
+  loadServerStats(true); loadProxmox(true); loadExtServices(true);
   setTimeout(() => { if (btn) { btn.textContent = '⟳ REFRESH ALL'; btn.disabled = false; } }, 3000);
 }
 
@@ -989,38 +989,6 @@ function loadUpdates() {
   });
 }
 
-function loadBigFiles(force) {
-  const el = document.getElementById('bigfiles-list');
-  if (!el) return;
-  api(force ? '/api/bigfiles?force=1' : '/api/bigfiles', data => {
-    const ts = document.getElementById('bigfiles-ts');
-    if (ts) ts.textContent = data.scanned ? `Scanned: ${data.scanned}` : '';
-    const files = data.files || [];
-    if (data.error && !files.length) {
-      el.innerHTML = `<div class="no-data">${data.error}</div>`; return;
-    }
-    if (!files.length) {
-      el.innerHTML = '<div class="no-data">No files over 100 MB found</div>'; return;
-    }
-    el.innerHTML = `<div style="overflow-x:auto;max-height:340px;overflow-y:auto">
-      <div style="font-size:10px;color:var(--text-dim);padding:6px 14px;letter-spacing:1px">${data.total} files >${data.min_size_mb}MB — showing top ${files.length}</div>
-      <table style="width:100%;border-collapse:collapse;font-size:11px">
-        <thead><tr style="font-size:9px;letter-spacing:2px;color:var(--text-dim);border-bottom:1px solid var(--border2)">
-          <th style="text-align:left;padding:5px 14px;font-weight:normal">PATH</th>
-          <th style="text-align:right;padding:5px 8px;font-weight:normal;white-space:nowrap">SIZE</th>
-          <th style="text-align:left;padding:5px 8px;font-weight:normal;white-space:nowrap">MODIFIED</th>
-        </tr></thead>
-        <tbody>${files.map((f,i) => `
-          <tr style="border-bottom:1px solid var(--border);${i%2===1?'background:rgba(255,255,255,0.02)':''}">
-            <td style="padding:5px 14px;color:var(--text);word-break:break-all;font-family:var(--font-m);font-size:10px">${f.path}</td>
-            <td style="padding:5px 8px;text-align:right;white-space:nowrap;color:${f.size_mb>1000?'var(--red2)':f.size_mb>500?'var(--accent)':'var(--text-dim)'};font-family:var(--font-m)">${f.size_mb >= 1024 ? (f.size_mb/1024).toFixed(1)+' GB' : f.size_mb+' MB'}</td>
-            <td style="padding:5px 8px;white-space:nowrap;color:var(--text-dim)">${f.modified}</td>
-          </tr>`).join('')}
-        </tbody>
-      </table>
-    </div>`;
-  });
-}
 
 // ══════════════════════════════════════════════════════════
 //  CYBER OPS

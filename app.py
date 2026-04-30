@@ -2247,17 +2247,6 @@ def api_notes_download(fname):
         return jsonify({"error": "not found"}), 404
     return send_file(path, as_attachment=True, download_name=fname)
 
-BIGFILES_FILE = f"{DATA_DIR}/bigfiles.json"
-
-@app.route("/api/bigfiles")
-@login_required
-def api_bigfiles():
-    try:
-        with open(BIGFILES_FILE) as f:
-            return jsonify(json.load(f))
-    except FileNotFoundError:
-        return jsonify({"files": [], "total": 0, "scanned": None,
-                        "min_size_mb": 100, "error": "No scan results yet — scan runs every 6h"})
 
 GOALS_FILE = f"{DATA_DIR}/goals.md"
 
