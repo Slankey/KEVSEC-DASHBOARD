@@ -774,88 +774,88 @@
     </div>
     </div><!-- end firewall panel -->
 
-    <!-- IP Management Panel -->
-    <div class="panel">
-      <div class="panel-header">
-        <span>🚫 IP Management — Ban / Unban</span>
-        <span id="banip-feedback" class="ts" style="color:var(--accent)"></span>
-        <button class="refresh-btn" onclick="loadFirewallDrops()">⟳ Refresh</button>
-      </div>
-      <!-- Manual Ban -->
-      <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
-        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">MANUAL BAN</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-          <input id="ban-ip-input" type="text" placeholder="1.2.3.4 or 1.2.3.0/24"
-                 style="flex:1;min-width:160px;background:var(--bg3);border:1px solid var(--border2);
-                        color:var(--text);font-family:var(--font-m);font-size:11px;padding:6px 10px">
-          <input id="ban-reason-input" type="text" placeholder="Reason (optional)"
-                 style="flex:1;min-width:140px;background:var(--bg3);border:1px solid var(--border2);
-                        color:var(--text);font-family:var(--font-m);font-size:11px;padding:6px 10px">
-          <button class="svc-btn svc-btn-warn" onclick="banIP()">🚫 BAN IP</button>
+    <!-- Right column: IP Management + Server Health stacked -->
+    <div style="display:flex;flex-direction:column;gap:16px;min-width:0">
+
+      <!-- IP Management Panel -->
+      <div class="panel">
+        <div class="panel-header">
+          <span>🚫 IP Management — Ban / Unban</span>
+          <span id="banip-feedback" class="ts" style="color:var(--accent)"></span>
+          <button class="refresh-btn" onclick="loadFirewallDrops()">⟳ Refresh</button>
+        </div>
+        <!-- Manual Ban -->
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+          <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">MANUAL BAN</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <input id="ban-ip-input" type="text" placeholder="1.2.3.4 or 1.2.3.0/24"
+                   style="flex:1;min-width:160px;background:var(--bg3);border:1px solid var(--border2);
+                          color:var(--text);font-family:var(--font-m);font-size:11px;padding:6px 10px">
+            <input id="ban-reason-input" type="text" placeholder="Reason (optional)"
+                   style="flex:1;min-width:140px;background:var(--bg3);border:1px solid var(--border2);
+                          color:var(--text);font-family:var(--font-m);font-size:11px;padding:6px 10px">
+            <button class="svc-btn svc-btn-warn" onclick="banIP()">🚫 BAN IP</button>
+          </div>
+        </div>
+        <!-- Unban -->
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+          <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">UNBAN FROM ALL JAILS</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <input id="unban-ip-input" type="text" placeholder="1.2.3.4"
+                   style="flex:1;min-width:160px;background:var(--bg3);border:1px solid var(--border2);
+                          color:var(--text);font-family:var(--font-m);font-size:11px;padding:6px 10px">
+            <button class="svc-btn" onclick="unbanIP()" style="color:var(--accent)">✓ UNBAN IP</button>
+          </div>
+        </div>
+        <!-- Blacklist Update -->
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+          <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">BLACKLIST SYNC</div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <button class="svc-btn" onclick="runBlacklistUpdate()" style="color:var(--accent)">⟳ Run Blacklist Update Now</button>
+            <span style="font-size:10px;color:var(--text-dim)">Collects IPs from all sources → nftables</span>
+          </div>
+          <pre id="blacklist-output" style="display:none;margin-top:8px;font-size:10px;color:var(--text-dim);
+               background:var(--bg3);padding:8px;max-height:120px;overflow-y:auto;white-space:pre-wrap"></pre>
+        </div>
+        <!-- Jail Summary -->
+        <div style="padding:12px 16px">
+          <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">JAIL SUMMARY</div>
+          <div id="jail-summary" style="font-family:var(--font-m);font-size:11px;line-height:1.8"></div>
         </div>
       </div>
-      <!-- Unban -->
-      <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
-        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">UNBAN FROM ALL JAILS</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-          <input id="unban-ip-input" type="text" placeholder="1.2.3.4"
-                 style="flex:1;min-width:160px;background:var(--bg3);border:1px solid var(--border2);
-                        color:var(--text);font-family:var(--font-m);font-size:11px;padding:6px 10px">
-          <button class="svc-btn" onclick="unbanIP()" style="color:var(--accent)">✓ UNBAN IP</button>
+
+      <!-- Server Health + Network Panel -->
+      <div class="panel">
+        <div class="panel-header">
+          <span>💻 Server Health &amp; Network</span>
+          <span id="health-ts" class="ts"></span>
+          <button class="refresh-btn" onclick="loadServerHealth(true)">⟳ Refresh</button>
+        </div>
+        <!-- System stats -->
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+          <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">SYSTEM</div>
+          <div id="health-stats" class="stats-grid"></div>
+        </div>
+        <!-- Network interfaces -->
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+          <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">NETWORK I/O</div>
+          <div id="health-net" style="font-family:var(--font-m);font-size:11px;line-height:1.8"></div>
+        </div>
+        <!-- Top processes -->
+        <div style="padding:12px 16px">
+          <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">TOP PROCESSES BY MEM</div>
+          <div class="fw-table-wrap">
+            <table class="fw-table">
+              <thead><tr><th>User</th><th>PID</th><th>CPU%</th><th>MEM%</th><th>Command</th></tr></thead>
+              <tbody id="health-procs"></tbody>
+            </table>
+          </div>
         </div>
       </div>
-      <!-- Blacklist Update -->
-      <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
-        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">BLACKLIST SYNC</div>
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-          <button class="svc-btn" onclick="runBlacklistUpdate()" style="color:var(--accent)">⟳ Run Blacklist Update Now</button>
-          <span style="font-size:10px;color:var(--text-dim)">Collects IPs from all sources → nftables</span>
-        </div>
-        <pre id="blacklist-output" style="display:none;margin-top:8px;font-size:10px;color:var(--text-dim);
-             background:var(--bg3);padding:8px;max-height:120px;overflow-y:auto;white-space:pre-wrap"></pre>
-      </div>
-      <!-- Jail Summary -->
-      <div style="padding:12px 16px">
-        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">JAIL SUMMARY</div>
-        <div id="jail-summary" style="font-family:var(--font-m);font-size:11px;line-height:1.8"></div>
-      </div>
-    </div>
 
-  </div><!-- end firewall+ip row -->
+    </div><!-- end right column -->
 
-  <!-- Server Health + Network Stats -->
-  <div class="panel-row" style="margin-bottom:16px;align-items:start">
-
-    <!-- Server Health + Network Panel -->
-    <div class="panel">
-      <div class="panel-header">
-        <span>💻 Server Health &amp; Network</span>
-        <span id="health-ts" class="ts"></span>
-        <button class="refresh-btn" onclick="loadServerHealth(true)">⟳ Refresh</button>
-      </div>
-      <!-- System stats -->
-      <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
-        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">SYSTEM</div>
-        <div id="health-stats" class="stats-grid"></div>
-      </div>
-      <!-- Network interfaces -->
-      <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
-        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">NETWORK I/O</div>
-        <div id="health-net" style="font-family:var(--font-m);font-size:11px;line-height:1.8"></div>
-      </div>
-      <!-- Top processes -->
-      <div style="padding:12px 16px">
-        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">TOP PROCESSES BY MEM</div>
-        <div class="fw-table-wrap">
-          <table class="fw-table">
-            <thead><tr><th>User</th><th>PID</th><th>CPU%</th><th>MEM%</th><th>Command</th></tr></thead>
-            <tbody id="health-procs"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-  </div><!-- end health row -->
+  </div><!-- end firewall row -->
 
   <!-- Threat Maps -->
   <div class="panel">
