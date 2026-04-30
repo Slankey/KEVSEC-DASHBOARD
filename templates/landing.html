@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>KEVSEC — Cyber Intelligence Operations</title>
 <meta name="description" content="Independent threat intelligence, network defense, and cyber operations research.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
   :root {
     --green: #00ff88;
@@ -177,37 +179,173 @@
   .footer-copy { color: var(--muted); font-size: 11px; }
   .footer-cl { color: var(--red); font-size: 10px; letter-spacing: 2px; }
 
-  /* ── LOGIN MODAL ── */
+  /* ── LOGIN MODAL (gov portal theme) ── */
   #login-overlay {
     position: fixed; inset: 0; z-index: 9999;
-    background: rgba(8,11,15,0.92);
-    backdrop-filter: blur(6px);
+    background: rgba(4,10,20,0.97);
+    backdrop-filter: blur(4px);
     display: flex; align-items: center; justify-content: center;
     opacity: 0; pointer-events: none;
-    transition: opacity .25s;
+    transition: opacity .3s;
+    font-family: 'Share Tech Mono', 'Courier New', monospace;
   }
   #login-overlay.visible { opacity: 1; pointer-events: all; }
-  .login-box {
-    background: var(--bg2); border: 1px solid var(--green);
-    box-shadow: 0 0 40px rgba(0,255,136,0.12);
-    width: 100%; max-width: 420px;
-    transform: translateY(12px);
-    transition: transform .25s;
+  #login-overlay::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,.05) 3px, rgba(0,0,0,.05) 4px);
+    pointer-events: none;
   }
-  #login-overlay.visible .login-box { transform: translateY(0); }
-  .login-bar { background: var(--bg); padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
-  .login-bar-title { font-size: 11px; letter-spacing: 3px; color: var(--green); text-transform: uppercase; }
-  .login-close { cursor: pointer; background: none; border: none; color: var(--muted); font-size: 16px; transition: color .15s; line-height: 1; }
-  .login-close:hover { color: var(--text); }
-  .login-body { padding: 32px 28px; }
-  .login-prompt { font-size: 11px; color: var(--muted); margin-bottom: 24px; line-height: 1.8; }
-  .login-field { margin-bottom: 20px; }
-  .login-field label { display: block; font-size: 10px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; margin-bottom: 8px; }
-  .login-field input { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 10px 14px; font-family: inherit; font-size: 13px; outline: none; transition: border-color .2s; }
-  .login-field input:focus { border-color: var(--green); }
-  .login-submit { width: 100%; padding: 12px; background: transparent; border: 1px solid var(--green); color: var(--green); font-family: inherit; font-size: 12px; letter-spacing: 3px; text-transform: uppercase; cursor: pointer; transition: background .2s, color .2s; margin-top: 8px; }
-  .login-submit:hover { background: var(--green); color: var(--bg); }
-  .login-error { color: var(--red); font-size: 11px; margin-top: 16px; letter-spacing: 1px; min-height: 16px; text-align: center; }
+
+  /* classification banners */
+  .gov-banner-top, .gov-banner-bot {
+    position: fixed; left: 0; right: 0;
+    background: #cc2020; color: #fff;
+    text-align: center; font-size: 10px; letter-spacing: 5px;
+    padding: 5px; z-index: 10001; font-family: 'Share Tech Mono', monospace;
+    text-transform: uppercase;
+  }
+  .gov-banner-top { top: 0; }
+  .gov-banner-bot { bottom: 0; }
+
+  .gov-container {
+    width: 100%; max-width: 500px;
+    position: relative; z-index: 10000;
+    padding: 16px;
+    transform: translateY(16px) scale(0.97);
+    transition: transform .3s;
+    color: #d4c9a8;
+  }
+  #login-overlay.visible .gov-container { transform: translateY(0) scale(1); }
+
+  .gov-seal-wrap { text-align: center; margin-bottom: 20px; }
+  .gov-seal {
+    display: inline-flex; align-items: center; justify-content: center; flex-direction: column;
+    width: 96px; height: 96px;
+    border: 3px solid #c9a84c; border-radius: 50%;
+    background: linear-gradient(135deg, #0a1628 0%, #0d2040 100%);
+    box-shadow: 0 0 32px rgba(201,168,76,.3), inset 0 0 20px rgba(0,0,0,.5);
+    position: relative;
+  }
+  .gov-seal-ring {
+    position: absolute; top: -10px; left: -10px; right: -10px; bottom: -10px;
+    border: 1px solid rgba(201,168,76,.2); border-radius: 50%;
+  }
+  .gov-seal-ring2 {
+    position: absolute; top: -18px; left: -18px; right: -18px; bottom: -18px;
+    border: 1px solid rgba(201,168,76,.08); border-radius: 50%;
+  }
+  .gov-seal-icon { font-size: 38px; filter: drop-shadow(0 0 8px rgba(201,168,76,.5)); }
+  .gov-seal-txt { font-size: 6.5px; letter-spacing: 2px; color: #c9a84c; margin-top: 2px; }
+
+  .gov-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px; color: #c9a84c;
+    text-align: center; letter-spacing: 3px;
+    text-shadow: 0 0 30px rgba(201,168,76,.35);
+    margin-bottom: 4px;
+  }
+  .gov-sub {
+    text-align: center; font-size: 9px; letter-spacing: 6px;
+    color: #5a5030; margin-bottom: 24px;
+  }
+
+  .gov-box {
+    border: 1px solid #1e3a5c;
+    background: rgba(8,18,34,.97);
+    padding: 32px 36px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.9), 0 0 0 1px rgba(201,168,76,.07);
+    position: relative;
+  }
+  .gov-box::before, .gov-box::after {
+    content: '★'; position: absolute; color: rgba(201,168,76,.3); font-size: 10px;
+  }
+  .gov-box::before { top: 10px; left: 14px; }
+  .gov-box::after  { top: 10px; right: 14px; }
+  @media (max-width: 520px) {
+    .gov-box { padding: 24px 20px; }
+    .gov-title { font-size: 16px; }
+  }
+
+  .gov-divider {
+    border: none; border-top: 1px solid #1e3a5c;
+    margin: 0 0 24px; position: relative;
+  }
+  .gov-divider::after {
+    content: '◆'; position: absolute; left: 50%;
+    transform: translateX(-50%) translateY(-50%);
+    color: #c9a84c; font-size: 10px;
+    background: #08121e; padding: 0 8px;
+  }
+
+  .gov-error {
+    color: #ff4444; font-size: 11px; letter-spacing: 2px;
+    text-align: center; padding: 10px;
+    border: 1px solid rgba(204,32,32,.4);
+    background: rgba(204,32,32,.06);
+    margin-bottom: 18px;
+  }
+
+  .gov-field { margin-bottom: 20px; }
+  .gov-field label {
+    display: block; font-size: 10px; letter-spacing: 4px;
+    color: #5a5030; margin-bottom: 8px; text-transform: uppercase;
+  }
+  .gov-field input {
+    width: 100%; background: rgba(4,10,20,.85);
+    border: 1px solid #1e3a5c; border-bottom-color: #2a4e7a;
+    color: #d4c9a8; font-family: 'Share Tech Mono', monospace; font-size: 14px;
+    padding: 10px 12px; outline: none;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .gov-field input:focus {
+    border-color: #c9a84c;
+    box-shadow: 0 0 12px rgba(201,168,76,.15);
+  }
+  .gov-field input::placeholder { color: #1e2e3e; }
+
+  .gov-btn {
+    width: 100%;
+    background: linear-gradient(180deg, #1e3a5c 0%, #102040 100%);
+    border: 1px solid #c9a84c; color: #c9a84c;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px; letter-spacing: 5px;
+    padding: 13px; cursor: pointer;
+    transition: all .2s; text-transform: uppercase; margin-top: 6px;
+  }
+  .gov-btn:hover {
+    background: linear-gradient(180deg, #2a4e7a 0%, #1e3a5c 100%);
+    box-shadow: 0 0 20px rgba(201,168,76,.2);
+  }
+
+  .gov-warning {
+    color: #2a4a6a; font-size: 8.5px; text-align: center;
+    margin-top: 18px; letter-spacing: 2px; line-height: 1.8;
+    border-top: 1px solid #1e3a5c; padding-top: 14px;
+  }
+
+  .gov-statusbar {
+    display: flex; justify-content: space-between;
+    font-size: 9px; color: #1e3a5c; letter-spacing: 2px;
+    padding: 10px 0 0;
+  }
+  #gov-clock { color: #2a4e6a; }
+
+  .gov-dismiss {
+    position: absolute; top: -8px; right: -8px;
+    width: 28px; height: 28px;
+    background: #1e3a5c; border: 1px solid #2a4e6a;
+    color: #4a6a8a; font-size: 14px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .2s; z-index: 10002;
+    font-family: monospace;
+  }
+  .gov-dismiss:hover { background: #cc2020; border-color: #cc2020; color: #fff; }
+
+  .gov-footer-note {
+    text-align: center; margin-top: 12px;
+    font-size: 8px; color: #1e2e3e; letter-spacing: 2px; line-height: 1.8;
+  }
 
   /* ── MISC ── */
   .scan-line {
@@ -504,34 +642,64 @@
   <span class="footer-cl">[CLASSIFIED]</span>
 </footer>
 
-<!-- HIDDEN LOGIN MODAL -->
+<!-- HIDDEN GOV PORTAL LOGIN -->
 <div id="login-overlay">
-  <div class="login-box">
-    <div class="login-bar">
-      <span class="login-bar-title">Authenticated Access</span>
-      <button class="login-close" id="login-close-btn" title="Close">&times;</button>
-    </div>
-    <div class="login-body">
-      <div class="login-prompt">
-        &gt; Secure session required.<br>
-        &gt; Credentials transmitted over TLS.
+  <div class="gov-banner-top">TOP SECRET // CODEWORD: KEVSEC // HANDLE VIA SCI CHANNELS ONLY — NOFORN</div>
+
+  <div class="gov-container">
+    <button class="gov-dismiss" id="login-close-btn" title="Abort">✕</button>
+
+    <div class="gov-seal-wrap">
+      <div class="gov-seal">
+        <div class="gov-seal-ring"></div>
+        <div class="gov-seal-ring2"></div>
+        <div class="gov-seal-icon">🦅</div>
+        <div class="gov-seal-txt">E PLURIBUS UNUM</div>
       </div>
-      <form method="POST" action="/ops">
-        <div class="login-field">
-          <label>Identifier</label>
-          <input type="text" name="username" id="login-user" autocomplete="off" spellcheck="false">
-        </div>
-        <div class="login-field">
-          <label>Auth Token</label>
-          <input type="password" name="password" id="login-pass" autocomplete="off">
-        </div>
-        <button type="submit" class="login-submit">Authenticate</button>
-      </form>
+    </div>
+
+    <div class="gov-title">EXECUTIVE INTELLIGENCE PORTAL</div>
+    <div class="gov-sub">KEVSEC OPERATIONS CENTER // SECURE ACCESS</div>
+
+    <div class="gov-box">
+      <hr class="gov-divider">
+
       {% if error %}
-      <div class="login-error">{{ error }}</div>
+      <div class="gov-error">⚠ {{ error }}</div>
       {% endif %}
+
+      <form method="POST" action="/ops">
+        <div class="gov-field">
+          <label>Operative Designation</label>
+          <input type="text" name="username" id="login-user" placeholder="Enter codename" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="gov-field">
+          <label>Authentication Key</label>
+          <input type="password" name="password" id="login-pass" placeholder="••••••••••••" autocomplete="off">
+        </div>
+        <button class="gov-btn" type="submit" id="gov-login-btn">Initiate Secure Session</button>
+      </form>
+
+      <div class="gov-warning">
+        UNAUTHORIZED ACCESS OR USE OF THIS SYSTEM IS PROHIBITED AND SUBJECT<br>
+        TO CRIMINAL AND CIVIL PENALTIES UNDER FEDERAL LAW — 18 U.S.C. § 1030<br>
+        ALL ACTIVITY IS MONITORED, LOGGED, AND SUBJECT TO AUDIT
+      </div>
+    </div>
+
+    <div class="gov-statusbar">
+      <span>ENCRYPTION: TLS 1.3 / AES-256</span>
+      <span id="gov-clock"></span>
+      <span>STATUS: SECURE</span>
+    </div>
+
+    <div class="gov-footer-note">
+      THIS IS NOT A U.S. GOVERNMENT WEBSITE.<br>
+      KEVSEC IS A PERSONAL PROJECT. FOR ENTERTAINMENT PURPOSES ONLY.
     </div>
   </div>
+
+  <div class="gov-banner-bot">TOP SECRET // CODEWORD: KEVSEC // HANDLE VIA SCI CHANNELS ONLY — NOFORN</div>
 </div>
 
 <script>
@@ -558,20 +726,37 @@
     if (_seq === 'kev') { _seq = ''; openLogin(); }
   });
 
-  function openLogin() {
-    document.getElementById('login-overlay').classList.add('visible');
-    setTimeout(() => { document.getElementById('login-user').focus(); }, 50);
+  // ── ZULU clock ──
+  function updateZulu() {
+    const n = new Date(), z = v => String(v).padStart(2,'0');
+    const el = document.getElementById('gov-clock');
+    if (el) el.textContent =
+      n.getUTCFullYear()+'-'+z(n.getUTCMonth()+1)+'-'+z(n.getUTCDate())+' '+
+      z(n.getUTCHours())+':'+z(n.getUTCMinutes())+':'+z(n.getUTCSeconds())+' ZULU';
+  }
+  setInterval(updateZulu, 1000);
+  updateZulu();
+
+  // ── Authenticating... state ──
+  const govBtn = document.getElementById('gov-login-btn');
+  if (govBtn) {
+    govBtn.closest('form').addEventListener('submit', () => {
+      govBtn.textContent = 'Authenticating...';
+      govBtn.disabled = true;
+    });
   }
 
-  document.getElementById('login-close-btn').addEventListener('click', () => {
+  function openLogin() {
+    document.getElementById('login-overlay').classList.add('visible');
+    setTimeout(() => { document.getElementById('login-user').focus(); }, 80);
+  }
+  function closeLogin() {
     document.getElementById('login-overlay').classList.remove('visible');
-  });
-  document.getElementById('login-overlay').addEventListener('click', e => {
-    if (e.target === document.getElementById('login-overlay'))
-      document.getElementById('login-overlay').classList.remove('visible');
-  });
+  }
+
+  document.getElementById('login-close-btn').addEventListener('click', closeLogin);
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') document.getElementById('login-overlay').classList.remove('visible');
+    if (e.key === 'Escape') closeLogin();
   });
 
   {% if show_modal %}
