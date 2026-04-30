@@ -817,7 +817,7 @@ def api_weather():
                 "instruction": (p.get("instruction") or "")[:200],
                 "effective":   (p.get("effective") or "")[:16].replace("T", " "),
                 "expires":     (p.get("expires") or "")[:16].replace("T", " "),
-                "url":         a.get("id", ""),  # NWS API URL for this alert
+                "url":         p.get("web", ""),
                 "areas":       p.get("areaDesc", ""),
             })
     except:
@@ -2034,7 +2034,7 @@ def api_wi_warnings():
                 "areas":     p.get("areaDesc", ""),
                 "effective": p.get("effective", ""),
                 "expires":   p.get("expires", ""),
-                "url":       p.get("web", "") or p.get("@id", ""),
+                "url":       p.get("web", ""),
             })
         # Sort: Extreme first, then Severe, Moderate, Minor
         sev_order = {"Extreme": 0, "Severe": 1, "Moderate": 2, "Minor": 3, "Unknown": 4}
@@ -3727,7 +3727,7 @@ def _warm_cache(force=False):
                                 "instruction": (p.get("instruction") or "")[:200],
                                 "effective": (p.get("effective") or "")[:16].replace("T"," "),
                                 "expires": (p.get("expires") or "")[:16].replace("T"," "),
-                                "url": a.get("id",""), "areas": p.get("areaDesc",""),})
+                                "url": p.get("web",""), "areas": p.get("areaDesc",""),})
             obs = {}
             for station in ["KMWC","KETB","KSBM"]:
                 try:
