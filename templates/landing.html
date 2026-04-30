@@ -246,11 +246,11 @@
     </p>
     <div class="hero-stats">
       <div class="stat">
-        <span class="stat-num classified">CLASSIFIED</span>
-        <span class="stat-lbl">Threats Blocked</span>
+        <span class="stat-num" id="ips-blocked">—</span>
+        <span class="stat-lbl">IPs Blocked</span>
       </div>
       <div class="stat">
-        <span class="stat-num classified">CLASSIFIED</span>
+        <span class="stat-num" id="probes-caught">—</span>
         <span class="stat-lbl">Probes Caught</span>
       </div>
       <div class="stat">
@@ -442,10 +442,10 @@
         </div>
       </div>
       <div class="info-row">
-        <span class="info-label">Threats Blocked</span>
+        <span class="info-label">IPs Blocked</span>
         <div style="display:flex;align-items:center;gap:8px">
-          <span class="info-val cl">CLASSIFIED</span>
-          <span class="info-dot idot-cl"></span>
+          <span class="info-val ok" id="panel-blocked">—</span>
+          <span class="info-dot idot-ok"></span>
         </div>
       </div>
       <div class="info-row">
@@ -535,6 +535,18 @@
 </div>
 
 <script>
+  // ── Live stats from /api/public/stats ──
+  fetch('/api/public/stats').then(r => r.json()).then(d => {
+    if (d.blocked) {
+      const fmt = d.blocked.toLocaleString();
+      document.getElementById('ips-blocked').textContent = fmt;
+      document.getElementById('panel-blocked').textContent = fmt;
+    }
+    if (d.caught) {
+      document.getElementById('probes-caught').textContent = d.caught.toLocaleString();
+    }
+  }).catch(() => {});
+
   // ── Hidden login trigger: type "kev" anywhere (not in an input) ──
   let _seq = '', _timer = null;
   document.addEventListener('keydown', e => {
