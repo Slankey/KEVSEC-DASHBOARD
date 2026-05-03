@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a1628"/>
+      <stop offset="100%" style="stop-color:#0d1f3c"/>
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="32" height="32" rx="4" fill="url(#bg)"/>
+  <!-- Shield outline -->
+  <path d="M16 3 L27 7.5 L27 18 Q27 26 16 30 Q5 26 5 18 L5 7.5 Z" fill="none" stroke="#00d4ff" stroke-width="1.2" opacity="0.9"/>
+  <path d="M16 6 L24 9.5 L24 18 Q24 24 16 27 Q8 24 8 18 L8 9.5 Z" fill="#00d4ff" opacity="0.08"/>
+  <!-- KS letters -->
+  <text x="16" y="21" text-anchor="middle" font-family="'Courier New',monospace" font-size="11" font-weight="900" fill="#00d4ff" letter-spacing="-1">KS</text>
+</svg>

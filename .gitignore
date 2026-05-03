@@ -7,3 +7,11 @@ data/cache/
 data/*.db
 *.log
 .DS_Store
+data/notepad.txt
+data/notes/
+data/personal_health.json
+data/reminders.json
+data/watering_log.json
+data/bigfiles.json
+data/attack_feed.json
+watering-calc.py.bak

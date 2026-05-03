@@ -5,7 +5,7 @@
 <meta id="viewport-meta" name="viewport" content="width=device-width,initial-scale=1">
 <meta name="csrf-token" content="{{ csrf_token }}">
 <title>KEVSEC // EXECUTIVE INTELLIGENCE PORTAL</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦅</text></svg>">
+<link rel="icon" type="image/svg+xml" href="/static/img/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/css/style.css">
@@ -34,6 +34,9 @@
         <div class="theme-dot t-phantom" title="Phantom" onclick="setTheme('phantom',this)"></div>
         <div class="theme-dot t-agency" title="Agency" onclick="setTheme('agency',this)"></div>
         <div class="theme-dot t-midnight" title="Midnight" onclick="setTheme('midnight',this)"></div>
+        <label style="margin-left:10px">TEXT</label>
+        <button onclick="dashSize(-1)" title="Smaller text" style="background:none;border:1px solid var(--border);color:var(--text-dim);font-family:var(--font-m);font-size:11px;padding:2px 7px;cursor:pointer;border-radius:2px;min-height:22px">A−</button>
+        <button onclick="dashSize(1)"  title="Larger text"  style="background:none;border:1px solid var(--border);color:var(--text-dim);font-family:var(--font-m);font-size:14px;padding:2px 7px;cursor:pointer;border-radius:2px;min-height:22px">A+</button>
       </div>
       <span class="operative-tag">OPERATIVE: <span>{{ user|upper }}</span></span>
       <a href="/logout" class="logout-btn">⬡ TERMINATE SESSION</a>
@@ -51,6 +54,7 @@
   <button class="tab"         data-tab="cyber">    🛡 Cyber Ops</button>
   <button class="tab"         data-tab="weather">  🌩 Weather Ops</button>
   <button class="tab"         data-tab="comms">    🩺 Personal</button>
+  <button class="tab"         data-tab="garden"> 🌱 Garden</button>
   <button class="tab desktop-mode-btn" id="desktop-mode-btn" onclick="toggleDesktopMode()" title="Switch between mobile and desktop layout">📱 Mobile</button>
 </nav>
 
@@ -548,30 +552,6 @@
     <div id="news-feed"></div>
   </div>
 
-  <!-- Podcast Player -->
-  <div class="panel" id="podcast-panel">
-    <div class="panel-header">
-      <span>🎙️ News Podcasts</span>
-      <span id="podcast-ts" class="ts"></span>
-      <button class="refresh-btn" onclick="loadPodcasts(true)">⟳ Refresh</button>
-    </div>
-
-    <!-- Sticky mini-player -->
-    <div id="podcast-player" style="display:none;padding:12px 16px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:8px">
-      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-        <span style="font-size:18px">▶</span>
-        <div style="flex:1;min-width:0">
-          <div id="pod-now-show" style="font-size:11px;color:var(--accent);letter-spacing:1px;text-transform:uppercase"></div>
-          <div id="pod-now-title" style="font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
-        </div>
-      </div>
-      <audio id="pod-audio" controls style="width:100%;height:32px;accent-color:var(--accent);background:transparent"></audio>
-    </div>
-
-    <div id="podcast-list" style="display:flex;flex-direction:column;gap:1px">
-      <div class="loading">Loading podcasts...</div>
-    </div>
-  </div>
 
 </div>
 
@@ -628,6 +608,20 @@
         <span style="font-size:10px;color:var(--text-dim)">min</span>
         <button class="svc-btn svc-btn-warn" onclick="serverAction('restart', parseInt(document.getElementById('restart-delay').value)||5)">🕐 Schedule</button>
         <button class="svc-btn svc-btn-warn" onclick="serverAction('update-restart',0)" style="margin-left:8px">📦 Update + Restart</button>
+      </div>
+    </div>
+
+    <!-- Maintenance actions -->
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+      <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:10px">MAINTENANCE</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+        <button class="svc-btn" onclick="cleanupTmp()">🗑 Clean /tmp</button>
+        <span style="font-size:10px;color:var(--text-dim)">Removes Claude Code sandbox dirs that accumulate and fill root disk</span>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button class="svc-btn" onclick="jellyfinScan()" id="jf-scan-btn">📺 Rescan Jellyfin Library</button>
+        <span style="font-size:10px;color:var(--text-dim)">Run after manually adding or deleting files — forces Jellyfin to re-index all media folders</span>
+        <span id="jf-scan-status" style="font-size:10px;color:var(--accent);margin-left:4px"></span>
       </div>
     </div>
 
@@ -800,86 +794,81 @@
     </div>
     </div><!-- end firewall panel -->
 
-    <!-- Right column: IP Management + Server Health stacked -->
-    <div style="display:flex;flex-direction:column;gap:16px;min-width:0">
-
-      <!-- IP Management Panel -->
-      <div class="panel">
-        <div class="panel-header">
-          <span>🚫 IP Management — Ban / Unban</span>
-          <span id="banip-feedback" class="ts" style="color:var(--accent)"></span>
-          <button class="refresh-btn" onclick="loadFirewallDrops()">⟳ Refresh</button>
-        </div>
-        <!-- Manual Ban -->
-        <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
-          <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">MANUAL BAN</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-            <input id="ban-ip-input" type="text" placeholder="1.2.3.4 or 1.2.3.0/24"
-                   style="flex:1;min-width:160px;background:var(--bg3);border:1px solid var(--border2);
-                          color:var(--text);font-family:var(--font-m);font-size:11px;padding:6px 10px">
-            <input id="ban-reason-input" type="text" placeholder="Reason (optional)"
-                   style="flex:1;min-width:140px;background:var(--bg3);border:1px solid var(--border2);
-                          color:var(--text);font-family:var(--font-m);font-size:11px;padding:6px 10px">
-            <button class="svc-btn svc-btn-warn" onclick="banIP()">🚫 BAN IP</button>
-          </div>
-        </div>
-        <!-- Unban -->
-        <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
-          <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">UNBAN FROM ALL JAILS</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-            <input id="unban-ip-input" type="text" placeholder="1.2.3.4"
-                   style="flex:1;min-width:160px;background:var(--bg3);border:1px solid var(--border2);
-                          color:var(--text);font-family:var(--font-m);font-size:11px;padding:6px 10px">
-            <button class="svc-btn" onclick="unbanIP()" style="color:var(--accent)">✓ UNBAN IP</button>
-          </div>
-        </div>
-        <!-- Blacklist Update -->
-        <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
-          <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">BLACKLIST SYNC</div>
-          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-            <button class="svc-btn" onclick="runBlacklistUpdate()" style="color:var(--accent)">⟳ Run Blacklist Update Now</button>
-            <span style="font-size:10px;color:var(--text-dim)">Collects IPs from all sources → nftables</span>
-          </div>
-          <pre id="blacklist-output" style="display:none;margin-top:8px;font-size:10px;color:var(--text-dim);
-               background:var(--bg3);padding:8px;max-height:120px;overflow-y:auto;white-space:pre-wrap"></pre>
-        </div>
-        <!-- Jail Summary -->
-        <div style="padding:12px 16px">
-          <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">JAIL SUMMARY</div>
-          <div id="jail-summary" style="font-family:var(--font-m);font-size:11px;line-height:1.8"></div>
+    <!-- Middle-right: IP Management -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>🚫 IP Management — Ban / Unban</span>
+        <span id="banip-feedback" class="ts" style="color:var(--accent)"></span>
+        <button class="refresh-btn" onclick="loadFirewallDrops()">⟳ Refresh</button>
+      </div>
+      <!-- Manual Ban -->
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">MANUAL BAN</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <input id="ban-ip-input" type="text" placeholder="1.2.3.4 or 1.2.3.0/24"
+                 style="flex:1;min-width:160px;background:var(--bg3);border:1px solid var(--border2);
+                        color:var(--text);font-family:var(--font-m);font-size:11px;padding:6px 10px">
+          <input id="ban-reason-input" type="text" placeholder="Reason (optional)"
+                 style="flex:1;min-width:140px;background:var(--bg3);border:1px solid var(--border2);
+                        color:var(--text);font-family:var(--font-m);font-size:11px;padding:6px 10px">
+          <button class="svc-btn svc-btn-warn" onclick="banIP()">🚫 BAN IP</button>
         </div>
       </div>
-
-      <!-- Server Health + Network Panel -->
-      <div class="panel">
-        <div class="panel-header">
-          <span>💻 Server Health &amp; Network</span>
-          <span id="health-ts" class="ts"></span>
-          <button class="refresh-btn" onclick="loadServerHealth(true)">⟳ Refresh</button>
-        </div>
-        <!-- System stats -->
-        <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
-          <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">SYSTEM</div>
-          <div id="health-stats" class="stats-grid"></div>
-        </div>
-        <!-- Network interfaces -->
-        <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
-          <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">NETWORK I/O</div>
-          <div id="health-net" style="font-family:var(--font-m);font-size:11px;line-height:1.8"></div>
-        </div>
-        <!-- Top processes -->
-        <div style="padding:12px 16px">
-          <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">TOP PROCESSES BY MEM</div>
-          <div class="fw-table-wrap">
-            <table class="fw-table">
-              <thead><tr><th>User</th><th>PID</th><th>CPU%</th><th>MEM%</th><th>Command</th></tr></thead>
-              <tbody id="health-procs"></tbody>
-            </table>
-          </div>
+      <!-- Unban -->
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">UNBAN FROM ALL JAILS</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <input id="unban-ip-input" type="text" placeholder="1.2.3.4"
+                 style="flex:1;min-width:160px;background:var(--bg3);border:1px solid var(--border2);
+                        color:var(--text);font-family:var(--font-m);font-size:11px;padding:6px 10px">
+          <button class="svc-btn" onclick="unbanIP()" style="color:var(--accent)">✓ UNBAN IP</button>
         </div>
       </div>
+      <!-- Blacklist Update -->
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">BLACKLIST SYNC</div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <button class="svc-btn" onclick="runBlacklistUpdate()" style="color:var(--accent)">⟳ Run Blacklist Update Now</button>
+          <span style="font-size:10px;color:var(--text-dim)">Collects IPs from all sources → nftables</span>
+        </div>
+        <pre id="blacklist-output" style="display:none;margin-top:8px;font-size:10px;color:var(--text-dim);
+             background:var(--bg3);padding:8px;max-height:120px;overflow-y:auto;white-space:pre-wrap"></pre>
+      </div>
+      <!-- Jail Summary -->
+      <div style="padding:12px 16px">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">JAIL SUMMARY</div>
+        <div id="jail-summary" style="font-family:var(--font-m);font-size:11px;line-height:1.8"></div>
+      </div>
+    </div>
 
-    </div><!-- end right column -->
+    <!-- Right column: Server Health + Network -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>💻 Server Health &amp; Network</span>
+        <span id="health-ts" class="ts"></span>
+        <button class="refresh-btn" onclick="loadServerHealth(true)">⟳ Refresh</button>
+      </div>
+      <!-- System stats -->
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">SYSTEM</div>
+        <div id="health-stats" class="stats-grid"></div>
+      </div>
+      <!-- Network interfaces -->
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">NETWORK I/O</div>
+        <div id="health-net" style="font-family:var(--font-m);font-size:11px;line-height:1.8"></div>
+      </div>
+      <!-- Top processes -->
+      <div style="padding:12px 16px">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">TOP PROCESSES BY MEM</div>
+        <div class="fw-table-wrap">
+          <table class="fw-table">
+            <thead><tr><th>User</th><th>PID</th><th>CPU%</th><th>MEM%</th><th>Command</th></tr></thead>
+            <tbody id="health-procs"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
 
   </div><!-- end firewall row -->
 
@@ -953,23 +942,103 @@
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════ WEATHER OPS ═══ -->
-<div id="tab-weather" class="tab-content">
-  <div id="wx-alert-banner" class="wx-alert-banner" style="display:none"></div>
+<!-- ═══════════════════════════════════════════════════════ GARDEN ═══ -->
+<div id="tab-garden" class="tab-content">
+  <div style="background:linear-gradient(90deg,#071007,#0a140a,#071007);border-bottom:1px solid var(--border);
+       padding:8px 16px;font-family:var(--font-m);font-size:9px;letter-spacing:3px;color:#6a9c4a;text-align:center">
+    AZALEAS · WILDFLOWERS · LAWN · CATNIP // ZONE 5b // PORT WASHINGTON 53074 // WATERING INTELLIGENCE
+  </div>
 
-  <!-- ── Garden & Lawn Care ─────────────────────────────────────────── -->
+  <!-- Soil Moisture + Stats row -->
+  <div class="panel-row">
+    <!-- Soil Moisture -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>💧 Soil Moisture — Open-Meteo Model</span>
+        <span id="garden-ts" class="ts"></span>
+        <button class="refresh-btn" onclick="loadGarden(true)">⟳ Refresh</button>
+      </div>
+      <div id="soil-moisture-panel" class="loading">Loading soil data...</div>
+    </div>
+    <!-- Garden Status -->
+    <div class="panel">
+      <div class="panel-header">🌿 Garden Status — All Plants</div>
+      <div id="garden-status-panel" class="loading">Loading...</div>
+    </div>
+  </div>
+
+  <!-- Watering Schedule (the full watering panel, moved from weather tab) -->
   <div class="panel">
     <div class="panel-header">
-      <span>🌱 Garden &amp; Lawn Care — Port Washington 53074</span>
-      <span id="garden-ts" class="ts"></span>
+      <span>🌱 Garden &amp; Lawn Care — Watering Schedule</span>
       <button class="refresh-btn" onclick="loadGarden(true)">⟳ Refresh</button>
-    </div>
-    <div style="background:linear-gradient(90deg,#071007,#0a140a,#071007);border-bottom:1px solid var(--border);
-         padding:8px 16px;font-family:var(--font-m);font-size:9px;letter-spacing:3px;color:#6a9c4a;text-align:center">
-      AZALEAS · WILDFLOWERS · LAWN // ZONE 5b // WATERING INTELLIGENCE // FROST TRACKING
     </div>
     <div id="garden-panel" class="loading">Calculating garden conditions...</div>
   </div>
+
+  <!-- Watering Log -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>📋 Watering Log — Actual vs Suggested</span>
+      <button class="refresh-btn" onclick="loadWateringLog()">⟳ Refresh</button>
+    </div>
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+      <div style="font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:8px">LOG ACTUAL WATERING EVENT</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <select id="wlog-plant" style="background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:4px 8px;font-size:12px">
+          <option value="lawn">🌿 Lawn</option>
+          <option value="azalea">🌸 Azaleas</option>
+          <option value="wildflowers">🌻 Wildflowers</option>
+          <option value="catnip">🐱 Catnip</option>
+        </select>
+        <input type="date" id="wlog-date" style="background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:4px 8px;font-size:12px;width:140px">
+        <input type="number" id="wlog-amount" placeholder='Amount (inches, e.g. 0.75)' step="0.1" min="0" max="5"
+               style="background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:4px 8px;font-size:12px;width:180px">
+        <input type="text" id="wlog-note" placeholder="Note (optional)"
+               style="background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:4px 8px;font-size:12px;flex:1;min-width:120px">
+        <button class="refresh-btn" onclick="submitWateringLog()">+ Log Watering</button>
+      </div>
+    </div>
+    <div id="watering-log-panel" class="loading">Loading log...</div>
+  </div>
+
+  <!-- Invasive Species -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>🚨 Invasive Species Watch — Ozaukee County, WI</span>
+      <a href="https://datcpservices.wisconsin.gov/lsa/invasivesearch.jsp" target="_blank"
+         class="refresh-btn" style="text-decoration:none">WI DNR ↗</a>
+    </div>
+    <div id="invasives-panel"></div>
+  </div>
+
+  <!-- Quick Links -->
+  <div class="panel">
+    <div class="panel-header">🔗 Garden Resources — 53074 / Zone 5b</div>
+    <div style="padding:12px 16px;display:flex;gap:8px;flex-wrap:wrap">
+      <a href="https://forecast.weather.gov/MapClick.php?CityName=Port+Washington&state=WI&site=MKX&textField1=43.3875&textField2=-87.8756" target="_blank"
+         style="color:var(--accent);text-decoration:none;border:1px solid var(--accent);padding:4px 12px;font-size:10px;letter-spacing:1px">NWS Forecast 53074 ↗</a>
+      <a href="https://www.ndbc.noaa.gov/station_page.php?station=45013" target="_blank"
+         style="color:var(--accent);text-decoration:none;border:1px solid var(--accent);padding:4px 12px;font-size:10px;letter-spacing:1px">NDBC 45013 Buoy ↗</a>
+      <a href="https://www.weather.gov/mkx/" target="_blank"
+         style="color:var(--accent);text-decoration:none;border:1px solid var(--accent);padding:4px 12px;font-size:10px;letter-spacing:1px">NWS MKX Office ↗</a>
+      <a href="https://apps.dnr.wi.gov/forestryapps/burnrestriction/" target="_blank"
+         style="color:var(--accent);text-decoration:none;border:1px solid var(--accent);padding:4px 12px;font-size:10px;letter-spacing:1px">WI DNR Burn Status ↗</a>
+      <a href="https://planthardiness.ars.usda.gov/" target="_blank"
+         style="color:var(--accent);text-decoration:none;border:1px solid var(--accent);padding:4px 12px;font-size:10px;letter-spacing:1px">USDA Zone Map ↗</a>
+      <a href="https://open-meteo.com/" target="_blank"
+         style="color:var(--text-dim);text-decoration:none;border:1px solid var(--border);padding:4px 12px;font-size:10px;letter-spacing:1px">Open-Meteo ↗</a>
+      <a href="https://extension.wisc.edu/garden/" target="_blank"
+         style="color:var(--text-dim);text-decoration:none;border:1px solid var(--border);padding:4px 12px;font-size:10px;letter-spacing:1px">UW Extension Garden ↗</a>
+      <a href="https://www.nws.noaa.gov/om/water/watering.shtml" target="_blank"
+         style="color:var(--text-dim);text-decoration:none;border:1px solid var(--border);padding:4px 12px;font-size:10px;letter-spacing:1px">NWS Lawn Watering Guide ↗</a>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ WEATHER OPS ═══ -->
+<div id="tab-weather" class="tab-content">
+  <div id="wx-alert-banner" class="wx-alert-banner" style="display:none"></div>
 
   <!-- ── Wisconsin Fire & Burn Ban ──────────────────────────────────── -->
   <div class="panel">

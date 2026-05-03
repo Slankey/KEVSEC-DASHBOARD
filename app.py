@@ -1,4 +1,5 @@
 import os, json, time, hashlib, secrets, datetime, subprocess, re, threading, random, logging, sqlite3
+import urllib.request as _urllib_req
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import wraps
 from flask import Flask, render_template, request, session, redirect, url_for, jsonify, send_file
@@ -43,10 +44,38 @@ NASA_API_KEY      = os.environ.get("NASA_API_KEY", "DEMO_KEY")
 CF_ZONE_ID        = os.environ.get("CF_ZONE_ID", "")
 CF_API_TOKEN      = os.environ.get("CF_API_TOKEN", "")
 ENV_FILE          = os.path.join(os.path.dirname(__file__), ".env")
+ALERT_EMAIL      = os.environ.get("ALERT_EMAIL", "kevinmaslanka94@gmail.com")
+MAILCHANNELS_URL = "https://api.mailchannels.net/tx/v1/send"
+DKIM_PRIVATE_KEY = "MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCOQGrNQuuHU43dPX2cd9QiwYPJQSwj6WpzlRLkHIaUSwh/cOullNN/B8s5Eunda0VocsRpXMJ9pxWZwJPWJf3T04AvVLYSn/bS8zuX3dbx0jrn4m/g+w4q9D+vOCb1x1lQrLa0yK41SQilu08RBoW+s2rZUGr4VMXJfdQ/Modx+p5sFVwqVc4v2tTn+8WA+wZk21aihkCv4tLwnu8posr8F3MjXgtIXDAmYLUF7Ts4bQrQpaf/QA0RGsKL/HF97caxaoOAMf9KnbFrY8xebACJ4rWSBjNbCsO11YPKf3BjzuyZzR5J5knrxTvI3/XUkWR9ArcPNPdolkB9QuCQxHO1AgMBAAECggEAIVhbUMtfj6TX6+UmpT93pEANhuc2lCJ6mCZ5O6yuJWPjVZBgRLu6yhvHGRVkaclkB0Rj4zjhxHeeuiBo5zmXowiAk1e9qGcEAlYPAZ34bU41DbdIN4pSO2Ju7UFx7Ioy1xTtbTpfj9ETbFoYgiqvvlCres59jMG+bWmID9pl4qMd6NVagqp96MqJ1jCJzN1hkPJZ1869YlreuYdqWjMOdnE976GiAeSHgeDiP4HHdfzkexjmBwZVyAh4qrCmSEMq37vcqWIfytdyV/cEDqXyzVDrsnzpTPbllBCDWxzm2HlZqdTMvWpmGNN+V5fi7Rc3jxqo8WAJHHcdx72Qj0eMgQKBgQDGNoHK5KA6BUpyitoxJ8BVYTmTXLyV6Ape+YIki0MnPjoTa89YBWy2bfDDz1N90w5oq4gYhUZugIsSQAMgwgKXvrp4ebK+mf/FTHlOHXkjex4fzjD/YVI/n7pONtQY+dCr6kHNDZ2HgrRzLC89ir8b9IvHpbNXH+io3R0sjiIsdQKBgQC3uUaOv1TErbw1U15AzA67rHSulOgmjxV3e6ne2MYg6biKTcpHp09nN3fp8PhCINVQiI9DzoWd00myXEQWRSFp+S7EDs7A5QViwMAVQn1xGImgsrNSBcyA8ACsWvuJlTudiuaZ7atxceEY0HHa0yWM9U9VINoUH5S74WGDb/1CQQKBgAuXuoWcU4axMoZ6eoJveb9EnXJx9RGrbZfabfMnNflAmXLzVkAmqRIOYguBv7dXNbuHdMFCYjkqSXf6yHQNBMvNOui67WpaZWwrqdiYvrIFjGB91b3J+l6AQAw9BrCjQ8IaRFjy1+jKCzXFOsoVqFHBPr+hgFizJA9kR0WI1pTVAoGBAJ0WEkkNOMptjeW+YXFfyB0ZKC75bMFDR+SAXM8IY+dSTxIZzyGS4WZsW+Avw+SutBUGnhAo7b/zHykckK7F7vrwLtc9nfP6Ha/BBLtovV7MzygSgxZXlPKNwtWbeUS6z101nVPxjcwSxZb06tRiAtJSEMHFtBDOq9o0q665Oz7BAoGAQQ/qiL7I1EeocfKkuMoPQNIIJCKOREOXt2HhyrtAs0gzPUZRHW9MJ3vMPDi457ikHWzaE94L9SGsggEQ0k4gC2kg7OMBYIqXbYJ0Hkk2DGQyrH1PTIlPPREFQd7IxZkzRIGI4CjVOv5FOPluOUyB0XIdkQrvAy2yMa6xGUZUhfc="
 os.makedirs(MEMOS_DIR, exist_ok=True)
 os.makedirs(NOTES_DIR, exist_ok=True)
 
 HDRS = {"User-Agent": "KEVSec/1.0"}
+
+_last_alert_sent = {}  # subject → timestamp, throttle duplicate alerts
+
+def send_alert(subject, body, throttle_seconds=3600):
+    """Send an alert via Cloudflare Worker + MailChannels. No SMTP credentials needed."""
+    now = time.time()
+    if now - _last_alert_sent.get(subject, 0) < throttle_seconds:
+        return
+    _last_alert_sent[subject] = now
+    def _send():
+        try:
+            import json as _json
+            payload = _json.dumps({
+                "personalizations": [{"to": [{"email": ALERT_EMAIL}],
+                    "dkim_domain": "kevsec.com", "dkim_selector": "mail", "dkim_private_key": DKIM_PRIVATE_KEY}],
+                "from": {"email": "alerts@kevsec.com", "name": "KEVSec Alerts"},
+                "subject": f"[KEVSEC] {subject}",
+                "content": [{"type": "text/plain", "value": body}]
+            }).encode()
+            req = _urllib_req.Request(MAILCHANNELS_URL, data=payload,
+                headers={"Content-Type": "application/json"}, method="POST")
+            _urllib_req.urlopen(req, timeout=15)
+        except Exception as e:
+            app.logger.warning("Alert email failed: %s", e)
+    threading.Thread(target=_send, daemon=True).start()
 
 # Presidential schedule regex — compiled once at module level
 _DATE_PAT = re.compile(
@@ -356,48 +385,66 @@ def api_internal_warm():
 @login_required
 def api_news():
     force = request.args.get("force") == "1"
-    cached = cache_get("news", ttl=CACHE_TTL_LONG, force=force)
+    cached = cache_get("news", ttl=3600, force=force)
     if cached:
         return jsonify(cached)
     feeds = [
         ("NPR",            "https://feeds.npr.org/1001/rss.xml"),
+        ("AP News",        "https://feeds.apnews.com/rss/apf-topnews"),
         ("Reuters",        "https://feeds.reuters.com/reuters/topNews"),
+        ("BBC World",      "http://feeds.bbci.co.uk/news/world/rss.xml"),
+        ("Al Jazeera",     "https://www.aljazeera.com/xml/rss/all.xml"),
         ("The Guardian",   "https://www.theguardian.com/world/rss"),
-        ("The Hill",       "https://thehill.com/feed/"),
-        ("Fox News",       "https://moxie.foxnews.com/google-publisher/latest.xml"),
-        ("Politico",       "https://rss.politico.com/politics-news.xml"),
         ("NYT",            "https://rss.nytimes.com/services/xml/rss/ntt/HomePage.xml"),
+        ("Washington Post","https://feeds.washingtonpost.com/rss/national"),
+        ("The Hill",       "https://thehill.com/feed/"),
+        ("Politico",       "https://rss.politico.com/politics-news.xml"),
+        ("Axios",          "https://api.axios.com/feed/"),
+        ("Fox News",       "https://moxie.foxnews.com/google-publisher/latest.xml"),
+        ("ABC News",       "https://feeds.abcnews.com/abcnews/topstories"),
+        ("CBS News",       "https://www.cbsnews.com/latest/rss/main"),
+        ("CNBC",           "https://www.cnbc.com/id/100727362/device/rss/rss.html"),
+        ("Bloomberg",      "https://feeds.bloomberg.com/markets/news.rss"),
+        ("Yahoo Finance",  "https://finance.yahoo.com/news/rssindex"),
+        ("Wired",          "https://www.wired.com/feed/rss"),
+        ("Ars Technica",   "http://feeds.arstechnica.com/arstechnica/index"),
+        ("ProPublica",     "https://feeds.propublica.org/propublica/main"),
+        ("The Intercept",  "https://theintercept.com/feed/?rss"),
+        ("AllSides",       "https://www.allsides.com/news/rss"),
         ("WPR",            "https://www.wpr.org/feed"),
         ("TMJ4 (WI)",      "https://www.tmj4.com/news/local/rss"),
         ("CBS58 (WI)",     "https://www.cbs58.com/news/local-news.rss"),
-        ("AP News",        "https://feeds.apnews.com/rss/apf-topnews"),
-        ("BBC World",      "http://feeds.bbci.co.uk/news/world/rss.xml"),
         ("Milwaukee Journal Sentinel", "https://rss.jsonengage.com/milwaukee-journal-sentinel/"),
-        ("CNBC",           "https://www.cnbc.com/id/100727362/device/rss/rss.html"),
-        ("Yahoo Finance",  "https://finance.yahoo.com/news/rssindex"),
         ("Investing.com",  "https://www.investing.com/rss/news.rss"),
-        ("AllSides",       "https://www.allsides.com/news/rss"),
-        # Google News topic feeds (CNN killed their RSS in 2023; GNews is current)
+        # Google News topic feeds
         ("Google News",    "https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en"),
         ("Google: World",  "https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRGx1YlY4U0FtVnVHZ0pWVXlnQVAB?hl=en-US&gl=US&ceid=US:en"),
         ("Google: Tech",   "https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRGRqTVhZU0FtVnVHZ0pWVXlnQVAB?hl=en-US&gl=US&ceid=US:en"),
         ("Google: Business","https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRGx6TVdZU0FtVnVHZ0pWVXlnQVAB?hl=en-US&gl=US&ceid=US:en"),
+        ("Google: Science","https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNR1F3TlhZU0FtVnVHZ0pWVXlnQVAB?hl=en-US&gl=US&ceid=US:en"),
     ]
-    articles = []
-    for source, url in feeds:
+    def fetch_feed(source, url):
         try:
             f = feedparser.parse(url)
+            out = []
             for e in f.entries[:8]:
                 summary = re.sub(r"<[^>]+>", "", e.get("summary", ""))[:220]
-                articles.append({
-                    "source": source,
-                    "title": e.get("title", "")[:120],
-                    "link": e.get("link", "#"),
-                    "published": e.get("published", "")[:25],
-                    "summary": summary
-                })
-        except:
-            pass
+                out.append({"source": source, "title": e.get("title", "")[:120],
+                            "link": e.get("link", "#"), "published": e.get("published", "")[:25],
+                            "summary": summary})
+            return out
+        except Exception:
+            return []
+
+    articles = []
+    with ThreadPoolExecutor(max_workers=10) as pool:
+        futs = {pool.submit(fetch_feed, src, url): src for src, url in feeds}
+        for f in as_completed(futs):
+            try:
+                articles.extend(f.result())
+            except Exception:
+                pass
+
     result = {"articles": articles, "fetched": datetime.datetime.now().strftime("%H:%M:%S")}
     cache_set("news", result)
     return jsonify(result)
@@ -683,18 +730,42 @@ def api_garden():
     rain_3d_ahead = round(sum(x["rain_in"]  for x in forecast_7d[:3]),   2)
     frost = _frost_status(today)
 
-    def _plant(name, icon, need_in, notes, extra_tip):
-        deficit = max(0, need_in - rain_7d)
-        ok      = rain_7d >= need_in * 0.75
+    # ── Load manual watering log — credit recent hand-watering to moisture budget ──
+    watering_bonus = {"azalea": 0.0, "wildflowers": 0.0, "lawn": 0.0, "catnip": 0.0}
+    try:
+        with open(WATERING_LOG_FILE) as _wf:
+            _wlog = json.load(_wf)
+        _cutoff = (today - datetime.timedelta(days=7)).isoformat()
+        for _entry in _wlog:
+            if _entry.get("date", "") >= _cutoff:
+                _pk  = _entry.get("plant", "").lower()
+                _amt = _entry.get("amount_in")
+                if _pk in watering_bonus and _amt is not None:
+                    try:
+                        watering_bonus[_pk] += float(_amt)
+                    except (ValueError, TypeError):
+                        pass
+    except (FileNotFoundError, json.JSONDecodeError, Exception):
+        pass
+
+    def _plant(name, icon, need_in, notes, extra_tip, plant_key=""):
+        manual_in      = round(watering_bonus.get(plant_key, 0.0), 2)
+        effective_rain = round(rain_7d + manual_in, 2)
+        deficit = max(0, need_in - effective_rain)
+        ok      = effective_rain >= need_in * 0.75
         wtr_now = not ok and rain_3d_ahead < 0.25
         if ok:
             status = "GOOD"
-            tip = ("Rainfall adequate (%.2f\" in 7 days). "
-                   "Check 2\" soil depth — if dry, a light supplement helps.") % rain_7d
+            if manual_in > 0:
+                tip = ("Adequate moisture (%.2f\" rain + %.2f\" manual = %.2f\" effective). "
+                       "Check 2\" soil depth.") % (rain_7d, manual_in, effective_rain)
+            else:
+                tip = ("Rainfall adequate (%.2f\" in 7 days). "
+                       "Check 2\" soil depth — if dry, a light supplement helps.") % rain_7d
         elif deficit < 0.4:
             status = "LOW"
             action = "Water today if no rain by evening." if wtr_now else "Rain expected soon — hold off."
-            tip = ("Slightly dry (%.2f\" vs %.1f\" needed). %s") % (rain_7d, need_in, action)
+            tip = ("Slightly dry (%.2f\" effective vs %.1f\" needed). %s") % (effective_rain, need_in, action)
         else:
             status = "DRY"
             if wtr_now:
@@ -705,7 +776,8 @@ def api_garden():
         if extra_tip:
             tip += " " + extra_tip
         return {"name": name, "icon": icon, "need_in": need_in,
-                "rain_7d": rain_7d, "deficit": round(deficit, 2),
+                "rain_7d": rain_7d, "manual_in": manual_in,
+                "effective_rain": effective_rain, "deficit": round(deficit, 2),
                 "status": status, "water_now": wtr_now, "tip": tip, "notes": notes}
 
     plants = [
@@ -715,21 +787,32 @@ def api_garden():
              "Yellow leaves = needs Holly-tone acidic fertilizer",
              "Zone 5b: safe to transplant after May 15",
              "Bloom time ~May: don't fertilize until after blooms drop"],
-            "Azaleas hate soggy roots — ensure good drainage."),
+            "Azaleas hate soggy roots — ensure good drainage.",
+            plant_key="azalea"),
         _plant("Wildflowers", "🌻", 0.75,
             ["Newly seeded: keep moist daily until 3\" tall",
              "Established: drought tolerant — water only in 10+ day dry spells",
              "Don't mow blooming areas May–Sep",
              "Leave seed heads for winter bird food",
              "WI natives (coneflower, black-eyed susan) thrive with neglect"],
-            "Once established, less is more with wildflowers."),
+            "Once established, less is more with wildflowers.",
+            plant_key="wildflowers"),
         _plant("Lawn", "🌿", 1.25,
             ["Water 1-2×/week deeply vs. light daily (promotes deep roots)",
              "Best time: 6–10am — reduces evaporation & fungal risk",
              "Don't mow until 3.5\" tall; cut to 3\" (never below 2.5\")",
              "Overseed thin areas: early May or September",
              "Fertilize after May 15 — not before last frost"],
-            "Lawn can go dormant (tan/brown) in summer heat — it recovers."),
+            "Lawn can go dormant (tan/brown) in summer heat — it recovers.",
+            plant_key="lawn"),
+        _plant("Catnip", "🐱", 0.5,
+            ["Drought tolerant once established — don't overwater",
+             "Full sun to partial shade; thrives in zone 5b",
+             "Trim after first bloom to encourage second flush",
+             "Can spread aggressively — consider container or edging",
+             "Harvest before full bloom for highest potency"],
+            "Catnip wilts dramatically when dry but recovers quickly — trust the model.",
+            plant_key="catnip"),
     ]
 
     # ── 7-day watering schedule ───────────────────────────────────────────
@@ -765,6 +848,23 @@ def api_garden():
             "water_flowers": water_flowers,
         })
 
+    soil_moisture = {}
+    try:
+        sm_r = requests.get(
+            "https://api.open-meteo.com/v1/forecast",
+            params={
+                "latitude": LAT, "longitude": LON,
+                "hourly": "soil_moisture_0_to_1cm,soil_moisture_1_to_3cm,soil_moisture_3_to_9cm",
+                "timezone": "America/Chicago",
+                "forecast_days": 1,
+            }, timeout=10)
+        sm_d = sm_r.json().get("hourly", {})
+        for key, label in [("soil_moisture_0_to_1cm","top_1cm"),("soil_moisture_1_to_3cm","top_3cm"),("soil_moisture_3_to_9cm","top_9cm")]:
+            vals = [v for v in sm_d.get(key, []) if v is not None]
+            soil_moisture[label] = round(vals[-1] * 100, 1) if vals else None  # convert to % (0-1 scale)
+    except Exception as e:
+        app.logger.warning("soil moisture: %s", e)
+
     result = {
         "plants":    plants,
         "frost":     frost,
@@ -773,11 +873,70 @@ def api_garden():
         "rain_14d":  rain_14d,
         "rain_3d_ahead": rain_3d_ahead,
         "precip_history": precip_history[-7:],
+        "soil_moisture": soil_moisture,
         "location":  "Port Washington, WI 53074 — USDA Zone 5b",
         "fetched":   _ts(),
     }
     cache_set("garden", result)
     return jsonify(result)
+
+WATERING_LOG_FILE = f"{DATA_DIR}/watering_log.json"
+
+@app.route("/api/watering_log", methods=["GET"])
+@login_required
+def api_watering_log_get():
+    try:
+        with open(WATERING_LOG_FILE) as f:
+            return jsonify(json.load(f))
+    except FileNotFoundError:
+        return jsonify([])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/watering_log", methods=["POST"])
+@login_required
+@csrf_required
+def api_watering_log_post():
+    body = request.get_json(silent=True) or {}
+    plant  = body.get("plant", "").strip()[:50]
+    amount = body.get("amount_in")
+    date   = body.get("date", datetime.date.today().isoformat())
+    note   = body.get("note", "").strip()[:200]
+    if not plant:
+        return jsonify({"error": "plant required"}), 400
+    try:
+        amount = round(float(amount), 2) if amount is not None else None
+    except (ValueError, TypeError):
+        amount = None
+    try:
+        with open(WATERING_LOG_FILE) as f:
+            log = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        log = []
+    log.append({
+        "date": date, "plant": plant,
+        "amount_in": amount, "note": note,
+        "logged_at": datetime.datetime.now().isoformat()
+    })
+    with open(WATERING_LOG_FILE, "w") as f:
+        json.dump(log, f)
+    return jsonify({"ok": True, "count": len(log)})
+
+@app.route("/api/watering_log/<int:idx>", methods=["DELETE"])
+@login_required
+@csrf_required
+def api_watering_log_delete(idx):
+    try:
+        with open(WATERING_LOG_FILE) as f:
+            log = json.load(f)
+        if 0 <= idx < len(log):
+            log.pop(idx)
+            with open(WATERING_LOG_FILE, "w") as f:
+                json.dump(log, f)
+            return jsonify({"ok": True})
+        return jsonify({"error": "index out of range"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/api/weather")
 @login_required
@@ -1361,7 +1520,7 @@ def api_server_stats():
         svc_names = ["jellyfin", "librarian-bot",
                      "reminder-bot", "kevsec-dashboard", "presidential-sim",
                      "honeypot", "endlessh", "fail2ban", "sonarr", "radarr", "prowlarr", "nginx",
-                     "dj-atticus"]
+                     "dj-atticus", "rtorrent@slankey"]
         sr = subprocess.run(["systemctl", "is-active"] + svc_names,
                             capture_output=True, text=True)
         statuses = sr.stdout.strip().split("\n")
@@ -1383,6 +1542,18 @@ def api_server_stats():
             result["swap_used"]  = swap_used
             result["swap_total"] = swap_total
             result["swap_pct"]   = round(swap_used / swap_total * 100, 1) if swap_total else 0
+            if result["swap_pct"] > 85:
+                send_alert("High Swap Usage",
+                    f"Swap is at {result['swap_pct']}% ({swap_used}MB / {swap_total}MB) on swizzin.",
+                    throttle_seconds=7200)
+        # Alert on any critical service down
+        down = [s for s, st in svcs.items() if st not in ("active", "activating")]
+        critical = {"jellyfin", "kevsec-dashboard", "nginx", "fail2ban", "honeypot"}
+        for svc in down:
+            if svc in critical:
+                send_alert(f"Service Down: {svc}",
+                    f"{svc} is reporting status '{svcs[svc]}' on swizzin.",
+                    throttle_seconds=3600)
         cache_set("server_stats", result)
         return jsonify(result)
     except Exception as e:
@@ -1394,7 +1565,7 @@ def api_server_stats():
 def api_ext_services():
     """Check external service status via official Statuspage APIs + HTTP pings."""
     force = request.args.get("force") == "1"
-    cached = cache_get("ext_services", ttl=300, force=force)  # 5-min cache
+    cached = cache_get("ext_services", ttl=900, force=force)  # 15-min cache
     if cached:
         return jsonify(cached)
 
@@ -1407,7 +1578,7 @@ def api_ext_services():
         ("Zoom",         "https://status.zoom.us/api/v2/summary.json"),
     ]
 
-    # Services to check via simple HTTP GET (2xx/3xx = up)
+    # Services to check via simple HTTP GET (2xx/3xx = up) — 3s timeout to avoid bot-detection hangs
     PING_SERVICES = [
         ("Netflix",      "https://www.netflix.com/"),
         ("YouTube",      "https://www.youtube.com/"),
@@ -1417,45 +1588,55 @@ def api_ext_services():
         ("Twitch",       "https://www.twitch.tv/"),
         ("Slack",        "https://slack.com/"),
         ("Dropbox",      "https://www.dropbox.com/"),
-        ("GitHub.com",   "https://github.com/"),
         ("Twitter/X",    "https://x.com/"),
         ("OpenAI",       "https://openai.com/"),
         ("Amazon",       "https://www.amazon.com/"),
         ("Spotify",      "https://www.spotify.com/"),
-        ("Snapchat",     "https://www.snapchat.com/"),
         ("Hulu",         "https://www.hulu.com/"),
-        ("Steam",        "https://store.steampowered.com/"),
         ("CS2 Servers",  "https://www.valvesoftware.com/en/"),
     ]
 
-    results = []
     hdrs = HDRS
 
     def indicator_to_status(ind):
         return {"none": "operational", "minor": "degraded",
                 "major": "outage", "critical": "outage"}.get(ind, "unknown")
 
-    for name, url in STATUSPAGE_SERVICES:
+    def fetch_statuspage(name, url):
         try:
             r = requests.get(url, headers=hdrs, timeout=6)
-            ind = r.json().get("status", {}).get("indicator", "unknown")
+            ind  = r.json().get("status", {}).get("indicator", "unknown")
             desc = r.json().get("status", {}).get("description", "")
-            results.append({"name": name, "status": indicator_to_status(ind),
-                            "indicator": ind, "desc": desc})
+            return {"name": name, "status": indicator_to_status(ind), "indicator": ind, "desc": desc}
         except Exception:
-            results.append({"name": name, "status": "unknown", "indicator": "unknown", "desc": ""})
+            return {"name": name, "status": "unknown", "indicator": "unknown", "desc": ""}
 
-    for name, url in PING_SERVICES:
+    def fetch_ping(name, url):
         try:
-            r = requests.get(url, headers=hdrs, timeout=6, allow_redirects=True)
+            r = requests.get(url, headers=hdrs, timeout=3, allow_redirects=True)
             ok = r.status_code < 400
-            results.append({"name": name, "status": "operational" if ok else "degraded",
-                            "indicator": "none" if ok else "minor", "desc": f"HTTP {r.status_code}"})
+            return {"name": name, "status": "operational" if ok else "degraded",
+                    "indicator": "none" if ok else "minor", "desc": f"HTTP {r.status_code}"}
         except Exception as e:
-            results.append({"name": name, "status": "outage", "indicator": "major",
-                            "desc": str(e)[:60]})
+            return {"name": name, "status": "outage", "indicator": "major", "desc": str(e)[:60]}
 
-    # ── Local service uptime check (systemd) ────────────────────────────
+    # Run all external checks in parallel
+    results = []
+    all_checks = [(fetch_statuspage, n, u) for n, u in STATUSPAGE_SERVICES] + \
+                 [(fetch_ping,       n, u) for n, u in PING_SERVICES]
+    with ThreadPoolExecutor(max_workers=20) as pool:
+        futures = {pool.submit(fn, n, u): (fn, n) for fn, n, u in all_checks}
+        for future in as_completed(futures):
+            try:
+                results.append(future.result())
+            except Exception:
+                _, name = futures[future]
+                results.append({"name": name, "status": "unknown", "indicator": "unknown", "desc": ""})
+    # Re-sort to stable display order
+    order = {n: i for i, (_, n, _) in enumerate(all_checks)}
+    results.sort(key=lambda x: order.get(x["name"], 999))
+
+    # ── Local service uptime check (systemd) — run in parallel too ──────
     LOCAL_SERVICES = [
         ("Jellyfin",       "jellyfin"),
         ("Librarian Bot",  "librarian-bot"),
@@ -1468,25 +1649,31 @@ def api_ext_services():
         ("Fail2ban",       "fail2ban"),
         ("Honeypot",       "honeypot"),
         ("Endlessh",       "endlessh"),
+        ("kevsec-create",  "kevsec-create"),
     ]
-    local_results = []
-    for display_name, svc in LOCAL_SERVICES:
+
+    def check_local(display_name, svc):
         try:
             out = subprocess.run(["systemctl", "is-active", svc],
                                  capture_output=True, text=True, timeout=3).stdout.strip()
             up = out == "active"
-            local_results.append({
-                "name": display_name, "service": svc,
-                "status": "operational" if up else "outage",
-                "indicator": "none" if up else "major",
-                "desc": out, "local": True
-            })
+            return {"name": display_name, "service": svc,
+                    "status": "operational" if up else "outage",
+                    "indicator": "none" if up else "major",
+                    "desc": out, "local": True}
         except Exception as ex:
-            local_results.append({
-                "name": display_name, "service": svc,
-                "status": "unknown", "indicator": "unknown",
-                "desc": str(ex)[:40], "local": True
-            })
+            return {"name": display_name, "service": svc,
+                    "status": "unknown", "indicator": "unknown",
+                    "desc": str(ex)[:40], "local": True}
+
+    local_results = []
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        futs = [pool.submit(check_local, dn, svc) for dn, svc in LOCAL_SERVICES]
+        for f in as_completed(futs):
+            local_results.append(f.result())
+    # Re-sort to stable display order
+    svc_order = {dn: i for i, (dn, _) in enumerate(LOCAL_SERVICES)}
+    local_results.sort(key=lambda x: svc_order.get(x["name"], 999))
 
     result = {"services": results, "local": local_results,
               "fetched": datetime.datetime.now().strftime("%H:%M:%S")}
@@ -1635,7 +1822,7 @@ def api_tarpit_stats():
             if ip in ("127.0.0.1", "::1", ""):
                 continue
             hp_unique.add(ip)
-            if event in ("TRAP_HIT", "TRAP_CREDS"):
+            if event in ("TRAP_HIT", "TRAP_CREDS", "TARPIT", "TARPIT_HIT"):
                 bans += 1
             if len(honeypot_log) < 20:
                 honeypot_log.append({"ip": ip, "ts": ts, "path": path, "event": event})
@@ -1704,6 +1891,21 @@ def api_firewall_drops():
     except: pass
     # Fail2ban — get currently banned IPs from all jails via fail2ban-client
     try:
+        # Pre-build a map of ip -> last ban timestamp from the log
+        ban_time_map = {}
+        try:
+            log_r = subprocess.run(["tail", "-n", "5000", "/var/log/fail2ban.log"],
+                                   capture_output=True, text=True)
+            for line in log_r.stdout.split("\n"):
+                if "NOTICE" not in line or " Ban " not in line:
+                    continue
+                ts_m = re.search(r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})", line)
+                ip_m = re.search(r"Ban (\S+)", line)
+                if ts_m and ip_m:
+                    ban_time_map[ip_m.group(1)] = ts_m.group(1)[5:]  # MM-DD HH:MM:SS
+        except Exception:
+            pass
+
         jails_r = subprocess.run(["sudo","fail2ban-client","status"],
                                  capture_output=True, text=True, timeout=10)
         jail_line = re.search(r"Jail list:\s*(.+)", jails_r.stdout)
@@ -1716,7 +1918,7 @@ def api_firewall_drops():
             banned_ips = ip_line.group(1).split() if ip_line else []
             for ip_addr in banned_ips[:20]:
                 events.append({
-                    "time":   "",
+                    "time":   ban_time_map.get(ip_addr, ""),
                     "src":    ip_addr,
                     "port":   "",
                     "proto":  "",
@@ -2300,6 +2502,12 @@ def api_notes_rename(fname):
     os.rename(old_path, os.path.join(NOTES_DIR, new_fname))
     return jsonify({"status": "renamed", "fname": new_fname})
 
+@app.route("/dl/logopack")
+@login_required
+def dl_logopack():
+    path = os.path.join(os.path.dirname(__file__), "static/img/logopack/kevsec-logopack.zip")
+    return send_file(path, as_attachment=True, download_name="kevsec-logopack.zip", mimetype="application/zip")
+
 @app.route("/api/notes/<path:fname>/download", methods=["GET"])
 @login_required
 def api_notes_download(fname):
@@ -2769,6 +2977,46 @@ def api_server_control():
         )
         return jsonify({"ok": r.returncode == 0,
                         "output": (r.stdout + r.stderr).strip()[:200]})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/cleanup_tmp", methods=["POST"])
+@login_required
+@csrf_required
+def api_cleanup_tmp():
+    """Delete accumulated Claude Code sandbox dirs from /tmp to free root disk space."""
+    _sec_log.warning("CLEANUP_TMP by %s from %s", session.get("user", "?"), _real_ip())
+    try:
+        r = subprocess.run(
+            ["sudo", "/usr/local/bin/kevsec-cleanup-tmp.sh"],
+            capture_output=True, text=True, timeout=30
+        )
+        return jsonify({"ok": r.returncode == 0, "output": (r.stdout + r.stderr).strip()})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/jellyfin_scan", methods=["POST"])
+@login_required
+@csrf_required
+def api_jellyfin_scan():
+    """Trigger a full Jellyfin library scan via the Jellyfin API."""
+    _sec_log.warning("JELLYFIN_SCAN by %s from %s", session.get("user", "?"), _real_ip())
+    JF_URL = "http://127.0.0.1:8096"
+    JF_KEY = "d76438d2151c4dce8394f12b4007fabc"
+    try:
+        req = _urllib_req.Request(
+            f"{JF_URL}/jellyfin/Library/Refresh",
+            data=b"",
+            method="POST",
+            headers={"X-Emby-Token": JF_KEY, "Content-Type": "application/json"}
+        )
+        with _urllib_req.urlopen(req, timeout=10) as resp:
+            status = resp.status
+        if status in (200, 204):
+            return jsonify({"ok": True, "msg": "Library scan started — Jellyfin is now scanning all folders."})
+        return jsonify({"ok": False, "msg": f"Jellyfin returned HTTP {status}"}), 502
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -3455,83 +3703,6 @@ def api_pol_tweets():
                     "error": "No data yet — run /usr/local/bin/scrape-pol-tweets.py first"})
 
 
-@app.route("/api/podcasts")
-@login_required
-def api_podcasts():
-    """Latest episode from each podcast feed with audio URL for in-browser playback."""
-    force = request.args.get("force") == "1"
-    cached = cache_get("podcasts", ttl=900, force=force)  # 15-min TTL
-    if cached:
-        return jsonify(cached)
-
-    FEEDS = [
-        ("BBC Global News",      "https://podcasts.files.bbci.co.uk/p02nq0gn.rss"),
-        ("NPR Hourly News",      "https://feeds.npr.org/500005/podcast.xml"),
-        ("NPR Up First",         "https://feeds.npr.org/510318/podcast.xml"),
-        ("NPR Consider This",    "https://feeds.npr.org/510355/podcast.xml"),
-        ("CNN 5 Things",         "http://rss.cnn.com/services/podcasting/5things/rss.xml"),
-        ("Fox News Rundown",     "https://feeds.foxnews.com/foxnewsradio/the-rundown"),
-        ("The Daily (NYT)",      "https://feeds.simplecast.com/54nAGcIl"),
-        ("Pod Save America",     "https://feeds.megaphone.fm/crooked-pod-save-america"),
-        ("Axios Today",          "https://feeds.simplecast.com/axiostoday"),
-        ("FT News Briefing",     "https://feeds.acast.com/public/shows/ft-news-briefing"),
-    ]
-
-    def _fetch(name, url):
-        try:
-            f = feedparser.parse(url)
-            if not f.entries:
-                return None
-            e = f.entries[0]
-            audio_url = ""
-            for enc in e.get("enclosures", []):
-                if enc.get("type", "").startswith("audio"):
-                    audio_url = enc.get("href", enc.get("url", ""))
-                    break
-            if not audio_url:
-                # Try media_content
-                for mc in e.get("media_content", []):
-                    if mc.get("type", "").startswith("audio"):
-                        audio_url = mc.get("url", "")
-                        break
-            if not audio_url:
-                return None
-            pub = e.get("published", e.get("updated", ""))
-            dur = ""
-            for tag in ("itunes_duration", "duration"):
-                if e.get(tag):
-                    dur = str(e[tag]); break
-            return {
-                "name":        name,
-                "episode":     e.get("title", "")[:120],
-                "summary":     re.sub(r"<[^>]+>", "", e.get("summary", ""))[:200].strip(),
-                "published":   pub[:16] if pub else "",
-                "duration":    dur,
-                "audio_url":   audio_url,
-                "feed_url":    url,
-            }
-        except Exception as ex:
-            app.logger.debug("podcast feed %s: %s", name, ex)
-            return None
-
-    from concurrent.futures import ThreadPoolExecutor, as_completed
-    podcasts = []
-    with ThreadPoolExecutor(max_workers=10) as ex:
-        futures = {ex.submit(_fetch, name, url): name for name, url in FEEDS}
-        for fut in as_completed(futures):
-            r = fut.result()
-            if r:
-                podcasts.append(r)
-
-    # Preserve display order
-    order = [n for n, _ in FEEDS]
-    podcasts.sort(key=lambda x: order.index(x["name"]) if x["name"] in order else 99)
-
-    result = {"podcasts": podcasts, "fetched": _ts()}
-    cache_set("podcasts", result)
-    return jsonify(result)
-
-
 @app.route("/api/f1")
 @login_required
 def api_f1():
@@ -3623,24 +3794,38 @@ def _warm_cache(force=False):
     # News feeds
     try:
         feeds = [
-            ("NPR","https://feeds.npr.org/1001/rss.xml"),("Reuters","https://feeds.reuters.com/reuters/topNews"),
-            ("The Guardian","https://www.theguardian.com/world/rss"),("The Hill","https://thehill.com/feed/"),
-            ("Fox News","https://moxie.foxnews.com/google-publisher/latest.xml"),
-            ("Politico","https://rss.politico.com/politics-news.xml"),
-            ("NYT","https://rss.nytimes.com/services/xml/rss/ntt/HomePage.xml"),
-            ("WPR","https://www.wpr.org/feed"),
-            ("TMJ4 (WI)","https://www.tmj4.com/news/local/rss"),("CBS58 (WI)","https://www.cbs58.com/news/local-news.rss"),
+            ("NPR","https://feeds.npr.org/1001/rss.xml"),
             ("AP News","https://feeds.apnews.com/rss/apf-topnews"),
+            ("Reuters","https://feeds.reuters.com/reuters/topNews"),
             ("BBC World","http://feeds.bbci.co.uk/news/world/rss.xml"),
-            ("Milwaukee Journal Sentinel","https://rss.jsonengage.com/milwaukee-journal-sentinel/"),
+            ("Al Jazeera","https://www.aljazeera.com/xml/rss/all.xml"),
+            ("The Guardian","https://www.theguardian.com/world/rss"),
+            ("NYT","https://rss.nytimes.com/services/xml/rss/ntt/HomePage.xml"),
+            ("Washington Post","https://feeds.washingtonpost.com/rss/national"),
+            ("The Hill","https://thehill.com/feed/"),
+            ("Politico","https://rss.politico.com/politics-news.xml"),
+            ("Axios","https://api.axios.com/feed/"),
+            ("Fox News","https://moxie.foxnews.com/google-publisher/latest.xml"),
+            ("ABC News","https://feeds.abcnews.com/abcnews/topstories"),
+            ("CBS News","https://www.cbsnews.com/latest/rss/main"),
             ("CNBC","https://www.cnbc.com/id/100727362/device/rss/rss.html"),
+            ("Bloomberg","https://feeds.bloomberg.com/markets/news.rss"),
             ("Yahoo Finance","https://finance.yahoo.com/news/rssindex"),
-            ("Investing.com","https://www.investing.com/rss/news.rss"),
+            ("Wired","https://www.wired.com/feed/rss"),
+            ("Ars Technica","http://feeds.arstechnica.com/arstechnica/index"),
+            ("ProPublica","https://feeds.propublica.org/propublica/main"),
+            ("The Intercept","https://theintercept.com/feed/?rss"),
             ("AllSides","https://www.allsides.com/news/rss"),
+            ("WPR","https://www.wpr.org/feed"),
+            ("TMJ4 (WI)","https://www.tmj4.com/news/local/rss"),
+            ("CBS58 (WI)","https://www.cbs58.com/news/local-news.rss"),
+            ("Milwaukee Journal Sentinel","https://rss.jsonengage.com/milwaukee-journal-sentinel/"),
+            ("Investing.com","https://www.investing.com/rss/news.rss"),
             ("Google News","https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en"),
             ("Google: World","https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRGx1YlY4U0FtVnVHZ0pWVXlnQVAB?hl=en-US&gl=US&ceid=US:en"),
             ("Google: Tech","https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRGRqTVhZU0FtVnVHZ0pWVXlnQVAB?hl=en-US&gl=US&ceid=US:en"),
             ("Google: Business","https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRGx6TVdZU0FtVnVHZ0pWVXlnQVAB?hl=en-US&gl=US&ceid=US:en"),
+            ("Google: Science","https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNR1F3TlhZU0FtVnVHZ0pWVXlnQVAB?hl=en-US&gl=US&ceid=US:en"),
         ]
         articles = []
         for source, url in feeds:
