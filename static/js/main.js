@@ -17,6 +17,22 @@ function setTheme(name, el) {
   setTheme(saved, dot);
 })();
 
+// ── Text size A− / A+ ──────────────────────────────────────
+(function() {
+  const SIZES = [12, 13, 14, 16, 18, 21];
+  let idx = 2; // default 14px
+  function apply(i) {
+    idx = Math.max(0, Math.min(SIZES.length - 1, i));
+    document.getElementById('body').style.fontSize = SIZES[idx] + 'px';
+    try { localStorage.setItem('kevsec-fontsize', idx); } catch(e){}
+  }
+  try {
+    const s = parseInt(localStorage.getItem('kevsec-fontsize'));
+    if (!isNaN(s)) apply(s);
+  } catch(e){}
+  window.dashSize = function(d) { apply(idx + d); };
+})();
+
 // ── Clock ──────────────────────────────────────────────────
 const TZ_LIST = [
   { tz: 'UTC',                cls: 'tz-zulu',    std: 'UTC',  dst: 'UTC'  },
@@ -89,12 +105,56 @@ document.querySelectorAll('.tab[data-tab]').forEach(btn => {
   });
 });
 
+const M = 60000; // 1 minute
 function loadTab(tab) {
-  if (tab === 'intel')   { loadNews(); loadThreatLevel(); loadWikipedia(); loadAPOD(); loadStocks(false,'intel'); loadOzaukeeAlerts(); loadPresidentIntel(); loadCongressStatus(); loadMidtermIntel(); loadPolls(); loadF1(); loadPolTweets(); loadGovtIntel(); loadPodcasts(); }
-  if (tab === 'command') { loadServerStats(); loadProxmox(); loadExtServices(); loadTarpitStats(); buildSvcControlGrid(); loadGoals(); loadDjStatus(); }
-  if (tab === 'cyber')   { loadCVEs(); loadFirewallDrops(); loadSWPC(); loadServerHealth(); loadJailSummary(); }
-  if (tab === 'weather') { loadGarden(); loadWeather(); loadEarthquakes(); loadGDACS(); loadLakeMichigan(); loadAirNow(); loadWildfires(); loadSWPC(); loadMETAR(); initWi511Map(); loadWIWarnings(); loadLNM(); loadGlerlImages(); loadBurnBan(); }
-  if (tab === 'comms')   { loadHealth(); loadSkinLog(); loadShowerLog(); loadHealthLog(); loadPersonalNews(); loadNotepad(); loadReminders(); loadNotesList(); loadMemos(); }
+  if (tab === 'intel') {
+    // Immediate: fast/local
+    loadNews(); loadThreatLevel(); loadWikipedia(); loadAPOD(); loadOzaukeeAlerts();
+    // Stagger heavier intel pulls 1 min apart
+    setTimeout(() => loadStocks(false, 'intel'),  1*M);
+    setTimeout(() => loadPresidentIntel(),         2*M);
+    setTimeout(() => loadCongressStatus(),         3*M);
+    setTimeout(() => loadMidtermIntel(),           4*M);
+    setTimeout(() => loadPolls(),                  5*M);
+    setTimeout(() => loadF1(),                     6*M);
+    setTimeout(() => loadPolTweets(),              7*M);
+    setTimeout(() => loadGovtIntel(),              8*M);
+  }
+  if (tab === 'command') {
+    loadServerStats();
+    setTimeout(() => loadProxmox(),           1*M);
+    setTimeout(() => loadGoals(),             2*M);
+    setTimeout(() => loadDjStatus(),          3*M);
+    setTimeout(() => loadTarpitStats(),       4*M);
+    setTimeout(() => buildSvcControlGrid(),   4*M + 5000);
+    setTimeout(() => loadExtServices(),       5*M);  // heaviest — runs last
+  }
+  if (tab === 'cyber') {
+    loadCVEs(); loadFirewallDrops(); loadServerHealth(); loadJailSummary();
+    setTimeout(() => loadSWPC(), 2*M);
+  }
+  if (tab === 'weather') {
+    loadWeather(); loadEarthquakes();
+    setTimeout(() => loadAirNow(),       1*M);
+    setTimeout(() => loadGDACS(),        2*M);
+    setTimeout(() => loadLakeMichigan(), 3*M);
+    setTimeout(() => loadWildfires(),    4*M);
+    setTimeout(() => loadSWPC(),         5*M);
+    setTimeout(() => loadMETAR(),        6*M);
+    setTimeout(() => loadWIWarnings(),   7*M);
+    setTimeout(() => loadLNM(),          8*M);
+    setTimeout(() => loadGlerlImages(),  9*M);
+    setTimeout(() => loadBurnBan(),     10*M);
+    initWi511Map();
+  }
+  if (tab === 'comms') {
+    loadHealth(); loadNotepad(); loadReminders(); loadNotesList(); loadMemos();
+    setTimeout(() => loadSkinLog(),      1*M);
+    setTimeout(() => loadShowerLog(),    2*M);
+    setTimeout(() => loadHealthLog(),    3*M);
+    setTimeout(() => loadPersonalNews(), 4*M);
+  }
+  if (tab === 'garden') { loadGarden(); loadWateringLog(); renderInvasives(); }
 }
 function refreshAllCommand() {
   const btn = document.querySelector('[onclick="refreshAllCommand()"]');
@@ -105,19 +165,7 @@ function refreshAllCommand() {
 
 window.addEventListener('load', () => {
   tabLoaded['tab-intel'] = true;
-  // Priority 1: fast/cached data — load immediately
-  loadNews(); loadThreatLevel(); loadWikipedia(); loadAPOD(); loadOzaukeeAlerts();
-  // Priority 2: stagger heavier panels to avoid blocking the browser
-  setTimeout(() => { loadStocks(false, 'intel'); }, 200);
-  setTimeout(() => { loadPresidentIntel(); }, 400);
-  setTimeout(() => { loadCongressStatus(); }, 600);
-  setTimeout(() => { loadMidtermIntel(); }, 800);
-  setTimeout(() => { loadPolls(); }, 1000);
-  setTimeout(() => { loadF1(); }, 1200);
-  setTimeout(() => { loadPolTweets(); }, 1400);
-  setTimeout(() => { loadGovtIntel(); }, 1600);
-  setTimeout(() => { loadPodcasts(); }, 1800);
-  // Intervals
+  loadTab('intel');  // uses staggered loadTab logic above
   setInterval(loadServerStats, 30000);
   setInterval(refreshRadar, 300000);
 });
@@ -409,10 +457,14 @@ function loadAPOD(force) {
     }
 
     if (data.media_type === 'video') {
+      const isDirectVideo = /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(data.url);
+      const mediaEl = isDirectVideo
+        ? `<video src="${data.url}" controls style="width:100%;max-height:400px;background:#000;display:block"></video>`
+        : `<iframe src="${data.url}" style="width:100%;height:400px;border:none" allowfullscreen></iframe>`;
       el.innerHTML = `
         <div style="padding:14px 16px">
           <div style="font-family:var(--font-h);font-size:18px;color:var(--accent);margin-bottom:10px">${data.title}</div>
-          <iframe src="${data.url}" style="width:100%;height:400px;border:none" allowfullscreen></iframe>
+          ${mediaEl}
           <div style="font-size:12px;color:var(--text-dim);line-height:1.6;margin-top:12px">${data.explanation}</div>
           <div style="font-size:10px;color:var(--text-dim);margin-top:6px">© ${data.copyright || 'NASA'}</div>
         </div>`;
@@ -465,8 +517,8 @@ function loadServerStats(force) {
         ${bar(parseInt(data.disk_pct))}
       </div>
       <div class="stat-box">
-        <div class="stat-label">Swap</div>
-        <div class="stat-value">${data.swap_pct !== undefined ? data.swap_pct + '%' : 'N/A'}</div>
+        <div class="stat-label" style="${data.swap_pct > 70 ? 'color:var(--warn,#f59e0b)' : ''}">Swap${data.swap_pct > 70 ? ' ⚠' : ''}</div>
+        <div class="stat-value" style="${data.swap_pct > 85 ? 'color:var(--danger,#f87171)' : data.swap_pct > 70 ? 'color:var(--warn,#f59e0b)' : ''}">${data.swap_pct !== undefined ? data.swap_pct + '%' : 'N/A'}</div>
         <div class="stat-sub">${data.swap_used !== undefined ? data.swap_used + 'MB / ' + data.swap_total + 'MB' : ''}</div>
         ${data.swap_pct !== undefined ? bar(data.swap_pct) : ''}
       </div>`;
@@ -802,6 +854,35 @@ function serverAction(action, delay) {
         if (data.error) _svcFeedback('✕ ' + data.error, '#cc4400');
       });
     },
+  });
+}
+
+function cleanupTmp() {
+  _svcFeedback('Cleaning /tmp…', '#cc7700');
+  _postControl('/api/cleanup_tmp', {}, data => {
+    if (data.error) {
+      _svcFeedback('✕ ' + data.error, '#cc4400');
+    } else {
+      _svcFeedback('✓ ' + (data.output || 'Done'), '#4a9c4a');
+    }
+  });
+}
+
+function jellyfinScan() {
+  const btn = document.getElementById('jf-scan-btn');
+  const st  = document.getElementById('jf-scan-status');
+  if (btn) btn.disabled = true;
+  if (st)  st.textContent = '⏳ Starting scan…';
+  _postControl('/api/jellyfin_scan', {}, data => {
+    if (btn) btn.disabled = false;
+    if (data.error || !data.ok) {
+      if (st) st.textContent = '✕ ' + (data.error || data.msg || 'Failed');
+      if (st) st.style.color = '#cc4400';
+    } else {
+      if (st) st.textContent = '✓ Scan started';
+      if (st) st.style.color = '#4a9c4a';
+      setTimeout(() => { if (st) st.textContent = ''; }, 8000);
+    }
   });
 }
 
@@ -1242,6 +1323,62 @@ function loadGarden(force) {
     const frostRisk  = wdata.frost_risk  || frost.risk  || '—';
     const hist       = gdata.precip_history || [];
 
+    // Soil Moisture panel
+    const smEl = document.getElementById('soil-moisture-panel');
+    if (smEl) {
+      const sm = gdata.soil_moisture || {};
+      const layers = [
+        { key: 'top_1cm',  label: '0–1 cm (surface)', icon: '🌱' },
+        { key: 'top_3cm',  label: '1–3 cm (shallow)',  icon: '🌿' },
+        { key: 'top_9cm',  label: '3–9 cm (root zone)', icon: '🌳' },
+      ];
+      const smGauge = (pct) => {
+        if (pct === null || pct === undefined) return '<span style="color:var(--text-dim)">N/A</span>';
+        const color = pct < 15 ? '#cc4444' : pct < 30 ? '#cc7700' : '#4a9c4a';
+        const barW = Math.min(100, pct);
+        return `<div style="display:flex;align-items:center;gap:8px">
+          <div style="flex:1;height:10px;background:#111;border:1px solid var(--border);border-radius:4px;overflow:hidden">
+            <div style="height:100%;width:${barW}%;background:${color};transition:width 0.4s"></div>
+          </div>
+          <span style="font-size:12px;color:${color};font-family:var(--font-m);width:45px;text-align:right">${pct}%</span>
+        </div>`;
+      };
+      smEl.innerHTML = `
+        <div style="padding:14px 16px">
+          ${layers.map(l => `
+            <div style="margin-bottom:12px">
+              <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+                <span style="font-size:10px;color:var(--text-dim);letter-spacing:1px">${l.icon} ${l.label}</span>
+                <span style="font-size:9px;color:var(--text-dim)">vol. water content</span>
+              </div>
+              ${smGauge(sm[l.key])}
+            </div>`).join('')}
+          <div style="font-size:9px;color:var(--text-dim);margin-top:8px;letter-spacing:1px">
+            SOURCE: Open-Meteo ERA5 model — updated hourly · Port Washington WI
+          </div>
+        </div>`;
+    }
+
+    // Garden Status panel
+    const gsEl = document.getElementById('garden-status-panel');
+    if (gsEl && gdata.plants) {
+      const statusColor = s => s==='GOOD'?'#4a9c4a':s==='LOW'?'#cc7700':'#cc4444';
+      gsEl.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:0">` +
+        gdata.plants.map(p => `
+          <div style="padding:12px 14px;border-bottom:1px solid var(--border);border-right:1px solid var(--border)">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <span style="font-size:14px">${p.icon} <strong style="color:var(--text-hi);font-size:11px">${p.name}</strong></span>
+              <span style="font-family:var(--font-m);font-size:11px;color:${statusColor(p.status)};
+                    border:1px solid ${statusColor(p.status)};padding:1px 6px;border-radius:3px">${p.status}</span>
+            </div>
+            <div style="font-size:10px;color:var(--text-dim);margin-bottom:4px">
+              ${p.rain_7d}" rain · ${p.need_in}" needed · ${p.deficit>0?p.deficit+'" deficit':'surplus'}
+            </div>
+            <div style="font-size:10px;color:var(--text-hi);line-height:1.5">${p.tip}</div>
+          </div>`).join('') +
+        `</div>`;
+    }
+
     // ── Decision cell ──────────────────────────────────────────────────
     function decCell(day) {
       if (!day) return '<td style="color:var(--text-dim)">—</td>';
@@ -1278,9 +1415,10 @@ function loadGarden(force) {
       return `${d.icon} ${label}<br><span style="font-size:9px;color:var(--text-dim)">${d.date.slice(5)} · ${d.tmax_f??'?'}°/${d.tmin_f??'?'}° · ${d.rain_in}"</span>`;
     };
 
-    const lawnSched   = (schedules.lawn        || {}).schedule || [];
-    const azaleaSched = (schedules.azalea       || {}).schedule || [];
-    const flowerSched = (schedules.wildflowers  || {}).schedule || [];
+    const lawnSched    = (schedules.lawn        || {}).schedule || [];
+    const azaleaSched  = (schedules.azalea       || {}).schedule || [];
+    const flowerSched  = (schedules.wildflowers  || {}).schedule || [];
+    const catnipSched  = (schedules.catnip       || {}).schedule || [];
 
     const hasData = lawnSched.length > 0;
 
@@ -1329,12 +1467,13 @@ function loadGarden(force) {
               <th style="text-align:center">🌿 Lawn</th>
               <th style="text-align:center">🌸 Azaleas</th>
               <th style="text-align:center">🌻 Wildflowers</th>
+              <th style="text-align:center">🐱 Catnip</th>
             </tr></thead>
             <tbody>
-              ${Array.from({length: Math.max(lawnSched.length, azaleaSched.length, flowerSched.length)}, (_,i) => `
+              ${Array.from({length: Math.max(lawnSched.length, azaleaSched.length, flowerSched.length, catnipSched.length)}, (_,i) => `
               <tr ${i%2===0 ? 'style="background:rgba(255,255,255,0.03)"' : ''}>
                 <td style="font-size:10px;white-space:nowrap">${dayLabel(lawnSched,i)}</td>
-                ${decCell(lawnSched[i])}${decCell(azaleaSched[i])}${decCell(flowerSched[i])}
+                ${decCell(lawnSched[i])}${decCell(azaleaSched[i])}${decCell(flowerSched[i])}${decCell(catnipSched[i])}
               </tr>`).join('')}
             </tbody>
           </table>
@@ -1347,6 +1486,7 @@ function loadGarden(force) {
             <div>🌱 <strong style="color:var(--text-hi)">Lawn water:</strong> 1–1.5" per week in growing season</div>
             <div>🌸 <strong style="color:var(--text-hi)">Azaleas:</strong> Deep soak every 7–10 days; hate wet roots</div>
             <div>🌻 <strong style="color:var(--text-hi)">Wildflowers:</strong> Drought tolerant once established; 1x/week new plants</div>
+            <div>🐱 <strong style="color:var(--text-hi)">Catnip:</strong> Very drought tolerant; water only when wilted or bone dry</div>
             <div>📅 <strong style="color:var(--text-hi)">Transplant safe:</strong> After May 15 (last frost ~May 7)</div>
             <div>🍂 <strong style="color:var(--text-hi)">First fall frost:</strong> ~Oct 8 · 153-day season</div>
           </div>
@@ -1363,6 +1503,147 @@ function loadGarden(force) {
   });
 }
 
+function loadWateringLog() {
+  const el = document.getElementById('watering-log-panel');
+  if (!el) return;
+  fetch('/api/watering_log').then(r => r.json()).then(log => {
+    if (!Array.isArray(log) || log.length === 0) {
+      el.innerHTML = '<div style="padding:16px;color:var(--text-dim);font-size:11px">No watering events logged yet.</div>';
+      return;
+    }
+    const sorted = [...log].map((e,i) => ({...e, _idx:i})).sort((a,b) => b.date.localeCompare(a.date));
+    el.innerHTML = `
+      <div style="overflow-x:auto">
+        <table class="fw-table" style="width:100%">
+          <thead><tr>
+            <th>Date</th><th>Plant</th><th>Amount</th><th>Note</th><th>Logged</th><th></th>
+          </tr></thead>
+          <tbody>${sorted.map(e => {
+            const plantIcon = {lawn:'🌿',azalea:'🌸',wildflowers:'🌻',catnip:'🐱'}[e.plant] || '🌱';
+            const logTime = e.logged_at ? e.logged_at.slice(0,16).replace('T',' ') : '';
+            return `<tr>
+              <td style="font-family:var(--font-m);color:var(--accent)">${e.date}</td>
+              <td>${plantIcon} ${e.plant}</td>
+              <td>${e.amount_in != null ? e.amount_in+'"' : '—'}</td>
+              <td style="color:var(--text-dim);font-size:10px">${e.note || '—'}</td>
+              <td style="color:var(--text-dim);font-size:9px">${logTime}</td>
+              <td><button class="refresh-btn" style="font-size:9px;padding:1px 6px"
+                onclick="deleteWateringLog(${e._idx})">✕</button></td>
+            </tr>`;
+          }).join('')}</tbody>
+        </table>
+      </div>`;
+  }).catch(() => {
+    if (el) el.innerHTML = '<div style="padding:16px;color:#cc4444">Failed to load watering log.</div>';
+  });
+}
+
+function submitWateringLog() {
+  const plant  = document.getElementById('wlog-plant')?.value;
+  const date   = document.getElementById('wlog-date')?.value || new Date().toISOString().slice(0,10);
+  const amount = parseFloat(document.getElementById('wlog-amount')?.value) || null;
+  const note   = document.getElementById('wlog-note')?.value || '';
+  const token  = document.querySelector('meta[name="csrf-token"]');
+  const csrf   = token ? token.content : '';
+  fetch('/api/watering_log', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json','X-CSRF-Token': csrf},
+    body: JSON.stringify({plant, date, amount_in: amount, note, _csrf: csrf})
+  }).then(r => r.json()).then(d => {
+    if (d.ok) {
+      document.getElementById('wlog-note').value = '';
+      document.getElementById('wlog-amount').value = '';
+      loadWateringLog();
+    } else {
+      alert('Error: ' + (d.error || 'unknown'));
+    }
+  });
+}
+
+function deleteWateringLog(idx) {
+  const token = document.querySelector('meta[name="csrf-token"]');
+  const csrf  = token ? token.content : '';
+  fetch(`/api/watering_log/${idx}`, {
+    method: 'DELETE',
+    headers: {'X-CSRF-Token': csrf, 'Content-Type':'application/json'},
+    body: JSON.stringify({_csrf: csrf})
+  }).then(r => r.json()).then(d => { if (d.ok) loadWateringLog(); });
+}
+
+function renderInvasives() {
+  const el = document.getElementById('invasives-panel');
+  if (!el) return;
+  const today = new Date();
+  const month = today.getMonth() + 1;
+
+  const species = [
+    { name: 'Garlic Mustard', sci: 'Alliaria petiolata', icon: '🌿',
+      active: month >= 4 && month <= 6, season: 'Apr–Jun (pull before seed set)',
+      control: 'Hand pull before seed set; bag and trash (do NOT compost)',
+      desc: 'White flowers, heart-shaped leaves. Spreads rapidly in shaded areas. Allelopathic — kills tree seedlings.' },
+    { name: 'Japanese Barberry', sci: 'Berberis thunbergii', icon: '🌳',
+      active: true, season: 'Year-round visible; treat spring/fall',
+      control: 'Cut-stump herbicide (glyphosate or triclopyr); hand pull small plants in spring',
+      desc: 'Thorny shrub, red berries. Dense colonies crowd out native understory. Tick habitat.' },
+    { name: 'Common Buckthorn', sci: 'Rhamnus cathartica', icon: '🌲',
+      active: true, season: 'Year-round; best treatment Oct–Mar',
+      control: 'Cut-stump treatment fall/winter when natives are dormant; foliar spray in fall',
+      desc: 'Small tree, thorn-tipped branches. Out-competes native shrubs. Laxative berries spread seeds widely.' },
+    { name: 'Glossy Buckthorn', sci: 'Frangula alnus', icon: '🌲',
+      active: true, season: 'Year-round; treat Oct–Mar',
+      control: 'Same as common buckthorn; avoid cutting in berry season',
+      desc: 'Similar to common buckthorn but glossy leaves, no thorns. Common in wet areas and roadsides.' },
+    { name: 'Multiflora Rose', sci: 'Rosa multiflora', icon: '🌹',
+      active: month >= 5 && month <= 6, season: 'Flowers May–Jun; treat spring or fall',
+      control: 'Cut to ground repeatedly; goats effective; herbicide on cut stumps',
+      desc: 'Dense thorny thicket. White flowers in clusters. Impossible to walk through once established.' },
+    { name: 'Purple Loosestrife', sci: 'Lythrum salicaria', icon: '💜',
+      active: month >= 7 && month <= 9, season: 'Flowers Jul–Sep; treat before seed set',
+      control: 'Galerucella beetles (biocontrol); herbicide in wet areas with permit; hand pull small patches',
+      desc: 'Tall purple spikes in wetlands. Chokes out native cattail and sedge. One plant = millions of seeds.' },
+    { name: 'Japanese Knotweed', sci: 'Reynoutria japonica', icon: '🎋',
+      active: month >= 4 && month <= 10, season: 'Emerges Apr; treat Jun–Sep when 3–7ft tall',
+      control: 'Repeated cutting weakens; inject or foliar herbicide in late summer/fall; NEVER compost',
+      desc: 'Bamboo-like. Grows 10ft, regrows from 0.7" root fragments. Extremely difficult to eradicate.' },
+    { name: 'Wild Parsnip', sci: 'Pastinaca sativa', icon: '⚠️',
+      active: month >= 5 && month <= 7, season: 'Flowers May–Jul — TOXIC',
+      control: 'WEAR GLOVES AND LONG SLEEVES. Cut before flower; bag. Skin contact + sunlight = severe burns.',
+      desc: 'Yellow umbrella flowers, roadside ditches. Sap causes phototoxic burns (like severe poison ivy × 10). DO NOT mow — spreads.' },
+    { name: 'Reed Canary Grass', sci: 'Phalaris arundinacea', icon: '🌾',
+      active: month >= 4 && month <= 10, season: 'Growing Apr–Oct; treat May or Sep',
+      control: 'Repeated mowing weakens; herbicide in fall; replace with native wetland plants',
+      desc: 'Tall grass in wet areas. Forms dense monocultures that block native species recruitment.' },
+    { name: 'Phragmites', sci: 'Phragmites australis (non-native)', icon: '🌾',
+      active: month >= 8 && month <= 10, season: 'Treat Aug–Oct before frost',
+      control: 'Herbicide in late summer/fall; cut + herbicide combo; WI permit required for wetland applications',
+      desc: 'Giant reed grass up to 15ft, tan/grey plumes in fall. Fills wetlands, ditches, lake shores.' },
+  ];
+
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:0">
+      ${species.map(s => `
+        <div style="padding:12px 14px;border-bottom:1px solid var(--border);border-right:1px solid var(--border)">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+            <div>
+              <span style="font-size:13px">${s.icon} <strong style="color:var(--text-hi)">${s.name}</strong></span>
+              <div style="font-size:9px;color:var(--text-dim);font-style:italic;margin-top:1px">${s.sci}</div>
+            </div>
+            <span style="font-size:9px;letter-spacing:1px;padding:2px 6px;border-radius:3px;
+              background:${s.active ? 'rgba(204,68,68,0.2)' : 'rgba(30,30,42,0.6)'};
+              border:1px solid ${s.active ? '#cc4444' : 'var(--border)'};
+              color:${s.active ? '#ff6666' : 'var(--text-dim)'};white-space:nowrap;flex-shrink:0">
+              ${s.active ? '⚡ ACTIVE' : 'DORMANT'}
+            </span>
+          </div>
+          <div style="font-size:10px;color:var(--text-dim);margin-bottom:4px">📅 ${s.season}</div>
+          <div style="font-size:10px;color:var(--text-hi);margin-bottom:4px;line-height:1.4">${s.desc}</div>
+          <div style="font-size:10px;color:#6a9c4a;line-height:1.4">🔧 ${s.control}</div>
+        </div>`).join('')}
+    </div>
+    <div style="padding:8px 14px;font-size:9px;color:var(--text-dim);letter-spacing:1px">
+      SOURCE: WI DNR Invasive Species Program · Ozaukee County · Updated for zone 5b spring 2026
+    </div>`;
+}
 
 function loadMidtermIntel(force) {
   api(force ? '/api/midterm_intel?force=1' : '/api/midterm_intel', data => {
@@ -1824,53 +2105,6 @@ function loadTarpitStats(force) {
       }
     }
   });
-}
-
-// ══════════════════════════════════════════════════════════
-//  PODCASTS
-// ══════════════════════════════════════════════════════════
-function loadPodcasts(force) {
-  const list = document.getElementById('podcast-list');
-  if (!list) return;
-  list.innerHTML = '<div class="loading">Loading podcasts...</div>';
-
-  api(force ? '/api/podcasts?force=1' : '/api/podcasts', data => {
-    const ts = document.getElementById('podcast-ts');
-    if (ts) ts.textContent = data.fetched || '';
-    const pods = data.podcasts || [];
-    if (!pods.length) {
-      list.innerHTML = '<div style="padding:12px 16px;color:var(--muted);font-size:12px">No podcasts available</div>';
-      return;
-    }
-    list.innerHTML = pods.map((p, i) => {
-      const dur = p.duration ? ` · ${p.duration}` : '';
-      const pub = p.published ? ` · ${p.published.slice(0,10)}` : '';
-      return `<div class="feed-item" style="cursor:pointer;padding:12px 16px;border-bottom:1px solid var(--border);display:flex;gap:14px;align-items:flex-start;transition:background .15s"
-        onclick="playPodcast(${JSON.stringify(p.audio_url)}, ${JSON.stringify(p.name)}, ${JSON.stringify(p.episode)})"
-        onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
-        <div style="flex-shrink:0;width:32px;height:32px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--accent)">▶</div>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:10px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:3px">${esc(p.name)}</div>
-          <div style="font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.episode)}</div>
-          <div style="font-size:10px;color:var(--muted);margin-top:3px">${pub.trim()}${dur}</div>
-        </div>
-      </div>`;
-    }).join('');
-  });
-}
-
-function playPodcast(url, show, title) {
-  const player = document.getElementById('podcast-player');
-  const audio = document.getElementById('pod-audio');
-  const showEl = document.getElementById('pod-now-show');
-  const titleEl = document.getElementById('pod-now-title');
-  if (!audio || !player) return;
-  player.style.display = 'flex';
-  player.style.flexDirection = 'column';
-  showEl.textContent = show;
-  titleEl.textContent = title;
-  audio.src = url;
-  audio.play().catch(() => {});
 }
 
 // ══════════════════════════════════════════════════════════

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 60" width="240" height="60">
+  <defs>
+    <linearGradient id="glow" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#00ff88;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#00e5ff;stop-opacity:1"/>
+    </linearGradient>
+  </defs>
+  <!-- Shield icon -->
+  <path d="M12 6 L22 10 L22 22 Q22 30 12 34 Q2 30 2 22 L2 10 Z" fill="none" stroke="#00ff88" stroke-width="1.5" opacity="0.9"/>
+  <path d="M12 11 L18 14 L18 22 Q18 27 12 30 Q6 27 6 22 L6 14 Z" fill="#00ff88" opacity="0.1"/>
+  <text x="12" y="24" text-anchor="middle" font-family="'Courier New',monospace" font-size="10" font-weight="bold" fill="#00ff88">K</text>
+  <!-- KEVSEC text -->
+  <text x="32" y="36" font-family="'Courier New','Lucida Console',monospace" font-size="24" font-weight="900" letter-spacing="4" fill="url(#glow)">KEVSEC</text>
+  <!-- Tagline -->
+  <text x="33" y="50" font-family="'Courier New',monospace" font-size="8" letter-spacing="5" fill="#586069">INTELLIGENCE</text>
+  <!-- Decorative line -->
+  <line x1="32" y1="40" x2="226" y2="40" stroke="#00ff88" stroke-width="0.5" opacity="0.3"/>
+</svg>

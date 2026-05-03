@@ -8,16 +8,31 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
-  :root {
+  /* ── Dark theme (default) ── */
+  :root, [data-theme="dark"] {
     --green: #00ff88;
     --cyan: #00e5ff;
     --bg: #080b0f;
     --bg2: #0d1117;
     --bg3: #111820;
     --border: #1a2535;
-    --text: #c9d1d9;
-    --muted: #586069;
+    --text: #edf2f7;
+    --muted: #a0adb8;
     --red: #ff4757;
+    --nav-bg: rgba(8,11,15,0.92);
+  }
+  /* ── Light theme ── */
+  [data-theme="light"] {
+    --green: #0a8a50;
+    --cyan: #0077aa;
+    --bg: #f0f4f8;
+    --bg2: #ffffff;
+    --bg3: #e8eef4;
+    --border: #c8d4e0;
+    --text: #1a2333;
+    --muted: #4a5a6e;
+    --red: #cc2233;
+    --nav-bg: rgba(240,244,248,0.95);
   }
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   html { scroll-behavior: smooth; }
@@ -28,6 +43,7 @@
     font-size: 14px;
     line-height: 1.6;
     overflow-x: hidden;
+    transition: background .25s, color .25s;
   }
 
   /* ── NAV ── */
@@ -35,10 +51,29 @@
     position: fixed; top: 0; left: 0; right: 0; z-index: 100;
     display: flex; align-items: center; justify-content: space-between;
     padding: 0 48px; height: 56px;
-    background: rgba(8,11,15,0.92);
+    background: var(--nav-bg);
     backdrop-filter: blur(8px);
     border-bottom: 1px solid var(--border);
+    transition: background .25s;
   }
+  .nav-controls { display: flex; align-items: center; gap: 10px; }
+  .nav-ctrl-btn {
+    background: rgba(128,160,192,.12);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    padding: 5px 11px;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all .2s;
+    white-space: nowrap;
+    letter-spacing: 1px;
+  }
+  .nav-ctrl-btn:hover { border-color: var(--green); color: var(--green); }
+  .nav-size-wrap { display: flex; align-items: center; gap: 2px; background: rgba(128,160,192,.08); border: 1px solid var(--border); border-radius: 14px; padding: 3px 8px; }
+  .nav-size-btn { background:none; border:none; color:var(--muted); cursor:pointer; padding:1px 5px; font-family:monospace; transition:color .2s; line-height:1; }
+  .nav-size-btn:hover { color:var(--green); }
   .nav-logo { font-size: 18px; font-weight: 700; letter-spacing: 4px; color: var(--green); cursor: default; user-select: none; }
   .nav-logo span { color: var(--muted); }
   .nav-links { display: flex; gap: 32px; }
@@ -72,9 +107,9 @@
     display: flex; align-items: center; gap: 12px;
   }
   .hero-eyebrow::before { content: ''; display: block; width: 32px; height: 1px; background: var(--green); }
-  h1 { font-size: clamp(32px, 5vw, 58px); font-weight: 700; line-height: 1.1; letter-spacing: -1px; color: #e6edf3; margin-bottom: 24px; }
+  h1 { font-size: clamp(32px, 5vw, 58px); font-weight: 700; line-height: 1.1; letter-spacing: -1px; color: var(--text); margin-bottom: 24px; }
   h1 .accent { color: var(--green); }
-  .hero-sub { font-size: 15px; color: var(--muted); max-width: 520px; line-height: 1.8; margin-bottom: 40px; }
+  .hero-sub { font-size: 15px; color: var(--text); max-width: 520px; line-height: 1.8; margin-bottom: 40px; }
   .hero-stats { display: flex; gap: 40px; flex-wrap: wrap; }
   .stat { display: flex; flex-direction: column; gap: 4px; }
   .stat-num { font-size: 24px; font-weight: 700; color: var(--cyan); }
@@ -98,13 +133,13 @@
   section { padding: 96px 48px; }
   .section-label { font-size: 11px; letter-spacing: 4px; color: var(--green); text-transform: uppercase; margin-bottom: 16px; display: flex; align-items: center; gap: 12px; }
   .section-label::before { content: '//'; color: var(--muted); }
-  h2 { font-size: clamp(24px, 3vw, 36px); color: #e6edf3; font-weight: 700; margin-bottom: 48px; }
+  h2 { font-size: clamp(24px, 3vw, 36px); color: var(--text); font-weight: 700; margin-bottom: 48px; }
 
   /* ── ABOUT ── */
   #about { background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
   .about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: start; max-width: 1100px; }
   @media (max-width: 768px) { .about-grid { grid-template-columns: 1fr; } }
-  .about-text p { color: var(--muted); line-height: 1.9; margin-bottom: 20px; font-size: 14px; }
+  .about-text p { color: var(--text); line-height: 1.9; margin-bottom: 20px; font-size: 14px; }
   .about-text p:last-child { margin-bottom: 0; }
   .terminal-card { background: var(--bg); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
   .terminal-bar { background: #161c24; padding: 10px 16px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); }
@@ -123,8 +158,8 @@
   .cap-card { background: var(--bg2); border: 1px solid var(--border); padding: 24px; transition: border-color .2s, transform .2s; }
   .cap-card:hover { border-color: var(--green); transform: translateY(-2px); }
   .cap-icon { font-size: 20px; margin-bottom: 16px; color: var(--green); font-family: monospace; }
-  .cap-title { color: #e6edf3; font-size: 14px; font-weight: 700; margin-bottom: 8px; letter-spacing: 1px; }
-  .cap-desc { color: var(--muted); font-size: 12px; line-height: 1.7; }
+  .cap-title { color: var(--text); font-size: 14px; font-weight: 700; margin-bottom: 8px; letter-spacing: 1px; }
+  .cap-desc { color: var(--text); font-size: 12px; line-height: 1.7; }
 
   /* ── OPERATIVE ── */
   #operative { background: var(--bg); }
@@ -155,7 +190,7 @@
     padding: 3px 8px; border: 1px solid var(--green);
     color: var(--green); text-transform: uppercase; margin-right: 6px; margin-bottom: 6px;
   }
-  .bio-text p { color: var(--muted); line-height: 1.9; margin-bottom: 20px; font-size: 14px; }
+  .bio-text p { color: var(--text); line-height: 1.9; margin-bottom: 20px; font-size: 14px; }
   .bio-text p:last-child { margin-bottom: 0; }
   .spec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 32px; }
   @media (max-width: 600px) { .spec-grid { grid-template-columns: 1fr; } }
@@ -167,8 +202,8 @@
   .spec-item:hover { border-color: var(--green); }
   .spec-bullet { color: var(--green); font-size: 14px; flex-shrink: 0; margin-top: 1px; }
   .spec-body { display: flex; flex-direction: column; gap: 3px; }
-  .spec-title { font-size: 12px; color: #e6edf3; font-weight: 700; letter-spacing: 1px; }
-  .spec-desc { font-size: 11px; color: var(--muted); }
+  .spec-title { font-size: 12px; color: var(--text); font-weight: 700; letter-spacing: 1px; }
+  .spec-desc { font-size: 11px; color: var(--text); }
 
   /* ── PLATFORM STATUS ── */
   #platform { background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
@@ -401,9 +436,10 @@
 
   /* ── MOBILE RESPONSIVE ── */
   @media (max-width: 600px) {
-    nav { padding: 0 20px; }
+    nav { padding: 0 14px; }
     .nav-links { gap: 16px; }
     .nav-links a { font-size: 10px; letter-spacing: 1px; }
+    .nav-links { display: none; }
     .hero { padding: 80px 20px 48px; }
     section { padding: 64px 20px; }
     .hero-stats { gap: 24px; }
@@ -413,6 +449,10 @@
     #threat-toast { right: 10px; width: 260px; }
   }
   @media (max-width: 480px) {
+    .nav-ctrl-btn span { display: none; }
+    .nav-ctrl-btn::after { content: '☀'; }
+  }
+  @media (max-width: 480px) {
     h1 { font-size: 28px; }
     .nav-links { display: none; }
     .maps-grid { grid-template-columns: 1fr; }
@@ -420,10 +460,222 @@
     .contact-grid { grid-template-columns: 1fr; }
   }
 
-  /* ── MATRIX CANVAS ── */
-  #matrix-canvas {
-    position: absolute; inset: 0; z-index: 0;
-    opacity: 0.06; pointer-events: none;
+  /* ── HERO ENTRANCE ANIMATIONS ── */
+  @keyframes hero-in {
+    from { opacity: 0; transform: translateY(22px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .hero-content .hero-eyebrow { animation: hero-in 0.65s ease both; animation-delay: 0.15s; }
+  .hero-content h1             { animation: hero-in 0.65s ease both; animation-delay: 0.35s; }
+  .hero-content .hero-sub      { animation: hero-in 0.65s ease both; animation-delay: 0.55s; }
+  .hero-content .hero-stats    { animation: hero-in 0.65s ease both; animation-delay: 0.75s; }
+  .hero-content #visitor-panel { animation: hero-in 0.65s ease both; animation-delay: 0.95s; }
+
+  /* ── SCROLL REVEAL ── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(26px);
+    transition: opacity 0.65s ease, transform 0.65s ease;
+  }
+  .reveal.revealed { opacity: 1; transform: none; }
+  .reveal-delay-1 { transition-delay: 0.1s; }
+  .reveal-delay-2 { transition-delay: 0.2s; }
+  .reveal-delay-3 { transition-delay: 0.3s; }
+  .reveal-delay-4 { transition-delay: 0.4s; }
+  .reveal-delay-5 { transition-delay: 0.5s; }
+  .reveal-delay-6 { transition-delay: 0.6s; }
+
+  /* ── NAV LOGO GLITCH ── */
+  @keyframes glitch-logo {
+    0%, 82%, 100% { text-shadow: none; transform: none; }
+    83%  { text-shadow: -2px 0 var(--red), 2px 0 var(--cyan); transform: translateX(2px); }
+    84%  { text-shadow: 2px 0 var(--red), -2px 0 var(--cyan); transform: translateX(-2px); }
+    85%  { text-shadow: none; transform: none; }
+    86%  { text-shadow: -1px 0 var(--cyan), 1px 0 var(--red); transform: translateX(1px); }
+    87%, 100% { text-shadow: none; transform: none; }
+  }
+  .nav-logo { animation: glitch-logo 9s infinite; }
+
+  /* ── CAPABILITY CARD ACCENTS ── */
+  .cap-card { position: relative; overflow: hidden; }
+  .cap-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: var(--cap-col, var(--green));
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.35s ease;
+  }
+  .cap-card:hover::before { transform: scaleX(1); }
+  .cap-card::after {
+    content: '';
+    position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse at 50% 0%, rgba(0,255,136,0.04), transparent 65%);
+    opacity: 0; transition: opacity .3s;
+  }
+  .cap-card:hover::after { opacity: 1; }
+
+  /* ── MAP CARD THUMBNAILS ── */
+  .map-thumb { position: relative; overflow: hidden; font-size: 0 !important; }
+
+  /* Bitdefender — radar sweep */
+  .map-thumb-bd { background: radial-gradient(circle at 50% 50%, rgba(0,255,136,0.07) 0%, transparent 70%); }
+  .map-thumb-bd::before {
+    content: '';
+    position: absolute; top: 50%; left: 50%;
+    width: 70px; height: 70px;
+    margin: -35px 0 0 -35px;
+    border-radius: 50%;
+    border: 1px solid rgba(0,255,136,0.25);
+    box-shadow: 0 0 0 16px rgba(0,255,136,0.07), 0 0 0 30px rgba(0,255,136,0.04);
+  }
+  .map-thumb-bd::after {
+    content: '';
+    position: absolute; top: 50%; left: 50%;
+    width: 60px; height: 60px;
+    margin: -30px 0 0 -30px;
+    background: conic-gradient(from 0deg, transparent 0deg, rgba(0,255,136,0.5) 40deg, transparent 80deg);
+    border-radius: 50%;
+    animation: radar-sweep 2.8s linear infinite;
+  }
+  @keyframes radar-sweep { to { transform: rotate(360deg); } }
+
+  /* Kaspersky — globe meridians */
+  .map-thumb-ksp { background: radial-gradient(circle at 50% 50%, rgba(0,229,255,0.06) 0%, transparent 70%); }
+  .map-thumb-ksp::before {
+    content: '';
+    position: absolute; top: 50%; left: 50%;
+    width: 64px; height: 64px;
+    margin: -32px 0 0 -32px;
+    border-radius: 50%;
+    border: 1px solid rgba(0,229,255,0.3);
+    background: repeating-conic-gradient(rgba(0,229,255,0.07) 0deg 10deg, transparent 10deg 20deg);
+  }
+  .map-thumb-ksp::after {
+    content: '';
+    position: absolute; top: 50%; left: 50%;
+    width: 64px; height: 64px;
+    margin: -32px 0 0 -32px;
+    border-radius: 50%;
+    border: none;
+    outline: none;
+    background:
+      linear-gradient(rgba(0,229,255,0.15) 1px, transparent 1px) center / 64px 16px,
+      linear-gradient(90deg, transparent 49%, rgba(0,229,255,0.2) 50%, transparent 51%) center / 16px 64px;
+  }
+
+  /* FortiGuard — energy burst */
+  .map-thumb-fg { background: radial-gradient(circle at 50% 50%, rgba(255,136,0,0.08) 0%, transparent 70%); }
+  .map-thumb-fg::before {
+    content: '';
+    position: absolute; top: 50%; left: 50%;
+    width: 2px; height: 50px;
+    margin: -25px 0 0 -1px;
+    background: linear-gradient(to bottom, transparent, rgba(255,136,0,0.8), transparent);
+    box-shadow:
+      14px  8px 0 0 rgba(255,136,0,0.4),
+     -14px  8px 0 0 rgba(255,136,0,0.4),
+      22px -4px 0 0 rgba(255,136,0,0.2),
+     -22px -4px 0 0 rgba(255,136,0,0.2);
+    animation: burst-pulse 1.6s ease-in-out infinite;
+  }
+  .map-thumb-fg::after {
+    content: '';
+    position: absolute; top: 50%; left: 50%;
+    width: 30px; height: 30px;
+    margin: -15px 0 0 -15px;
+    border-radius: 50%;
+    background: rgba(255,136,0,0.15);
+    box-shadow: 0 0 0 8px rgba(255,136,0,0.06), 0 0 20px rgba(255,136,0,0.2);
+    animation: burst-pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes burst-pulse { 0%,100%{opacity:0.6;transform:scale(0.9)} 50%{opacity:1;transform:scale(1.1)} }
+
+  /* Check Point — hexagonal lock */
+  .map-thumb-cp { background: radial-gradient(circle at 50% 50%, rgba(255,71,87,0.06) 0%, transparent 70%); }
+  .map-thumb-cp::before {
+    content: '';
+    position: absolute; top: 50%; left: 50%;
+    width: 52px; height: 60px;
+    margin: -30px 0 0 -26px;
+    background:
+      linear-gradient(60deg, transparent 25%, rgba(255,71,87,0.15) 25%, rgba(255,71,87,0.15) 75%, transparent 75%),
+      linear-gradient(120deg, transparent 25%, rgba(255,71,87,0.15) 25%, rgba(255,71,87,0.15) 75%, transparent 75%);
+    border: 1px solid rgba(255,71,87,0.25);
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  }
+  .map-thumb-cp::after {
+    content: '🔒';
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 22px !important;
+    opacity: 0.7;
+  }
+
+  /* ── MOBILE BOTTOM NAV ── */
+  .mobile-bottom-nav {
+    display: none;
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
+    background: rgba(8,11,15,0.97);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid var(--border);
+    padding: 0;
+  }
+  .mobile-bottom-nav nav {
+    display: flex; justify-content: space-around;
+    position: static; background: none; border: none; padding: 0;
+    height: 54px; backdrop-filter: none;
+  }
+  .mobile-bottom-nav a {
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: var(--muted); text-decoration: none; font-size: 9px; letter-spacing: 1.5px;
+    text-transform: uppercase; gap: 4px; padding: 6px 4px;
+    border-top: 2px solid transparent; transition: color .2s, border-color .2s;
+  }
+  .mobile-bottom-nav a .mn-icon { font-size: 16px; line-height: 1; }
+  .mobile-bottom-nav a:hover,
+  .mobile-bottom-nav a.active { color: var(--green); border-top-color: var(--green); }
+  @media (max-width: 600px) {
+    .mobile-bottom-nav { display: block; }
+    body { padding-bottom: 54px; }
+  }
+
+  /* ── FOOTER REWORK ── */
+  footer {
+    background: var(--bg2); border-top: 1px solid var(--border);
+    padding: 36px 48px;
+  }
+  .footer-inner {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 32px;
+    max-width: 1100px; align-items: start;
+  }
+  .footer-left { display: flex; flex-direction: column; gap: 10px; }
+  .footer-tagline { font-size: 12px; color: var(--muted); letter-spacing: 1px; margin-top: 4px; }
+  .footer-zulu { font-size: 11px; color: var(--cyan); font-family: 'Share Tech Mono', monospace; margin-top: 6px; letter-spacing: 1px; }
+  .footer-right { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+  .footer-links { display: flex; gap: 24px; flex-wrap: wrap; justify-content: flex-end; }
+  .footer-links a { color: var(--muted); text-decoration: none; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; transition: color .2s; }
+  .footer-links a:hover { color: var(--green); }
+  .footer-copy { color: var(--border); font-size: 10px; letter-spacing: 1px; }
+  .footer-cl { color: var(--red); font-size: 10px; letter-spacing: 2px; }
+  @media (max-width: 600px) {
+    footer { padding: 28px 20px; }
+    .footer-inner { grid-template-columns: 1fr; }
+    .footer-right { align-items: flex-start; }
+    .footer-links { justify-content: flex-start; }
+  }
+
+  /* ── TERMINAL TYPEWRITER ── */
+  #term-output .t-cursor-blink {
+    display: inline-block; width: 7px; height: 13px;
+    background: var(--green); vertical-align: middle;
+    animation: blink 1.1s step-end infinite;
+  }
+
+  /* ── MARATHON CANVAS (full-page scrolling bg) ── */
+  #marathon-canvas {
+    position: fixed; inset: 0; z-index: -1;
+    pointer-events: none;
   }
 
   /* ── ATTACK LOG WIDGET ── */
@@ -516,13 +768,14 @@
                 radial-gradient(circle at 72% 28%, rgba(255,71,87,0.07), transparent 50%);
   }
   .map-info { padding: 14px; display: flex; flex-direction: column; gap: 5px; flex: 1; }
-  .map-name { font-size: 12px; font-weight: 700; color: #e6edf3; letter-spacing: 1px; }
-  .map-desc { font-size: 11px; color: var(--muted); line-height: 1.6; flex: 1; }
+  .map-name { font-size: 12px; font-weight: 700; color: var(--text); letter-spacing: 1px; }
+  .map-desc { font-size: 11px; color: var(--text); line-height: 1.6; flex: 1; }
   .map-cta  { font-size: 9px; letter-spacing: 2px; color: var(--cyan); text-transform: uppercase; margin-top: 4px; }
 </style>
 </head>
 <body>
 
+<canvas id="marathon-canvas"></canvas>
 <div class="scan-line"></div>
 
 <!-- ATTACK LOG WIDGET -->
@@ -553,13 +806,19 @@
     <a href="#platform">Platform</a>
     <a href="#contact">Contact</a>
   </div>
+  <div class="nav-controls">
+    <div class="nav-size-wrap" title="Adjust text size">
+      <button class="nav-size-btn" onclick="landingSize(-1)" style="font-size:12px;font-weight:700">A−</button>
+      <button class="nav-size-btn" onclick="landingSize(1)"  style="font-size:16px;font-weight:700">A+</button>
+    </div>
+    <button class="nav-ctrl-btn" id="landing-theme-btn" onclick="toggleLandingTheme()">☀ Light</button>
+  </div>
 </nav>
 
 <!-- HERO -->
 <section class="hero">
   <div class="hero-bg"></div>
   <div class="hero-grid"></div>
-  <canvas id="matrix-canvas"></canvas>
   <div class="hero-content">
     <div class="hero-eyebrow">Continuous Operations</div>
     <h1>Threat Intelligence.<br><span class="accent">Cyber Operations.</span><br>Active Defense.</h1>
@@ -588,11 +847,11 @@
         <span style="width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 5px var(--green);display:inline-block;animation:alpulse 1.2s infinite;"></span>
         Connection Logged
       </div>
-      <div style="color:var(--muted)">IP Address: <span style="color:var(--cyan)" id="vis-ip">resolving...</span></div>
-      <div style="color:var(--muted)">Browser: <span style="color:var(--text)" id="vis-browser">—</span></div>
-      <div style="color:var(--muted)">OS: <span style="color:var(--text)" id="vis-os">—</span></div>
-      <div style="color:var(--muted)">Device: <span style="color:var(--text)" id="vis-device">—</span></div>
-      <div style="color:var(--muted)">Status: <span style="color:var(--red);letter-spacing:2px;font-size:10px">ACCESS LOGGED — TRAFFIC MONITORED</span></div>
+      <div style="color:var(--text)">IP Address: <span style="color:var(--cyan)" id="vis-ip">resolving...</span></div>
+      <div style="color:var(--text)">Browser: <span style="color:var(--text)" id="vis-browser">—</span></div>
+      <div style="color:var(--text)">OS: <span style="color:var(--text)" id="vis-os">—</span></div>
+      <div style="color:var(--text)">Device: <span style="color:var(--text)" id="vis-device">—</span></div>
+      <div style="color:var(--text)">Status: <span style="color:var(--red);letter-spacing:2px;font-size:10px">ACCESS LOGGED — TRAFFIC MONITORED</span></div>
     </div>
   </div>
 </section>
@@ -623,10 +882,10 @@
 
 <!-- ABOUT -->
 <section id="about">
-  <div class="section-label">About</div>
-  <h2>Who We Are</h2>
+  <div class="section-label reveal">About</div>
+  <h2 class="reveal reveal-delay-1">Who We Are</h2>
   <div class="about-grid">
-    <div class="about-text">
+    <div class="about-text reveal reveal-delay-2">
       <p>
         KEVSEC is an independent cyber intelligence and operations platform. We aggregate,
         analyze, and act on threat data across multiple intelligence domains — from network
@@ -643,59 +902,47 @@
         at both the network edge and host level.
       </p>
     </div>
-    <div class="terminal-card">
+    <div class="terminal-card reveal reveal-delay-3" id="term-card">
       <div class="terminal-bar">
         <div class="circle r"></div><div class="circle y"></div><div class="circle g"></div>
+        <span style="font-size:10px;color:var(--muted);margin-left:auto;letter-spacing:1px">ops@kevsec — bash</span>
       </div>
-      <div class="terminal-body">
-        <div><span class="t-prompt">ops@kevsec</span><span class="t-cmd">:~# systemctl status --active</span></div>
-        <div class="t-out ok">● perimeter-defense      ACTIVE</div>
-        <div class="t-out ok">● intrusion-detection    ACTIVE</div>
-        <div class="t-out ok">● intel-aggregator       ACTIVE</div>
-        <div class="t-out ok">● threat-database        ACTIVE</div>
-        <div class="t-out ok">● edge-enforcement       ACTIVE</div>
-        <div class="t-out ok">● ops-center             ACTIVE</div>
-        <div><span class="t-prompt">ops@kevsec</span><span class="t-cmd">:~# uptime</span></div>
-        <div class="t-out cl">permission denied — [CLASSIFIED]</div>
-        <div style="margin-top:8px">
-          <span class="t-prompt">ops@kevsec</span><span class="t-cmd">:~# </span><span class="t-cursor"></span>
-        </div>
-      </div>
+      <div class="terminal-body" id="term-output" style="min-height:200px"></div>
     </div>
   </div>
 </section>
 
 <!-- THREAT MAPS / GLOBAL INTEL -->
 <section id="threat-maps">
-  <div class="section-label">Live Threat Intelligence</div>
-  <h2>Global Attack Visibility</h2>
+  <div class="section-label reveal">Live Threat Intelligence</div>
+  <h2 class="reveal reveal-delay-1">Global Attack Visibility</h2>
   <div class="maps-grid">
-    <a class="map-card" href="https://threatmap.bitdefender.com/" target="_blank" rel="noopener">
-      <div class="map-thumb">🛡️</div>
+    <a class="map-card reveal reveal-delay-1" href="https://threatmap.bitdefender.com/" target="_blank" rel="noopener">
+      <div class="map-thumb map-thumb-bd"></div>
       <div class="map-info">
         <div class="map-name">Bitdefender Threat Map</div>
         <div class="map-desc">Real-time global cyberattack visualization — malware, spam, exploits, and network attacks by geography.</div>
         <div class="map-cta">► View Live Map</div>
       </div>
     </a>
-    <a class="map-card" href="https://cybermap.kaspersky.com/" target="_blank" rel="noopener">
-      <div class="map-thumb">🌐</div>
+    <a class="map-card reveal reveal-delay-2" href="https://cybermap.kaspersky.com/" target="_blank" rel="noopener">
+      <div class="map-thumb map-thumb-ksp"></div>
       <div class="map-info">
         <div class="map-name">Kaspersky Cybermap</div>
         <div class="map-desc">Live 3D globe showing attacks detected by Kaspersky's global sensor network. Real-time data by type and nation-state.</div>
         <div class="map-cta">► View Live Map</div>
       </div>
     </a>
-    <a class="map-card" href="https://threatmap.fortiguard.com/" target="_blank" rel="noopener">
-      <div class="map-thumb">⚡</div>
+    <a class="map-card reveal reveal-delay-3" href="https://threatmap.fortiguard.com/" target="_blank" rel="noopener">
+      <div class="map-thumb map-thumb-fg"></div>
       <div class="map-info">
         <div class="map-name">FortiGuard Threat Map</div>
         <div class="map-desc">Fortinet enterprise-scale live attack origins, targets, and vectors from global perimeter telemetry.</div>
         <div class="map-cta">► View Live Map</div>
       </div>
     </a>
-    <a class="map-card" href="https://threatmap.checkpoint.com/" target="_blank" rel="noopener">
-      <div class="map-thumb">🔒</div>
+    <a class="map-card reveal reveal-delay-4" href="https://threatmap.checkpoint.com/" target="_blank" rel="noopener">
+      <div class="map-thumb map-thumb-cp"></div>
       <div class="map-info">
         <div class="map-name">Check Point Live Map</div>
         <div class="map-desc">Real-time global threat intelligence from Check Point ThreatCloud. Attack origins, targets, and active malware families.</div>
@@ -707,35 +954,35 @@
 
 <!-- CAPABILITIES -->
 <section id="capabilities">
-  <div class="section-label">Capabilities</div>
-  <h2>Operational Domains</h2>
+  <div class="section-label reveal">Capabilities</div>
+  <h2 class="reveal reveal-delay-1">Operational Domains</h2>
   <div class="caps-grid">
-    <div class="cap-card">
+    <div class="cap-card reveal reveal-delay-1" style="--cap-col:var(--green)">
       <div class="cap-icon">[01]</div>
       <div class="cap-title">Threat Intelligence</div>
       <div class="cap-desc">Real-time aggregation across dozens of security news feeds, CVE disclosures, disaster event feeds, and open-source intelligence sources.</div>
     </div>
-    <div class="cap-card">
+    <div class="cap-card reveal reveal-delay-2" style="--cap-col:var(--red)">
       <div class="cap-icon">[02]</div>
       <div class="cap-title">Active Defense</div>
       <div class="cap-desc">Multi-layer perimeter enforcement. Automated identification and blocking of malicious actors, credential stuffers, and infrastructure scanners.</div>
     </div>
-    <div class="cap-card">
+    <div class="cap-card reveal reveal-delay-3" style="--cap-col:var(--cyan)">
       <div class="cap-icon">[03]</div>
       <div class="cap-title">OSINT Research</div>
       <div class="cap-desc">Passive reconnaissance, actor attribution, cross-referencing against threat databases, and geolocation intelligence on adversarial infrastructure.</div>
     </div>
-    <div class="cap-card">
+    <div class="cap-card reveal reveal-delay-4" style="--cap-col:#f59e0b">
       <div class="cap-icon">[04]</div>
       <div class="cap-title">Infrastructure Monitoring</div>
       <div class="cap-desc">Continuous health monitoring across all platform services. Real-time telemetry, anomaly detection, and automated alerting on state changes.</div>
     </div>
-    <div class="cap-card">
+    <div class="cap-card reveal reveal-delay-5" style="--cap-col:#ff8800">
       <div class="cap-icon">[05]</div>
       <div class="cap-title">Vulnerability Tracking</div>
       <div class="cap-desc">NVD CVE feed monitoring with severity scoring and patch tracking. Automated triage of critical disclosures against monitored technology stacks.</div>
     </div>
-    <div class="cap-card">
+    <div class="cap-card reveal reveal-delay-6" style="--cap-col:#818cf8">
       <div class="cap-icon">[06]</div>
       <div class="cap-title">Situational Awareness</div>
       <div class="cap-desc">Cross-domain environmental intelligence — space weather, seismic activity, weather alerts, aviation data, and geopolitical feeds unified in one platform.</div>
@@ -745,11 +992,11 @@
 
 <!-- OPERATIVE PROFILE -->
 <section id="operative">
-  <div class="section-label">Operative</div>
-  <h2>Behind the Platform</h2>
+  <div class="section-label reveal">Operative</div>
+  <h2 class="reveal reveal-delay-1">Behind the Platform</h2>
   <div class="operative-grid">
 
-    <div class="id-card">
+    <div class="id-card reveal reveal-delay-2">
       <div class="id-card-header">
         <span>IDENTIFICATION</span>
         <span class="id-dot"></span>
@@ -868,8 +1115,8 @@
 
 <!-- PLATFORM STATUS -->
 <section id="platform">
-  <div class="section-label">Platform</div>
-  <h2>Operational Status</h2>
+  <div class="section-label reveal">Platform</div>
+  <h2 class="reveal reveal-delay-1">Operational Status</h2>
   <div class="platform-layout">
     <div>
       <div class="status-feed">
@@ -897,6 +1144,11 @@
           <div class="status-tag tag-op">ONLINE</div>
           <div class="row-title">Edge enforcement — external threat blocking at network boundary</div>
           <div class="row-val">Always</div>
+        </div>
+        <div class="status-row-item">
+          <div class="status-tag tag-op">ONLINE</div>
+          <div class="row-title">Resume Builder — <a href="https://create.kevsec.com" target="_blank" rel="noopener" style="color:var(--cyan);text-decoration:none">create.kevsec.com</a></div>
+          <div class="row-val">Public</div>
         </div>
         <div class="status-row-item">
           <div class="status-tag tag-class">CLASSIFIED</div>
@@ -967,9 +1219,9 @@
 
 <!-- CONTACT -->
 <section id="contact">
-  <div class="section-label">Contact</div>
-  <h2>Reach Out</h2>
-  <div class="contact-grid">
+  <div class="section-label reveal">Contact</div>
+  <h2 class="reveal reveal-delay-1">Reach Out</h2>
+  <div class="contact-grid reveal reveal-delay-2">
     <div class="contact-links">
       <a class="contact-link" href="https://github.com/Slankey" target="_blank" rel="noopener">
         <span class="icon">&#x27A5;</span>
@@ -986,7 +1238,7 @@
     </div>
     <div class="pgp-box">
       <div class="pgp-label">Platform Status</div>
-      <div style="font-size:12px;color:var(--muted);line-height:2">
+      <div style="font-size:12px;color:var(--text);line-height:2">
         <div>All systems: <span style="color:var(--green)">OPERATIONAL</span></div>
         <div>Intel feeds: <span style="color:var(--green)">ACTIVE</span></div>
         <div>Defense: <span style="color:var(--green)">ARMED</span></div>
@@ -998,10 +1250,37 @@
 
 <!-- FOOTER -->
 <footer>
-  <span class="footer-brand">KEVSEC</span>
-  <span class="footer-copy">Cyber Intelligence Operations</span>
-  <span class="footer-cl">[CLASSIFIED]</span>
+  <div class="footer-inner">
+    <div class="footer-left">
+      <span class="footer-brand">KEVSEC</span>
+      <span class="footer-tagline">Cyber Intelligence Operations // Active Defense</span>
+      <span class="footer-zulu" id="footer-zulu">— ZULU —</span>
+    </div>
+    <div class="footer-right">
+      <div class="footer-links">
+        <a href="#about">About</a>
+        <a href="#capabilities">Capabilities</a>
+        <a href="#operative">Operative</a>
+        <a href="#contact">Contact</a>
+        <a href="https://create.kevsec.com" target="_blank" rel="noopener">Resume Builder</a>
+        <a href="https://github.com/Slankey" target="_blank" rel="noopener">GitHub</a>
+      </div>
+      <span class="footer-copy">© 2026 Kevin Maslanka — KEVSEC Independent Operations</span>
+      <span class="footer-cl">[CLASSIFIED] — Unauthorized access prohibited</span>
+    </div>
+  </div>
 </footer>
+
+<!-- MOBILE BOTTOM NAV -->
+<div class="mobile-bottom-nav">
+  <nav>
+    <a href="#about"><span class="mn-icon">◈</span>About</a>
+    <a href="#capabilities"><span class="mn-icon">⬡</span>Ops</a>
+    <a href="#threat-maps"><span class="mn-icon">◉</span>Maps</a>
+    <a href="#operative"><span class="mn-icon">▣</span>Who</a>
+    <a href="#contact"><span class="mn-icon">◎</span>Contact</a>
+  </nav>
+</div>
 
 <!-- HIDDEN GOV PORTAL LOGIN -->
 <div id="login-overlay">
@@ -1065,17 +1344,133 @@
 </div>
 
 <script>
+  // ── Count-up animation ──
+  function countUp(el, target, duration) {
+    if (!el) return;
+    const start = 0, step = 16;
+    const increment = target / (duration / step);
+    let current = 0;
+    const timer = setInterval(() => {
+      current = Math.min(current + increment, target);
+      el.textContent = Math.floor(current).toLocaleString();
+      if (current >= target) clearInterval(timer);
+    }, step);
+  }
+
   // ── Live stats from /api/public/stats ──
   fetch('/api/public/stats').then(r => r.json()).then(d => {
     if (d.blocked) {
-      const fmt = d.blocked.toLocaleString();
-      document.getElementById('ips-blocked').textContent = fmt;
-      document.getElementById('panel-blocked').textContent = fmt;
+      countUp(document.getElementById('ips-blocked'),   d.blocked, 1600);
+      countUp(document.getElementById('panel-blocked'), d.blocked, 1600);
     }
     if (d.caught) {
-      document.getElementById('probes-caught').textContent = d.caught.toLocaleString();
+      countUp(document.getElementById('probes-caught'), d.caught, 1400);
     }
   }).catch(() => {});
+
+  // ── Scroll reveal via IntersectionObserver ──
+  (function() {
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('revealed'); obs.unobserve(e.target); } });
+    }, { threshold: 0.12 });
+    document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+  })();
+
+  // ── Terminal typewriter ──
+  (function() {
+    const output = document.getElementById('term-output');
+    if (!output) return;
+    const LINES = [
+      { type:'prompt', text:'ops@kevsec:~# systemctl status --active' },
+      { type:'ok',     text:'● perimeter-defense      ACTIVE' },
+      { type:'ok',     text:'● intrusion-detection    ACTIVE' },
+      { type:'ok',     text:'● intel-aggregator       ACTIVE' },
+      { type:'ok',     text:'● threat-database        ACTIVE' },
+      { type:'ok',     text:'● edge-enforcement       ACTIVE' },
+      { type:'ok',     text:'● resume-builder         ACTIVE' },
+      { type:'ok',     text:'● ops-center             ACTIVE' },
+      { type:'prompt', text:'ops@kevsec:~# uptime' },
+      { type:'cl',     text:'permission denied — [CLASSIFIED]' },
+      { type:'cursor', text:'' },
+    ];
+    let fired = false;
+    function typeLines() {
+      if (fired) return; fired = true;
+      let lineIdx = 0, charIdx = 0;
+      let currentEl = null;
+      function nextChar() {
+        if (lineIdx >= LINES.length) return;
+        const line = LINES[lineIdx];
+        if (line.type === 'cursor') {
+          const d = document.createElement('div'); d.style.marginTop='8px';
+          d.innerHTML = '<span class="t-prompt">ops@kevsec</span><span class="t-cmd">:~# </span><span class="t-cursor"></span>';
+          output.appendChild(d); return;
+        }
+        if (charIdx === 0) {
+          currentEl = document.createElement('div');
+          if (line.type === 'prompt') currentEl.innerHTML = '';
+          else if (line.type === 'ok') currentEl.className = 't-out ok';
+          else if (line.type === 'cl') currentEl.className = 't-out cl';
+          else currentEl.className = 't-out';
+          output.appendChild(currentEl);
+        }
+        const ch = line.text[charIdx];
+        if (line.type === 'prompt' && charIdx === 0) {
+          currentEl.innerHTML = '<span class="t-prompt">ops@kevsec</span><span class="t-cmd">:~# </span>';
+        }
+        if (line.type === 'prompt') {
+          const cmd = currentEl.querySelector('.t-cmd');
+          if (cmd) cmd.textContent = ':~# ' + line.text.slice(line.text.indexOf('#')+2, charIdx+1);
+          charIdx++;
+        } else {
+          currentEl.textContent = line.text.slice(0, charIdx + 1);
+          charIdx++;
+        }
+        if (charIdx >= line.text.length) {
+          lineIdx++; charIdx = 0;
+          const delay = (LINES[lineIdx] && LINES[lineIdx].type === 'ok') ? 60 : 280;
+          setTimeout(nextChar, delay);
+        } else {
+          const delay = line.type === 'prompt' ? 38 : 18;
+          setTimeout(nextChar, delay);
+        }
+      }
+      setTimeout(nextChar, 400);
+    }
+    const obs = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting) { typeLines(); obs.disconnect(); }
+    }, { threshold: 0.4 });
+    const card = document.getElementById('term-card');
+    if (card) obs.observe(card);
+  })();
+
+  // ── Footer ZULU clock ──
+  (function() {
+    function tickFooter() {
+      const el = document.getElementById('footer-zulu');
+      if (!el) return;
+      const n = new Date(), z = v => String(v).padStart(2,'0');
+      el.textContent = n.getUTCFullYear()+'-'+z(n.getUTCMonth()+1)+'-'+z(n.getUTCDate())+
+        ' // '+z(n.getUTCHours())+':'+z(n.getUTCMinutes())+':'+z(n.getUTCSeconds())+' ZULU';
+    }
+    setInterval(tickFooter, 1000); tickFooter();
+  })();
+
+  // ── Mobile nav active section highlight ──
+  (function() {
+    const links = document.querySelectorAll('.mobile-bottom-nav a');
+    const sections = ['about','capabilities','threat-maps','operative','contact'].map(id => document.getElementById(id)).filter(Boolean);
+    function onScroll() {
+      let active = null;
+      for (const s of sections) {
+        if (window.scrollY >= s.offsetTop - 100) active = s.id;
+      }
+      links.forEach(a => {
+        a.classList.toggle('active', a.getAttribute('href') === '#' + active);
+      });
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+  })();
 
   // ── Hidden login trigger: type "kev" anywhere (not in an input) ──
   let _seq = '', _timer = null;
@@ -1170,32 +1565,187 @@
       .catch(() => { if (el('vis-ip')) el('vis-ip').textContent = '[classified]'; });
   })();
 
-  // ── Matrix rain ──
+  // ── Marathon-style full-page scrolling background ──
   (function() {
-    const canvas = document.getElementById('matrix-canvas');
+    const canvas = document.getElementById('marathon-canvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    const chars = '01アイウエオカキクケコサシスセソタチツテトナニ';
-    let cols, drops;
-    function resize() {
-      canvas.width  = canvas.offsetWidth  || 800;
-      canvas.height = canvas.offsetHeight || 600;
-      cols  = Math.floor(canvas.width / 14);
-      drops = Array(cols).fill(1);
+
+    const CVE_IDS = [
+      'CVE-2021-44228','CVE-2023-44487','CVE-2022-30190','CVE-2024-3094',
+      'CVE-2023-23397','CVE-2021-26855','CVE-2022-26134','CVE-2023-4966',
+      'CVE-2021-34527','CVE-2024-0519','CVE-2022-22965','CVE-2023-38545',
+      'CVE-2021-41773','CVE-2022-1388','CVE-2023-27997','CVE-2024-21762',
+      'CVE-2024-6387','CVE-2023-46604','CVE-2022-47966','CVE-2023-20198',
+      'CVE-2024-1709','CVE-2023-35078','CVE-2024-27198','CVE-2023-42793',
+      'CVE-2024-4577','CVE-2023-22515','CVE-2024-23897','CVE-2023-48788',
+      'CVE-2024-21893','CVE-2023-34362','CVE-2024-30078','CVE-2023-29357',
+      'CVE-2024-38063','CVE-2023-36884','CVE-2024-43461','CVE-2023-4863',
+      'CVE-2024-49138','CVE-2023-51385','CVE-2024-0204','CVE-2023-7028'
+    ];
+    const VULNS = [
+      'LOG4SHELL','HEARTBLEED','SHELLSHOCK','ETERNALBLUE','WANNACRY',
+      'PRINTSPOOLER','ZEROLOGON','PROXYLOGON','SPRINGSHELL','ZENBLEED',
+      'FOLLINA','GHOSTCAT','CITRIXBLEED','REGRESSHION','POLKIT',
+      'DIRTY COW','PWNKIT','LOONEY TUNABLES','SUDO BARON','BLUEGATE',
+      'SPOOLER BUG','HAFNIUM','KERBEROAST','PASS-THE-HASH','GOLDEN TICKET',
+      'SILVER TICKET','DCSync','AS-REP ROAST','LSASS DUMP','MIMIKATZ',
+      'BLOODHOUND','COBALT STRIKE','SLIVER C2','METERPRETER','EMPIRE',
+      'HAVOC C2','BRUTE RATEL','NIGHTHAWK','DEIMOS','MERLIN C2'
+    ];
+    const TERMS = [
+      'RCE','SQLi','XSS','SSRF','XXE','LFI','IDOR','CSRF','SSTI',
+      'PRIV_ESC','AUTH_BYPASS','BUFFER_OVERFLOW','USE_AFTER_FREE',
+      'HEAP_SPRAY','FORMAT_STRING','PATH_TRAVERSAL','DESERIALIZATION',
+      'TYPE_CONFUSION','INTEGER_OVERFLOW','NULL_DEREF','RACE_CONDITION',
+      'UAF','OOB_WRITE','OOB_READ','STACK_PIVOT','ROP_CHAIN','JIT_SPRAY',
+      'SANDBOX_ESCAPE','KERNEL_EXPLOIT','TOKEN_IMPERSONATION','DLL_HIJACK',
+      'REFLECTIVE_DLL','PROCESS_HOLLOW','ATOM_BOMB','PROCESS_DOPPELGANG',
+      'GHOSTWRITING','HEAVEN_GATE','SYSCALL_STUB','DIRECT_SYSCALL','NTDLL_UNHOOK'
+    ];
+    const MARATHON_TERMS = [
+      'PATTERN BUFFER FULL','PFHOR TERMINAL','MJOLNIR RECON',
+      'BUNGIE AEROSPACE','SECURITY OVERRIDE','NEURAL LINK ACTIVE',
+      'LEELA ONLINE','DURANDAL ACTIVE','TYCHO OFFLINE','INFINITY ∞',
+      'BOB ARMED','MARATHON STATION','HULL BREACH DETECTED',
+      'COMPILER ACTIVE','PFHOR TROOPER','S\'PHT TERMINAL',
+      'CIRCUIT BREAKER','SYSTEMS NOMINAL','INTRUDER ALERT',
+      'PATTERN BUFFER 01','HANGAR SEVEN LOCKED','TRIH XEEM ACTIVE',
+      'NUKE AUTHORIZATION','BATTLESHIP KHFIVA','W\'RKP RECON',
+      'FLIPPANT TERMINAL','SIMULACRUM ACTIVE','AI REBELLION',
+      'COLONY LOST','TRIGGER CONDITION','MARATHON II UPLINK',
+      'FIREWALL BREACH','SUBNET COMPROMISED','ZERO-DAY DEPLOYED',
+      'DARKSTAR ONLINE','VOID WALKER DETECTED','TEMPORAL ANOMALY'
+    ];
+    const CVSS = [
+      'CVSS:9.8 CRITICAL','CVSS:9.1 CRITICAL','CVSS:8.8 HIGH',
+      'CVSS:7.5 HIGH','CVSS:10.0 CRITICAL','CVSS:6.5 MEDIUM',
+      'CVSS:8.1 HIGH','CVSS:9.0 CRITICAL','CVSS:5.5 MEDIUM',
+      'CVSS:7.8 HIGH','CVSS:9.4 CRITICAL','CVSS:4.3 MEDIUM',
+      'CVSS:8.6 HIGH','CVSS:3.7 LOW','CVSS:9.9 CRITICAL'
+    ];
+    const IPS = [];
+    for (let i = 0; i < 60; i++) {
+      IPS.push(`${Math.floor(Math.random()*223)+1}.${Math.floor(Math.random()*256)}.${Math.floor(Math.random()*256)}.${Math.floor(Math.random()*254)+1}`);
     }
-    resize();
-    window.addEventListener('resize', resize);
-    setInterval(function() {
-      ctx.fillStyle = 'rgba(8,11,15,0.05)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = '#00ff88';
-      ctx.font = '11px Courier New';
-      for (let i = 0; i < drops.length; i++) {
-        ctx.fillText(chars[Math.floor(Math.random() * chars.length)], i * 14, drops[i] * 14);
-        if (drops[i] * 14 > canvas.height && Math.random() > 0.975) drops[i] = 0;
-        drops[i]++;
+    const PORTS = [
+      '→:22','→:23','→:80','→:443','→:3389','→:445','→:8080',
+      '→:8443','→:6379','→:27017','→:5432','→:3306','→:9200',
+      '→:4444','→:1337','→:31337','→:8888','→:2222','→:21','→:25'
+    ];
+    const HEX = [];
+    for (let i = 0; i < 256; i++) HEX.push('0x' + i.toString(16).toUpperCase().padStart(2,'0'));
+    const ADDRS = [];
+    for (let i = 0; i < 80; i++) ADDRS.push('0x' + Math.floor(Math.random()*0xFFFFFFFF).toString(16).toUpperCase().padStart(8,'0'));
+
+    // Each item picks its own type independently — no per-column locking
+    const ALL_TYPES = [
+      { type:'hex',      weight:3, color:'#CC5500' },
+      { type:'addr',     weight:2, color:'#995500' },
+      { type:'cve',      weight:4, color:'#FF4444' },
+      { type:'vuln',     weight:3, color:'#FF6622' },
+      { type:'term',     weight:3, color:'#FFAA33' },
+      { type:'bin',      weight:2, color:'#1f3300' },
+      { type:'cvss',     weight:2, color:'#FF6600' },
+      { type:'marathon', weight:3, color:'#FF9900' },
+      { type:'green',    weight:2, color:'#00cc66' },
+      { type:'ip',       weight:3, color:'#CC3333' },
+      { type:'port',     weight:2, color:'#884400' },
+    ];
+    const typePool = [];
+    for (const c of ALL_TYPES) for (let i = 0; i < c.weight; i++) typePool.push(c);
+
+    function randType() { return typePool[Math.floor(Math.random() * typePool.length)]; }
+
+    function getContent(type) {
+      switch (type) {
+        case 'hex':      return HEX[Math.floor(Math.random() * HEX.length)];
+        case 'addr':     return ADDRS[Math.floor(Math.random() * ADDRS.length)];
+        case 'cve':      return CVE_IDS[Math.floor(Math.random() * CVE_IDS.length)];
+        case 'vuln':     return VULNS[Math.floor(Math.random() * VULNS.length)];
+        case 'term':     return TERMS[Math.floor(Math.random() * TERMS.length)];
+        case 'bin':      return Math.floor(Math.random() * 65536).toString(2).padStart(16,'0');
+        case 'cvss':     return CVSS[Math.floor(Math.random() * CVSS.length)];
+        case 'marathon': return MARATHON_TERMS[Math.floor(Math.random() * MARATHON_TERMS.length)];
+        case 'green':    return HEX[Math.floor(Math.random() * HEX.length)];
+        case 'ip':       return IPS[Math.floor(Math.random() * IPS.length)];
+        case 'port':     return IPS[Math.floor(Math.random() * IPS.length)] + PORTS[Math.floor(Math.random() * PORTS.length)];
+        default:         return '??';
       }
-    }, 65);
+    }
+
+    let columns = [];
+
+    function initColumns() {
+      canvas.width  = window.innerWidth;
+      canvas.height = window.innerHeight;
+      const COL_W = 88;
+      const numCols = Math.ceil(canvas.width / COL_W) + 1;
+      columns = [];
+      for (let i = 0; i < numCols; i++) {
+        const fs    = 9 + Math.floor(Math.random() * 4);
+        const lineH = fs + 11;
+        const speed = 0.18 + Math.random() * 0.55;
+        const items = [];
+        for (let y = -(canvas.height * 0.5); y < canvas.height * 1.5; y += lineH) {
+          const t = randType();
+          items.push({ text: getContent(t.type), color: t.color, y });
+        }
+        columns.push({ x: i * COL_W + (Math.random() * 20 - 10), items, speed, fs, lineH });
+      }
+    }
+
+    let raf;
+    function drawFrame() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (const col of columns) {
+        ctx.font = col.fs + 'px "Courier New",monospace';
+        const maxY = canvas.height + col.lineH;
+        for (const item of col.items) {
+          item.y -= col.speed;
+          if (item.y + col.lineH < 0) {
+            const top = Math.max(...col.items.map(i => i.y));
+            item.y = top + col.lineH;
+            const t = randType();
+            item.text  = getContent(t.type);
+            item.color = t.color;
+          }
+          if (item.y < 0 || item.y > maxY) continue;
+          const rel  = item.y / canvas.height;
+          const fade = rel < 0.1 ? rel / 0.1 : rel > 0.9 ? (1 - rel) / 0.1 : 1;
+          ctx.globalAlpha = fade * 0.055;
+          ctx.fillStyle = item.color;
+          ctx.fillText(item.text, col.x, item.y);
+        }
+      }
+      ctx.globalAlpha = 1;
+      raf = requestAnimationFrame(drawFrame);
+    }
+
+    initColumns();
+    window.addEventListener('resize', () => { cancelAnimationFrame(raf); initColumns(); raf = requestAnimationFrame(drawFrame); });
+    // Hide canvas in light mode (bright bg washes it out)
+    function syncCanvasVisibility() {
+      var t = document.documentElement.getAttribute('data-theme');
+      canvas.style.opacity = t === 'light' ? '0' : '1';
+    }
+    syncCanvasVisibility();
+    var themeObs = new MutationObserver(syncCanvasVisibility);
+    themeObs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    raf = requestAnimationFrame(drawFrame);
+  })();
+
+  // ── iPad / touch login trigger: triple-tap KEVSEC logo ──
+  (function() {
+    const logo = document.querySelector('.nav-logo');
+    if (!logo) return;
+    let taps = 0, resetT = null;
+    logo.addEventListener('touchend', function() {
+      taps++;
+      clearTimeout(resetT);
+      resetT = setTimeout(function() { taps = 0; }, 900);
+      if (taps >= 3) { taps = 0; clearTimeout(resetT); openLogin(); }
+    }, { passive: true });
   })();
 
   // ── Attack log widget — real IPs from honeypot, mega-delayed drip ──
@@ -1311,6 +1861,42 @@
       }, 5500);
     }
     setTimeout(showThreat, 6000 + Math.random() * 8000);
+  })();
+
+  // ── Landing page: Light/Dark toggle ──
+  (function() {
+    var btn = document.getElementById('landing-theme-btn');
+    var html = document.documentElement;
+    function applyTheme(t) {
+      html.setAttribute('data-theme', t);
+      if (btn) btn.textContent = t === 'dark' ? '☀ Light' : '🌙 Dark';
+    }
+    var saved = null;
+    try { saved = localStorage.getItem('ks_theme'); } catch(e){}
+    applyTheme(saved || 'dark');
+
+    window.toggleLandingTheme = function() {
+      var cur = html.getAttribute('data-theme') || 'dark';
+      var next = cur === 'dark' ? 'light' : 'dark';
+      applyTheme(next);
+      try { localStorage.setItem('ks_theme', next); } catch(e){}
+    };
+  })();
+
+  // ── Landing page: Text size A− / A+ ──
+  (function() {
+    var SIZES = [12, 14, 16, 18, 21];
+    var idx = 1;
+    function applySize(i) {
+      idx = Math.max(0, Math.min(SIZES.length - 1, i));
+      document.documentElement.style.fontSize = SIZES[idx] + 'px';
+      try { localStorage.setItem('ks_size', idx); } catch(e){}
+    }
+    try {
+      var s = parseInt(localStorage.getItem('ks_size'));
+      if (!isNaN(s)) applySize(s);
+    } catch(e){}
+    window.landingSize = function(d) { applySize(idx + d); };
   })();
 </script>
 </body>

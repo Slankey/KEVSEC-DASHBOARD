@@ -889,6 +889,37 @@ footer {
   .ext-svc-grid { grid-template-columns: repeat(2, 1fr) !important; }
 }
 
+/* ── iPad / tablet (431px – 1100px) ─────────────────────── */
+@media (min-width: 431px) and (max-width: 1100px) {
+  /* Touch target sizing */
+  button:not(.theme-dot), .tab, .qa-btn, .logout-btn { min-height: 44px; }
+  .tab { font-size: 12px; padding: 12px 14px; }
+
+  /* Single column panels for portrait iPad */
+  .panel-row, .panel-row-3 { grid-template-columns: 1fr; }
+
+  /* Tabs: horizontal scroll (iPad landscape has enough room; portrait needs scroll) */
+  .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; white-space: nowrap; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+
+  /* Stocks — 3 col on iPad */
+  .stocks-grid { grid-template-columns: repeat(3, 1fr); }
+
+  /* Quick access — 4 col on iPad */
+  .quick-access-grid { grid-template-columns: repeat(4, 1fr); }
+
+  /* Header — tighten for portrait iPad */
+  .portal-title { font-size: 15px; }
+  .clf-banner { font-size: 8px; letter-spacing: 2px; }
+
+  /* Panels — prevent overflow */
+  .panel { overflow: hidden; }
+  iframe, img, video, embed { max-width: 100%; }
+
+  /* Tables — allow horizontal scroll */
+  .fw-table-wrap, table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
+}
+
 /* ══════════════════════════════════════════════════════════
    VOICE MEMO RECORDER
    ══════════════════════════════════════════════════════════ */
