@@ -1007,13 +1007,277 @@ footer {
   pointer-events: none;
 }
 
+/* ─── SKILLS ─────────────────────────────────────────────── */
+.section-skills { border-top: 1px solid var(--border); }
+.skills-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 60px;
+}
+.skill-item {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border);
+}
+.skill-item:nth-last-child(-n+2) { border-bottom: none; }
+.skill-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 10px;
+}
+.skill-name {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  color: var(--text);
+}
+.skill-pct {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 1px;
+}
+.skill-track {
+  height: 2px;
+  background: var(--border);
+  position: relative;
+  overflow: visible;
+}
+.skill-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  width: 0;
+  transition: width 1.4s cubic-bezier(0.16,1,0.3,1);
+  position: relative;
+}
+.skill-fill::after {
+  content: '';
+  position: absolute;
+  right: -1px; top: -3px;
+  width: 8px; height: 8px;
+  background: var(--accent2);
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+  opacity: 0;
+  transition: opacity 0.3s 1.2s;
+}
+.reveal.in .skill-fill { width: var(--w); }
+.reveal.in .skill-fill::after { opacity: 1; }
+
+/* ─── EXPERIENCE ─────────────────────────────────────────── */
+.section-experience { border-top: 1px solid var(--border); background: var(--bg2); border-bottom: 1px solid var(--border); }
+.exp-timeline {
+  position: relative;
+  padding-left: 32px;
+}
+.exp-timeline::before {
+  content: '';
+  position: absolute;
+  left: 5px; top: 8px; bottom: 0;
+  width: 1px;
+  background: linear-gradient(to bottom, var(--accent), var(--border) 80%, transparent);
+}
+.exp-entry {
+  position: relative;
+  margin-bottom: 36px;
+}
+.exp-entry:last-child { margin-bottom: 0; }
+.exp-entry::before {
+  content: '';
+  position: absolute;
+  left: -29px; top: 8px;
+  width: 9px; height: 9px;
+  background: var(--bg2);
+  border: 2px solid var(--accent);
+  transform: rotate(45deg);
+}
+.exp-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 24px 28px;
+  position: relative;
+  transition: border-color 0.2s, background 0.2s;
+}
+.exp-card:hover { border-color: var(--border2); background: var(--surface2); }
+.exp-card::before {
+  content: '';
+  position: absolute;
+  top: -1px; left: -1px;
+  width: 12px; height: 12px;
+  border-top: 2px solid var(--accent);
+  border-left: 2px solid var(--accent);
+}
+.exp-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+.exp-title {
+  font-family: var(--font-head);
+  font-size: 17px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text);
+}
+.exp-date {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: var(--accent);
+  border: 1px solid rgba(232,99,28,0.25);
+  padding: 3px 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.exp-company {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-mid);
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+.exp-desc {
+  font-size: 13px;
+  font-weight: 300;
+  color: var(--text-mid);
+  line-height: 1.8;
+}
+.exp-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 14px;
+}
+.exp-tag {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  padding: 2px 8px;
+}
+
+/* ─── EDUCATION ──────────────────────────────────────────── */
+.section-education { border-top: 1px solid var(--border); }
+.edu-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: start;
+}
+.edu-block { display: flex; flex-direction: column; gap: 2px; }
+.edu-entry {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  padding: 22px 24px;
+  position: relative;
+  transition: border-color 0.2s;
+}
+.edu-entry:last-child { border-bottom: 1px solid var(--border); }
+.edu-entry:first-child { border-top: 2px solid var(--accent); }
+.edu-entry:hover { border-color: var(--border2); }
+.edu-degree {
+  font-family: var(--font-head);
+  font-size: 15px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.edu-school {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-mid);
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+.edu-meta {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.edu-status-badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--amber);
+  border: 1px solid rgba(255,164,36,0.3);
+  padding: 2px 8px;
+  margin-top: 8px;
+}
+
+.certs-block { display: flex; flex-direction: column; gap: 0; }
+.cert-group-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  padding: 0 0 10px 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0;
+}
+.cert-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-top: none;
+  transition: background 0.2s, border-color 0.2s;
+}
+.cert-item:hover { background: var(--surface); }
+.cert-item.earned { border-left: 2px solid var(--green); }
+.cert-item.planned { border-left: 2px solid var(--border); }
+.cert-check {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  flex-shrink: 0;
+  width: 28px;
+}
+.cert-item.earned .cert-check { color: var(--green); }
+.cert-item.planned .cert-check { color: var(--text-dim); }
+.cert-name {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text);
+  letter-spacing: 0.3px;
+  flex: 1;
+}
+.cert-item.planned .cert-name { color: var(--text-mid); }
+.cert-badge {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border: 1px solid;
+}
+.cert-item.earned .cert-badge { color: var(--green); border-color: rgba(57,211,83,0.3); background: rgba(57,211,83,0.05); }
+.cert-item.planned .cert-badge { color: var(--text-dim); border-color: var(--border); }
+
 /* ─── RESPONSIVE ─────────────────────────────────────────── */
 @media (max-width: 1024px) {
   .hero-inner { grid-template-columns: 1fr; }
   .terminal-panel { display: none; }
   .about-grid { grid-template-columns: 1fr; gap: 48px; }
+  .skills-grid { grid-template-columns: 1fr; }
+  .skills-grid .skill-item:nth-last-child(-n+2) { border-bottom: 1px solid var(--border); }
+  .skills-grid .skill-item:last-child { border-bottom: none; }
   .caps-grid { grid-template-columns: 1fr 1fr; }
   .projects-grid { grid-template-columns: 1fr 1fr; }
+  .edu-grid { grid-template-columns: 1fr; gap: 40px; }
   .contact-grid { grid-template-columns: 1fr; gap: 40px; }
 }
 @media (max-width: 768px) {
@@ -1052,8 +1316,11 @@ footer {
   </div>
   <div class="nav-links">
     <a href="#about">About</a>
+    <a href="#skills">Skills</a>
+    <a href="#experience">Experience</a>
     <a href="#expertise">Expertise</a>
     <a href="#projects">Projects</a>
+    <a href="#education">Education</a>
     <a href="#contact">Contact</a>
   </div>
   <div class="nav-status">
@@ -1136,49 +1403,128 @@ footer {
     <div class="about-grid">
       <div class="about-text">
         <p class="reveal rv-2">
-          I'm a cybersecurity professional with hands-on experience in <strong>threat intelligence,
-          OSINT research, and infrastructure defense</strong>. KEVSEC is my personal security
-          operations platform — a live environment I designed, built, and actively maintain
-          to monitor and respond to real-world threats targeting my infrastructure 24/7.
+          I grew up immersed in online communities, forums, and multiplayer gaming environments —
+          spaces where social engineering, deception, and trust exploitation happen in real time.
+          That early exposure taught me something most people learn the hard way: <strong>the biggest
+          vulnerability in any system is the human element</strong>. It's what drew me to
+          <strong>Open-Source Intelligence (OSINT)</strong> investigations, digital footprint analysis,
+          and understanding how attackers weaponize publicly available information.
         </p>
         <p class="reveal rv-3">
-          My work spans network perimeter defense, adversary tradecraft research, malware
-          analysis, and digital forensics. I've built this platform end-to-end: automated
-          threat blocking pipelines, multi-source intelligence aggregation, and a unified
-          operations interface that surfaces what matters in real time.
+          Today I conduct independent security research, <strong>malware reverse engineering</strong>,
+          and <strong>dark web operations</strong> to study <strong>adversary tradecraft</strong> and
+          threat actor behavior. I maintain a personal cybersecurity lab running Linux environments and
+          security tooling for hands-on analysis. KEVSEC is the operational platform I built end-to-end:
+          automated threat blocking pipelines, multi-source intelligence aggregation, live honeypot systems,
+          and a unified dashboard that surfaces what matters in real time.
         </p>
         <p class="reveal rv-4">
-          I approach security as an engineering discipline — every system I build is designed
-          to be <strong>measurable, automatable, and continuously improved</strong>. The goal
-          is operational clarity: understand what's hitting you, attribute it, and respond
-          faster than the adversary expects.
+          My professional background spans enterprise IT support, physical security infrastructure,
+          and AV systems — including serving 3,000+ customers across major corporate campuses,
+          supporting a $100M facility launch, and training end users adapting to new technology platforms.
+          Known for translating complex technical concepts into clear, actionable guidance for
+          non-technical stakeholders. Highly curious, investigative, and driven to solve complex
+          technical problems. Prior member of CBRE's Rising Professional Organization and certified
+          first responder on the Emergency Response Team.
         </p>
       </div>
       <div class="profile-block reveal rv-2">
         <div class="profile-row">
           <span class="pr-label">Role</span>
-          <span class="pr-val tag">Cybersecurity Pro</span>
+          <span class="pr-val tag">Cybersecurity Researcher</span>
         </div>
         <div class="profile-row">
           <span class="pr-label">Focus</span>
-          <span class="pr-val">Threat Intel / OSINT</span>
-        </div>
-        <div class="profile-row">
-          <span class="pr-label">Clearance</span>
-          <span class="pr-val">Available</span>
+          <span class="pr-val">Malware Analysis / OSINT</span>
         </div>
         <div class="profile-row">
           <span class="pr-label">Platform</span>
-          <span class="pr-val">KEVSEC SOC</span>
+          <span class="pr-val">KEVSEC SOC Lab</span>
         </div>
         <div class="profile-row">
           <span class="pr-label">Environment</span>
-          <span class="pr-val">Linux / Proxmox</span>
+          <span class="pr-val">Linux / Proxmox / Windows</span>
+        </div>
+        <div class="profile-row">
+          <span class="pr-label">Background</span>
+          <span class="pr-val">IT + Physical Security</span>
+        </div>
+        <div class="profile-row">
+          <span class="pr-label">Education</span>
+          <span class="pr-val">BS Cybersecurity — CSU</span>
         </div>
         <div class="profile-row">
           <span class="pr-label">Status</span>
           <span class="pr-val tag">Open to Roles</span>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SKILLS -->
+<div class="section section-skills" id="skills">
+  <div class="section-inner">
+    <div class="section-header">
+      <div class="section-eyebrow reveal">Skills</div>
+      <h2 class="reveal rv-1">Capability <em>Matrix</em></h2>
+    </div>
+    <div class="skills-grid">
+      <div class="skill-item reveal rv-1">
+        <div class="skill-header">
+          <span class="skill-name">OSINT Investigations &amp; Digital Footprint Analysis</span>
+          <span class="skill-pct">92%</span>
+        </div>
+        <div class="skill-track"><div class="skill-fill" style="--w:92%"></div></div>
+      </div>
+      <div class="skill-item reveal rv-2">
+        <div class="skill-header">
+          <span class="skill-name">Security Research &amp; Threat Intelligence</span>
+          <span class="skill-pct">85%</span>
+        </div>
+        <div class="skill-track"><div class="skill-fill" style="--w:85%"></div></div>
+      </div>
+      <div class="skill-item reveal rv-3">
+        <div class="skill-header">
+          <span class="skill-name">Dark Web Operations &amp; Adversary Tradecraft</span>
+          <span class="skill-pct">82%</span>
+        </div>
+        <div class="skill-track"><div class="skill-fill" style="--w:82%"></div></div>
+      </div>
+      <div class="skill-item reveal rv-4">
+        <div class="skill-header">
+          <span class="skill-name">Malware Analysis &amp; Reverse Engineering</span>
+          <span class="skill-pct">78%</span>
+        </div>
+        <div class="skill-track"><div class="skill-fill" style="--w:78%"></div></div>
+      </div>
+      <div class="skill-item reveal rv-1">
+        <div class="skill-header">
+          <span class="skill-name">TCP/IP &amp; Network Fundamentals</span>
+          <span class="skill-pct">85%</span>
+        </div>
+        <div class="skill-track"><div class="skill-fill" style="--w:85%"></div></div>
+      </div>
+      <div class="skill-item reveal rv-2">
+        <div class="skill-header">
+          <span class="skill-name">Active Directory &amp; Windows Administration</span>
+          <span class="skill-pct">80%</span>
+        </div>
+        <div class="skill-track"><div class="skill-fill" style="--w:80%"></div></div>
+      </div>
+      <div class="skill-item reveal rv-3">
+        <div class="skill-header">
+          <span class="skill-name">Technical Documentation &amp; Reporting</span>
+          <span class="skill-pct">85%</span>
+        </div>
+        <div class="skill-track"><div class="skill-fill" style="--w:85%"></div></div>
+      </div>
+      <div class="skill-item reveal rv-4">
+        <div class="skill-header">
+          <span class="skill-name">Linux Environments &amp; Security Tooling</span>
+          <span class="skill-pct">70%</span>
+        </div>
+        <div class="skill-track"><div class="skill-fill" style="--w:70%"></div></div>
       </div>
     </div>
   </div>
@@ -1232,6 +1578,99 @@ footer {
   </div>
 </div>
 
+<!-- EXPERIENCE -->
+<div class="section section-experience" id="experience">
+  <div class="section-inner">
+    <div class="section-header">
+      <div class="section-eyebrow reveal">Experience</div>
+      <h2 class="reveal rv-1">Mission <em>Log</em></h2>
+    </div>
+    <div class="exp-timeline">
+
+      <div class="exp-entry reveal rv-1">
+        <div class="exp-card">
+          <div class="exp-top">
+            <span class="exp-title">Freelance Security Engineer</span>
+            <span class="exp-date">Sep 2023 — Present</span>
+          </div>
+          <div class="exp-company">WebSec B.V.</div>
+          <div class="exp-desc">Support senior analysts in OSINT investigations. Conduct digital footprint analysis and identity correlation across platforms. Document findings in structured investigative reports for client deliverables.</div>
+          <div class="exp-tags">
+            <span class="exp-tag">OSINT</span>
+            <span class="exp-tag">Identity Correlation</span>
+            <span class="exp-tag">Reporting</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="exp-entry reveal rv-2">
+        <div class="exp-card">
+          <div class="exp-top">
+            <span class="exp-title">Key Account Manager</span>
+            <span class="exp-date">Sep 2019 — Feb 2021</span>
+          </div>
+          <div class="exp-company">CH Coakley</div>
+          <div class="exp-desc">Served as system administrator for enterprise asset management software. Oversaw a 20,000-item inventory transfer between business units. Created best practices documentation adopted company-wide as a standard operating procedure.</div>
+          <div class="exp-tags">
+            <span class="exp-tag">System Admin</span>
+            <span class="exp-tag">Enterprise Software</span>
+            <span class="exp-tag">Process Documentation</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="exp-entry reveal rv-3">
+        <div class="exp-card">
+          <div class="exp-top">
+            <span class="exp-title">Service Desk Analyst</span>
+            <span class="exp-date">Mar 2019 — Aug 2019</span>
+          </div>
+          <div class="exp-company">VCPI (Healthcare IT)</div>
+          <div class="exp-desc">Handled 25–40 daily calls across healthcare clients. Active Directory administration, user account management, and endpoint troubleshooting. Operated within strict HIPAA, OSHA, and ANSI compliance requirements.</div>
+          <div class="exp-tags">
+            <span class="exp-tag">Active Directory</span>
+            <span class="exp-tag">HIPAA</span>
+            <span class="exp-tag">Healthcare IT</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="exp-entry reveal rv-4">
+        <div class="exp-card">
+          <div class="exp-top">
+            <span class="exp-title">Information Systems Technician</span>
+            <span class="exp-date">Oct 2018 — Feb 2019</span>
+          </div>
+          <div class="exp-company">BAYCOM, Inc.</div>
+          <div class="exp-desc">Installed and configured physical security systems including IndigoVision, Panasonic, and Motorola equipment. Deployed in high-security environments: 911 dispatch centers, evidence lockers, and courtrooms.</div>
+          <div class="exp-tags">
+            <span class="exp-tag">Physical Security</span>
+            <span class="exp-tag">Network Deployment</span>
+            <span class="exp-tag">Security Systems</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="exp-entry reveal rv-5">
+        <div class="exp-card">
+          <div class="exp-top">
+            <span class="exp-title">Audio Visual Coordinator</span>
+            <span class="exp-date">Jun 2016 — Apr 2018</span>
+          </div>
+          <div class="exp-company">CBRE Global Workplace Solutions</div>
+          <div class="exp-desc">Served 3,000+ customers across major corporate campuses. Supported the Day One opening of a $100M facility. Created enterprise-wide preventative maintenance standards still in use. Member of CBRE's Rising Professional Organization and certified first responder on the Emergency Response Team.</div>
+          <div class="exp-tags">
+            <span class="exp-tag">Enterprise Ops</span>
+            <span class="exp-tag">Emergency Response</span>
+            <span class="exp-tag">$100M Facility</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 <!-- PROJECTS -->
 <div class="section section-projects" id="projects">
   <div class="section-inner">
@@ -1258,6 +1697,72 @@ footer {
         <div class="project-desc">Public-facing web application at create.kevsec.com. Designed, built, and deployed as part of the broader KEVSEC platform stack on self-hosted Proxmox infrastructure.</div>
         <div class="project-link">create.kevsec.com ↗</div>
       </a>
+    </div>
+  </div>
+</div>
+
+<!-- EDUCATION -->
+<div class="section section-education" id="education">
+  <div class="section-inner">
+    <div class="section-header">
+      <div class="section-eyebrow reveal">Education &amp; Certifications</div>
+      <h2 class="reveal rv-1">Credentials &amp; <em>Training</em></h2>
+    </div>
+    <div class="edu-grid">
+
+      <div class="edu-block reveal rv-2">
+        <div class="edu-entry">
+          <div class="edu-degree">B.S. Cybersecurity</div>
+          <div class="edu-school">Colorado State University Global (CSU System)</div>
+          <div class="edu-meta">Minor: Intelligence &amp; Homeland Security</div>
+          <div class="edu-status-badge">● In Progress</div>
+        </div>
+        <div class="edu-entry">
+          <div class="edu-degree">Criminal Justice &amp; Political Science</div>
+          <div class="edu-school">University of Wisconsin — Milwaukee</div>
+          <div class="edu-meta">2013 – 2014</div>
+        </div>
+      </div>
+
+      <div class="certs-block reveal rv-2">
+        <div class="cert-group-label">Certification Roadmap</div>
+        <div class="cert-item planned">
+          <span class="cert-check">[ ]</span>
+          <span class="cert-name">CompTIA Network+</span>
+          <span class="cert-badge">Planned</span>
+        </div>
+        <div class="cert-item planned">
+          <span class="cert-check">[ ]</span>
+          <span class="cert-name">CompTIA Security+</span>
+          <span class="cert-badge">Planned</span>
+        </div>
+        <div class="cert-item planned">
+          <span class="cert-check">[ ]</span>
+          <span class="cert-name">CompTIA CySA+</span>
+          <span class="cert-badge">Planned</span>
+        </div>
+        <div class="cert-item planned">
+          <span class="cert-check">[ ]</span>
+          <span class="cert-name">CompTIA Linux+</span>
+          <span class="cert-badge">Planned</span>
+        </div>
+        <div class="cert-item planned">
+          <span class="cert-check">[ ]</span>
+          <span class="cert-name">Certified Ethical Hacker (CEH)</span>
+          <span class="cert-badge">Planned</span>
+        </div>
+        <div class="cert-item planned">
+          <span class="cert-check">[ ]</span>
+          <span class="cert-name">CISSP</span>
+          <span class="cert-badge">Planned</span>
+        </div>
+        <div class="cert-item planned">
+          <span class="cert-check">[ ]</span>
+          <span class="cert-name">OSCP — Offensive Security</span>
+          <span class="cert-badge">Planned</span>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -1316,8 +1821,11 @@ footer {
   <div class="footer-brand">KEV<span>SEC</span> // Kevin Maslanka</div>
   <div class="footer-links">
     <a href="#about">About</a>
+    <a href="#skills">Skills</a>
+    <a href="#experience">Experience</a>
     <a href="#expertise">Expertise</a>
     <a href="#projects">Projects</a>
+    <a href="#education">Education</a>
     <a href="#contact">Contact</a>
     <a href="https://github.com/Slankey" target="_blank" rel="noopener">GitHub ↗</a>
   </div>
