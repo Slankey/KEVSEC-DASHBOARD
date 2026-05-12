@@ -90,6 +90,9 @@ _EVENT_PAT = re.compile(
 _WS_PAT = re.compile(r'\s+')
 
 _cache = {}
+_warm_cache_lock = threading.Lock()
+_warm_cache_status = {"running": False, "started": None, "finished": None}
+BANCTL = "/usr/local/bin/kevsec-banctl"
 CACHE_TTL        = 300    # 5 min — live/frequent data (stocks, METAR, buoy, server stats)
 TARPIT_RESET_FILE = os.path.join(DATA_DIR, "tarpit_reset.json")
 CACHE_TTL_LONG   = 21600  # 6 hr  — weather, news, SWPC, AirNow, CVEs, threat
@@ -145,19 +148,25 @@ def cache_get(k, ttl=None, force=False):
         d, ts = _cache[k]
         if time.time() - ts < effective_ttl:
             return d
-    # Disk fallback for persisted keys
+    # Disk fallback for persisted keys — serve stale if expired so page loads
+    # never trigger live fetches; cron warm-cache job handles freshness.
     if k in DISK_CACHE_KEYS:
         path = _disk_path(k)
+        stale_data = None
         try:
             with open(path) as f:
                 entry = json.load(f)
             ts = entry.get("_cached_at", 0)
-            if time.time() - ts < effective_ttl:
-                d = entry.get("_data")
+            d = entry.get("_data")
+            if d is not None:
                 _cache[k] = (d, ts)
-                return d
+                stale_data = d
+                if time.time() - ts < effective_ttl:
+                    return d  # fresh
         except (FileNotFoundError, json.JSONDecodeError, KeyError):
             pass
+        if stale_data is not None:
+            return stale_data  # stale but better than a blocking live fetch
     return None
 
 def cache_set(k, d):
@@ -170,6 +179,56 @@ def cache_set(k, d):
                 json.dump({"_cached_at": now, "_data": d}, f)
         except Exception:
             pass
+
+def _banctl_status():
+    result = {
+        "suspended": False,
+        "fail2ban": "unknown",
+        "custom_active": 0,
+        "custom_meta": 0,
+        "master": 0,
+        "compiled": 0,
+        "ttl_days": int(os.environ.get("LOCAL_BAN_TTL_DAYS", "3")),
+        "recent": [],
+    }
+    try:
+        r = subprocess.run(["sudo", BANCTL, "status"], capture_output=True, text=True, timeout=10)
+        for line in r.stdout.splitlines():
+            if "=" not in line:
+                continue
+            k, v = line.split("=", 1)
+            if k == "suspended":
+                result["suspended"] = v == "yes"
+            elif k in ("custom_active", "custom_meta", "master", "compiled"):
+                result[k] = int(v or 0)
+            else:
+                result[k] = v
+    except Exception as e:
+        result["error"] = str(e)
+    try:
+        meta = "/etc/nftables-blacklist/custom.meta.tsv"
+        now = time.time()
+        rows = []
+        with open(meta) as f:
+            for line in f:
+                parts = line.rstrip("\n").split("\t")
+                if len(parts) < 5:
+                    continue
+                ip, first, last, count, sources = parts[:5]
+                ttl_secs = result["ttl_days"] * 86400
+                rows.append({
+                    "ip": ip,
+                    "first_seen": datetime.datetime.fromtimestamp(float(first)).strftime("%m-%d %H:%M"),
+                    "last_seen": datetime.datetime.fromtimestamp(float(last)).strftime("%m-%d %H:%M"),
+                    "age_h": round((now - float(last)) / 3600, 1),
+                    "expires_h": round((float(last) + ttl_secs - now) / 3600, 1),
+                    "count": int(count or 0),
+                    "sources": sources,
+                })
+        result["recent"] = sorted(rows, key=lambda x: x["last_seen"], reverse=True)[:25]
+    except Exception:
+        pass
+    return result
 
 def pve_auth():
     r = requests.post(f"{PROXMOX}/access/ticket", verify=False, timeout=5,
@@ -299,16 +358,58 @@ def api_public_feed():
     except Exception:
         return jsonify({"feed": []})
 
+_HP_LOG = "/mnt/hdd/logs/honeypot/access.log"
+_hp_log_lock = threading.Lock()
+
+def _honeypot_log(ip, event, path, ua):
+    """Write a pipe-delimited event to access.log — format fail2ban filters expect."""
+    ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    line = f"{ts} | {event:<18} | {ip:<18} | {path} | {ua}\n"
+    try:
+        with _hp_log_lock:
+            with open(_HP_LOG, "a") as f:
+                f.write(line)
+    except Exception as e:
+        app.logger.warning("honeypot_log write failed: %s", e)
+
+def _honeypot_ban(ip):
+    """Fire-and-forget: add IP to custom ban list immediately via banctl."""
+    try:
+        if os.path.exists("/etc/nftables-blacklist/banctl.suspended"):
+            return
+        subprocess.run(["sudo", BANCTL, "add", ip, "honeypot_flask"],
+                       capture_output=True, timeout=15)
+    except Exception as e:
+        app.logger.warning("honeypot_ban failed for %s: %s", ip, e)
+
 @app.route("/admin", methods=["GET", "POST"])
 @app.route("/wp-admin", methods=["GET", "POST"])
 @app.route("/wp-login.php", methods=["GET", "POST"])
 @app.route("/phpmyadmin", methods=["GET", "POST"])
 @app.route("/cpanel", methods=["GET", "POST"])
 @app.route("/manager/html", methods=["GET", "POST"])
+@app.route("/xmlrpc.php", methods=["GET", "POST"])
+@app.route("/wp-config.php", methods=["GET", "POST"])
+@app.route("/.env", methods=["GET", "POST"])
+@app.route("/config.php", methods=["GET", "POST"])
+@app.route("/setup.php", methods=["GET", "POST"])
+@app.route("/.git/config", methods=["GET"])
+@app.route("/actuator", methods=["GET"])
+@app.route("/actuator/health", methods=["GET"])
+@app.route("/server-status", methods=["GET"])
+@app.route("/console", methods=["GET", "POST"])
+@app.route("/solr/", methods=["GET"])
+@app.route("/jmx-console/", methods=["GET"])
 def honeypot():
     ip = _real_ip()
     path = request.path
-    _sec_log.warning("HONEYPOT_HIT ip=%s path=%s ua=%s", ip, path, request.headers.get("User-Agent",""))
+    ua = request.headers.get("User-Agent", "")
+    _sec_log.warning("HONEYPOT_HIT ip=%s path=%s ua=%s", ip, path, ua)
+    # Write to access.log in pipe format so fail2ban honeypot-probe + honeypot-trap jails trigger
+    _honeypot_log(ip, "UNKNOWN_PROBE", path, ua)
+    _honeypot_log(ip, "TARPIT", path, ua)
+    # Immediately add to nftables ban list without waiting for next cron cycle
+    threading.Thread(target=_honeypot_ban, args=(ip,), daemon=True).start()
     # Return a convincing fake login page to keep them engaged while ban fires
     return '''<!DOCTYPE html><html><head><title>Login</title></head><body>
 <form method="post"><p>Username: <input name="user"></p>
@@ -376,7 +477,8 @@ def api_internal_warm():
     """Localhost-only endpoint to trigger cache warm without auth. Used by cron."""
     if request.remote_addr not in ("127.0.0.1", "::1"):
         return jsonify({"error": "forbidden"}), 403
-    import threading
+    if _warm_cache_lock.locked():
+        return jsonify({"status": "already_warming", **_warm_cache_status})
     t = threading.Thread(target=_warm_cache, kwargs={"force": True}, daemon=True)
     t.start()
     return jsonify({"status": "warming", "ts": datetime.datetime.now().isoformat()})
@@ -865,15 +967,116 @@ def api_garden():
     except Exception as e:
         app.logger.warning("soil moisture: %s", e)
 
+    # ── 7-day lawn care outlook ───────────────────────────────────────────
+    lawn_week = []
+    for i, day in enumerate(forecast_7d):
+        r_in   = day.get("rain_in", 0) or 0
+        prob   = day.get("rain_prob", 0) or 0
+        tmax   = day.get("tmax_f") or 70
+        tmin   = day.get("tmin_f") or 50
+        et     = day.get("et_in", 0) or 0
+
+        prev_rain = forecast_7d[i-1].get("rain_in", 0) if i > 0 else (rain_7d / 7)
+        next_rain = forecast_7d[i+1].get("rain_in", 0) if i + 1 < len(forecast_7d) else 0
+        next_prob = forecast_7d[i+1].get("rain_prob", 0) if i + 1 < len(forecast_7d) else 0
+
+        # Grass wet from previous day heavy rain
+        prev_wet = prev_rain >= 0.3
+
+        # ── Mow ──────────────────────────────────────────────────────────────
+        if r_in >= 0.25 or prob >= 60:
+            mow = ("NO",    "Rain day — grass wet, clippings clump, blade tears not cuts")
+        elif prev_wet:
+            mow = ("AVOID", "Grass likely still wet from yesterday's rain")
+        elif tmax >= 92:
+            mow = ("AVOID", "Too hot (%.0f°F) — mowing heat-stressed grass damages it" % tmax)
+        elif r_in < 0.1 and prob < 30 and tmax < 90:
+            mow = ("GOOD",  "Dry, comfortable temp — ideal mow day")
+        elif r_in < 0.15 and prob < 50:
+            mow = ("OK",    "Conditions acceptable — watch for morning dew, mow after 9am")
+        else:
+            mow = ("AVOID", "Mixed conditions — prefer a drier day")
+
+        # ── Edge ─────────────────────────────────────────────────────────────
+        # Edge same rules as mow; usually done together
+        edge = mow  # identical logic
+
+        # ── Weed control (broadleaf herbicide) ──────────────────────────────
+        # Needs: 60–85°F, dry, no rain 24h after application
+        if tmax < 55 or tmin < 45:
+            weed = ("NO",    "Too cold — herbicide won't translocate below 55°F")
+        elif tmax > 87:
+            weed = ("NO",    "Too hot (%.0f°F) — volatilization risk, can damage lawn" % tmax)
+        elif r_in >= 0.2 or prob >= 50:
+            weed = ("NO",    "Rain washes herbicide off before absorption (needs 24h dry)")
+        elif next_rain >= 0.25 or next_prob >= 50:
+            weed = ("AVOID", "Rain tomorrow could wash off treatment")
+        elif r_in < 0.1 and prob < 30 and 55 <= tmax <= 87:
+            weed = ("GOOD",  "Ideal: dry, right temp range, no rain tomorrow")
+        else:
+            weed = ("OK",    "Acceptable — confirm no rain 24h after")
+
+        # ── Fertilize ────────────────────────────────────────────────────────
+        # Best: apply before light rain (0.1–0.5") to water it in; avoid heavy rain (runoff)
+        if tmax >= 90:
+            fert = ("NO",    "Lawn stressed in heat — fertilizer can burn; wait for cooler day")
+        elif r_in >= 0.6:
+            fert = ("NO",    "Heavy rain day — fertilizer will run off into storm drains")
+        elif r_in >= 0.1 and r_in < 0.5 and prob >= 40:
+            fert = ("GOOD",  "Light rain expected — ideal to water fertilizer in naturally")
+        elif next_rain >= 0.1 and next_rain < 0.5:
+            fert = ("GOOD",  "Light rain tomorrow — apply today, rain waters it in")
+        elif r_in < 0.1 and prob < 30 and tmax < 85:
+            fert = ("OK",    "Dry — will need irrigation within 24h of application")
+        else:
+            fert = ("OK",    "Acceptable conditions")
+
+        # ── Overseed ─────────────────────────────────────────────────────────
+        month = datetime.date.fromisoformat(day["date"]).month
+        if month not in (4, 5, 9, 10):
+            overseed = ("NO", "Wrong season — overseed in Apr–May or Sep–Oct for zone 5b")
+        elif tmax > 80:
+            overseed = ("AVOID", "Soil too warm (%.0f°F high) — seed germinates poorly above 75°F soil" % tmax)
+        elif r_in >= 0.5:
+            overseed = ("AVOID", "Heavy rain can wash seed away")
+        elif r_in > 0 or next_rain > 0:
+            overseed = ("GOOD",  "Moisture helps germination — keep seed bed moist 2× daily until 3\" tall")
+        else:
+            overseed = ("OK",    "Dry — will need irrigation 2× daily after seeding")
+
+        # Weather icon
+        if r_in >= 0.5:     wx = "🌧"
+        elif r_in >= 0.15:  wx = "🌦"
+        elif prob >= 50:    wx = "🌥"
+        elif tmax >= 75:    wx = "☀"
+        else:               wx = "🌤"
+
+        lawn_week.append({
+            "date":     day["date"],
+            "wx":       wx,
+            "rain_in":  r_in,
+            "rain_prob": prob,
+            "tmax_f":   tmax,
+            "tmin_f":   tmin,
+            "mow":      {"status": mow[0],     "reason": mow[1]},
+            "edge":     {"status": edge[0],    "reason": edge[1]},
+            "weed":     {"status": weed[0],    "reason": weed[1]},
+            "fert":     {"status": fert[0],    "reason": fert[1]},
+            "overseed": {"status": overseed[0],"reason": overseed[1]},
+        })
+
     result = {
         "plants":    plants,
         "frost":     frost,
         "schedule":  schedule,
+        "lawn_week": lawn_week,
         "rain_7d":   rain_7d,
         "rain_14d":  rain_14d,
         "rain_3d_ahead": rain_3d_ahead,
         "precip_history": precip_history[-7:],
         "soil_moisture": soil_moisture,
+        "mowing":      _mowing_recommendation(forecast_7d, rain_7d),
+        "fertilizer":  _fertilizer_recommendation(),
         "location":  "Port Washington, WI 53074 — USDA Zone 5b",
         "fetched":   _ts(),
     }
@@ -932,6 +1135,261 @@ def api_watering_log_delete(idx):
         if 0 <= idx < len(log):
             log.pop(idx)
             with open(WATERING_LOG_FILE, "w") as f:
+                json.dump(log, f)
+            return jsonify({"ok": True})
+        return jsonify({"error": "index out of range"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+MOWING_LOG_FILE    = f"{DATA_DIR}/mowing_log.json"
+FERTILIZER_LOG_FILE = f"{DATA_DIR}/fertilizer_log.json"
+
+def _fertilizer_recommendation():
+    """Return fertilizer status + next recommended date for zone 5b cool-season lawn."""
+    today = datetime.date.today()
+    try:
+        with open(FERTILIZER_LOG_FILE) as f:
+            fert_log = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        fert_log = []
+
+    last_fert = None
+    last_product = None
+    if fert_log:
+        last = max(fert_log, key=lambda e: e.get("date", ""))
+        last_fert = last.get("date")
+        last_product = last.get("product", "")
+
+    days_since = (today - datetime.date.fromisoformat(last_fert)).days if last_fert else None
+
+    # Zone 5b cool-season lawn fertilizer windows:
+    # 1) Late April – May 15 (light starter, post-frost)
+    # 2) September (main fall feed — most important)
+    # 3) Optional: late Oct / early Nov (winterizer)
+    month, day = today.month, today.day
+    windows = [
+        {"name": "Spring Starter",  "start": (4, 20), "end": (5, 15),
+         "note": "Light N feed after last frost — 0.5 lb N/1000sqft max"},
+        {"name": "Fall Feed",       "start": (9,  1), "end": (10, 15),
+         "note": "Most important application — 1 lb N/1000sqft"},
+        {"name": "Winterizer",      "start": (10,20), "end": (11, 15),
+         "note": "Optional late feed before ground freeze — 0.5 lb N/1000sqft"},
+    ]
+
+    in_window = None
+    for w in windows:
+        ws = datetime.date(today.year, w["start"][0], w["start"][1])
+        we = datetime.date(today.year, w["end"][0],   w["end"][1])
+        if ws <= today <= we:
+            in_window = w
+            break
+
+    # Find next window
+    next_window = None
+    for w in windows:
+        ws = datetime.date(today.year, w["start"][0], w["start"][1])
+        if ws > today:
+            next_window = {"name": w["name"], "date": ws.isoformat(), "note": w["note"]}
+            break
+    if not next_window:  # wrap to next year
+        w = windows[0]
+        ws = datetime.date(today.year + 1, w["start"][0], w["start"][1])
+        next_window = {"name": w["name"], "date": ws.isoformat(), "note": w["note"]}
+
+    if in_window:
+        if days_since is None or days_since > 30:
+            status = "APPLY NOW"
+            msg = f"{in_window['name']} window is open. {in_window['note']}."
+        else:
+            status = "RECENT"
+            msg = f"Fertilized {days_since}d ago — you're covered for this window."
+    elif days_since is None:
+        status = "UNKNOWN"
+        msg = "No fertilizer events logged."
+    else:
+        status = "OK"
+        days_to_next = (datetime.date.fromisoformat(next_window["date"]) - today).days
+        msg = f"Last fertilized {days_since}d ago. Next window: {next_window['name']} in {days_to_next}d."
+
+    return {
+        "last_fert": last_fert,
+        "last_product": last_product,
+        "days_since": days_since,
+        "status": status,
+        "message": msg,
+        "in_window": in_window["name"] if in_window else None,
+        "next_window": next_window,
+        "log": fert_log[-5:][::-1],
+    }
+
+def _mowing_recommendation(forecast_7d, rain_7d):
+    """Return best mow window + status based on last mow date and forecast."""
+    today = datetime.date.today()
+    # Load log
+    try:
+        with open(MOWING_LOG_FILE) as f:
+            mow_log = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        mow_log = []
+
+    last_mow = None
+    if mow_log:
+        dates = [e.get("date") for e in mow_log if e.get("date")]
+        if dates:
+            last_mow = max(dates)
+
+    days_since = (today - datetime.date.fromisoformat(last_mow)).days if last_mow else None
+
+    # Estimate growth rate: spring/early summer = fast (every 5-7d), summer = moderate (7-10d)
+    month = today.month
+    if month in (4, 5, 6):
+        ideal_interval = 6  # active growth
+    elif month in (7, 8):
+        ideal_interval = 9  # slower + heat
+    elif month in (9, 10):
+        ideal_interval = 8
+    else:
+        ideal_interval = 14  # dormant/winter
+
+    # Bonus: extra rain accelerates growth
+    if rain_7d > 2.0:
+        ideal_interval = max(ideal_interval - 2, 4)
+    elif rain_7d > 1.0:
+        ideal_interval = max(ideal_interval - 1, 4)
+
+    # Status
+    if days_since is None:
+        status = "UNKNOWN"
+        msg = "No mow events logged yet. Log your first mow to get recommendations."
+        due_in = None
+    else:
+        due_in = ideal_interval - days_since
+        if days_since >= ideal_interval + 2:
+            status = "OVERDUE"
+            msg = f"Mowed {days_since}d ago — overdue by {abs(due_in)}d. Mow ASAP on a dry day."
+        elif days_since >= ideal_interval:
+            status = "DUE"
+            msg = f"Mowed {days_since}d ago — due to mow now."
+        elif due_in <= 2:
+            status = "SOON"
+            msg = f"Mowed {days_since}d ago — mow in ~{due_in}d."
+        else:
+            status = "OK"
+            msg = f"Mowed {days_since}d ago — next mow in ~{due_in}d."
+
+    # Best day this week: dry, not too hot, not right before rain
+    best_day = None
+    for day in forecast_7d:
+        rain_in  = day.get("rain_in", 0) or 0
+        rain_prob = day.get("rain_prob", 0) or 0
+        tmax  = day.get("tmax_f")
+        # Good mow day: <0.1" rain, <30% chance rain, not > 92°F
+        if rain_in < 0.1 and rain_prob < 30 and (tmax is None or tmax < 92):
+            # Also check next day isn't heavy rain (avoid mowing before big rain)
+            day_idx = forecast_7d.index(day)
+            next_rain = forecast_7d[day_idx + 1]["rain_in"] if day_idx + 1 < len(forecast_7d) else 0
+            if next_rain < 0.5:
+                best_day = day["date"]
+                break
+
+    return {
+        "last_mow": last_mow,
+        "days_since": days_since,
+        "ideal_interval": ideal_interval,
+        "due_in_days": due_in,
+        "status": status,
+        "message": msg,
+        "best_day": best_day,
+        "log": mow_log[-5:][::-1],  # last 5, newest first
+    }
+
+@app.route("/api/mowing_log", methods=["GET"])
+@login_required
+def api_mowing_log_get():
+    try:
+        with open(MOWING_LOG_FILE) as f:
+            return jsonify(json.load(f))
+    except FileNotFoundError:
+        return jsonify([])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/mowing_log", methods=["POST"])
+@login_required
+@csrf_required
+def api_mowing_log_post():
+    body = request.get_json(silent=True) or {}
+    date = body.get("date", datetime.date.today().isoformat())
+    note = body.get("note", "").strip()[:200]
+    try:
+        with open(MOWING_LOG_FILE) as f:
+            log = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        log = []
+    log.append({"date": date, "note": note, "logged_at": datetime.datetime.now().isoformat()})
+    with open(MOWING_LOG_FILE, "w") as f:
+        json.dump(log, f)
+    cache_set("garden", None)  # invalidate so next load recalculates mowing rec
+    return jsonify({"ok": True, "count": len(log)})
+
+@app.route("/api/mowing_log/<int:idx>", methods=["DELETE"])
+@login_required
+@csrf_required
+def api_mowing_log_delete(idx):
+    try:
+        with open(MOWING_LOG_FILE) as f:
+            log = json.load(f)
+        if 0 <= idx < len(log):
+            log.pop(idx)
+            with open(MOWING_LOG_FILE, "w") as f:
+                json.dump(log, f)
+            return jsonify({"ok": True})
+        return jsonify({"error": "index out of range"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/fertilizer_log", methods=["GET"])
+@login_required
+def api_fertilizer_log_get():
+    try:
+        with open(FERTILIZER_LOG_FILE) as f:
+            return jsonify(json.load(f))
+    except FileNotFoundError:
+        return jsonify([])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/fertilizer_log", methods=["POST"])
+@login_required
+@csrf_required
+def api_fertilizer_log_post():
+    body = request.get_json(silent=True) or {}
+    date    = body.get("date", datetime.date.today().isoformat())
+    product = body.get("product", "").strip()[:100]
+    rate    = body.get("rate", "").strip()[:50]
+    note    = body.get("note", "").strip()[:200]
+    try:
+        with open(FERTILIZER_LOG_FILE) as f:
+            log = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        log = []
+    log.append({"date": date, "product": product, "rate": rate, "note": note,
+                "logged_at": datetime.datetime.now().isoformat()})
+    with open(FERTILIZER_LOG_FILE, "w") as f:
+        json.dump(log, f)
+    cache_set("garden", None)
+    return jsonify({"ok": True, "count": len(log)})
+
+@app.route("/api/fertilizer_log/<int:idx>", methods=["DELETE"])
+@login_required
+@csrf_required
+def api_fertilizer_log_delete(idx):
+    try:
+        with open(FERTILIZER_LOG_FILE) as f:
+            log = json.load(f)
+        if 0 <= idx < len(log):
+            log.pop(idx)
+            with open(FERTILIZER_LOG_FILE, "w") as f:
                 json.dump(log, f)
             return jsonify({"ok": True})
         return jsonify({"error": "index out of range"}), 404
@@ -1842,6 +2300,7 @@ def api_tarpit_stats():
     except Exception:
         result["permanent_bans"] = 0
 
+    result["ban_control"] = _banctl_status()
     cache_set("tarpit_stats", result)
     return jsonify(result)
 
@@ -1981,6 +2440,7 @@ def api_firewall_drops():
     result = {
         "drops":   ufw_top,
         "f2b":     f2b_top,
+        "ban_control": _banctl_status(),
         "fetched": datetime.datetime.now().strftime("%H:%M:%S"),
         "abuseipdb_enabled": bool(ABUSEIPDB_KEY)
     }
@@ -3080,12 +3540,10 @@ def api_ban_ip():
     _sec_log.warning("MANUAL_BAN ip=%s reason=%s by=%s from=%s",
                      ip_addr, reason, session.get("user","?"), _real_ip())
     results = {}
-    # 1. Add to custom.list
+    # 1. Add to TTL-based local ban list
     try:
-        custom_list = "/etc/nftables-blacklist/custom.list"
-        r = subprocess.run(["sudo","bash","-c",
-                            f"grep -qxF '{ip_addr}' {custom_list} || echo '{ip_addr}' >> {custom_list}"],
-                           capture_output=True, text=True, timeout=5)
+        r = subprocess.run(["sudo", BANCTL, "add", ip_addr, reason],
+                           capture_output=True, text=True, timeout=20)
         results["custom_list"] = r.returncode == 0
     except Exception as e:
         results["custom_list"] = False
@@ -3130,7 +3588,11 @@ def api_f2b_unban():
                 results[jail] = "unbanned"
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    # Also remove from iptables
+    # Also remove from local TTL list and iptables
+    try:
+        subprocess.run(["sudo", BANCTL, "unban", ip_addr],
+                       capture_output=True, text=True, timeout=20)
+    except: pass
     try:
         subprocess.run(["sudo","iptables","-D","INPUT","-s",ip_addr,"-j","DROP"],
                        capture_output=True, text=True, timeout=5)
@@ -3150,6 +3612,44 @@ def api_run_blacklist_update():
                             capture_output=True, text=True, timeout=60)
         out1 = (r1.stdout + r1.stderr).strip()
         return jsonify({"ok": r1.returncode == 0, "output": out1[:500]})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/ban_control", methods=["GET", "POST"])
+@login_required
+def api_ban_control():
+    if request.method == "GET":
+        return jsonify(_banctl_status())
+    csrf = request.headers.get("X-CSRF-Token", "")
+    if not csrf or csrf != session.get("csrf_token"):
+        return jsonify({"error": "invalid csrf token"}), 403
+    data = request.json or {}
+    action = (data.get("action") or "").strip()
+    reason = (data.get("reason") or "dashboard").strip()[:80]
+    allowed = {
+        "status": ["status"],
+        "purge": ["purge"],
+        "suspend": ["suspend", reason],
+        "resume": ["resume"],
+        "unban-all": ["unban-all"],
+        "open": ["open", reason],
+    }
+    if action not in allowed:
+        return jsonify({"error": "invalid action"}), 400
+    _sec_log.warning("BAN_CONTROL action=%s by=%s from=%s",
+                     action, session.get("user","?"), _real_ip())
+    try:
+        r = subprocess.run(["sudo", BANCTL] + allowed[action],
+                           capture_output=True, text=True, timeout=120)
+        cache_set("firewall_drops", None)
+        cache_set("tarpit_stats", None)
+        return jsonify({
+            "ok": r.returncode == 0,
+            "action": action,
+            "output": (r.stdout + r.stderr)[-2000:],
+            "status": _banctl_status(),
+        })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -3785,6 +4285,18 @@ def api_f1():
 
 
 def _warm_cache(force=False):
+    if not _warm_cache_lock.acquire(blocking=False):
+        app.logger.info("[warm_cache] skipped; previous run still active")
+        return
+    _warm_cache_status.update({"running": True, "started": datetime.datetime.now().isoformat(), "finished": None})
+    try:
+        return _warm_cache_impl(force=force)
+    finally:
+        _warm_cache_status.update({"running": False, "finished": datetime.datetime.now().isoformat()})
+        _warm_cache_lock.release()
+
+
+def _warm_cache_impl(force=False):
     """Pre-populate expensive caches at startup so first page load is instant."""
     time.sleep(2)  # let Flask fully start
     hdrs = HDRS
@@ -3968,7 +4480,7 @@ def _warm_cache(force=False):
         except: pass
 
     # SWPC space weather — daily only
-    if not cache_get("swpc", CACHE_TTL_DAY):
+    if force or not cache_get("swpc", CACHE_TTL_DAY):
         try:
             swpc_result = {"kp":None,"solar_wind":{},"alerts":[],
                            "fetched":datetime.datetime.now().strftime("%H:%M:%S")}
@@ -4058,7 +4570,7 @@ def _warm_cache(force=False):
         app.logger.warning(f"[GLERL] Warm cache error: {e}")
 
     # Earthquakes — daily only
-    if not cache_get("quakes", CACHE_TTL_DAY):
+    if force or not cache_get("quakes", CACHE_TTL_DAY):
         try:
             data = requests.get("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/significant_week.geojson",timeout=10).json()
             import zoneinfo as _zi; _ct = _zi.ZoneInfo("America/Chicago")
@@ -4125,7 +4637,54 @@ def _warm_cache(force=False):
         except Exception as e:
             app.logger.warning("[warm_cache] burn_ban: %s", e)
 
-    # Presidential Intel — 24hr TTL; scraped on first daily request, no warm_cache needed
+    # Presidential Intel — 24hr TTL
+    if force or not cache_get("president_intel", 86400):
+        try:
+            _pi_hdrs = {
+                "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+                              "(KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml",
+                "Accept-Language": "en-US,en;q=0.9",
+            }
+            _pi_resp = requests.get("https://rollcall.com/factbase/trump/calendar/",
+                                    timeout=20, headers=_pi_hdrs)
+            _pi_html = _pi_resp.text
+            _pi_today = datetime.date.today()
+            _pi_end = _pi_today + datetime.timedelta(days=14)
+            _pi_sched = []
+            _pi_dates = list(_DATE_PAT.finditer(_pi_html))
+            for _pi_i, _pi_dm in enumerate(_pi_dates):
+                _pi_day = _pi_dm.group(1).strip().rstrip(',')
+                _pi_dstr = _pi_dm.group(2).strip()
+                try:
+                    _pi_dobj = datetime.datetime.strptime(_pi_dstr, "%B %d, %Y").date()
+                except Exception:
+                    continue
+                if _pi_dobj < _pi_today or _pi_dobj > _pi_end:
+                    continue
+                _pi_start = _pi_dm.end()
+                _pi_chunk_end = _pi_dates[_pi_i + 1].start() if _pi_i + 1 < len(_pi_dates) else len(_pi_html)
+                _pi_chunk = _pi_html[_pi_start:_pi_chunk_end]
+                for _pi_em in _EVENT_PAT.finditer(_pi_chunk):
+                    _pi_title = _WS_PAT.sub(' ', _pi_em.group(3)).strip()
+                    if not _pi_title or _pi_title.lower() == 'tbd':
+                        continue
+                    _pi_sched.append({
+                        "date": _pi_dobj.strftime("%a %b %-d"),
+                        "day": _pi_day,
+                        "time": _pi_em.group(2).strip(),
+                        "title": _pi_title[:160],
+                        "type": _pi_em.group(1).strip(),
+                        "source": "Roll Call / Factbase",
+                    })
+            _pi_sched.sort(key=lambda x: (x["date"], x["time"]))
+            cache_set("president_intel", {
+                "schedule": _pi_sched[:30],
+                "fetched": _ts(),
+                "schedule_url": "https://rollcall.com/factbase/trump/calendar/",
+            })
+        except Exception as e:
+            app.logger.warning("[warm_cache] president_intel: %s", e)
 
     # Congress Status — 1-hr TTL
     if force or not cache_get("congress_status", 3600):
@@ -4524,6 +5083,549 @@ def api_spotify_status():
         "expired": time.time() > expires_at,
         "expires_in": max(0, int(expires_at - time.time()))
     })
+
+@app.route("/migration")
+@login_required
+def migration_monitor():
+    return '''<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>StorageBox Migration</title>
+<style>
+  body { background:#0a0a0a; color:#ccc; font-family:monospace; margin:0; padding:20px; }
+  h2 { color:#0f0; margin:0 0 10px; }
+  .stats { display:flex; gap:20px; margin-bottom:16px; flex-wrap:wrap; }
+  .stat { background:#111; border:1px solid #222; padding:10px 18px; border-radius:6px; }
+  .stat span { display:block; font-size:11px; color:#666; }
+  .stat b { font-size:22px; color:#0f0; }
+  .stat b.fail { color:#f44; }
+  .stat b.pending { color:#fa0; }
+  #log { background:#0d0d0d; border:1px solid #1a1a1a; padding:12px; height:60vh;
+         overflow-y:auto; white-space:pre-wrap; font-size:12px; line-height:1.5; border-radius:6px; }
+  .ok { color:#0f0; } .fail { color:#f44; } .skip { color:#555; }
+  .progress { color:#08f; } .info { color:#aaa; }
+  #status { margin-bottom:8px; font-size:12px; color:#555; }
+  a { color:#08f; text-decoration:none; } a:hover { text-decoration:underline; }
+</style>
+</head>
+<body>
+<h2>&#x1F4E6; StorageBox Migration Monitor</h2>
+<div class="stats" id="stats">Loading...</div>
+<div id="status">Refreshing every 10s &mdash; <a href="/dashboard">&#8592; Dashboard</a></div>
+<div id="log"></div>
+<script>
+function colorize(line) {
+  if (line.includes("] OK:")) return "<span class=ok>" + line + "</span>";
+  if (line.includes("] FAILED") || line.includes("ERROR")) return "<span class=fail>" + line + "</span>";
+  if (line.includes("] SKIP:")) return "<span class=skip>" + line + "</span>";
+  if (line.includes("PROGRESS:")) return "<span class=progress>" + line + "</span>";
+  if (line.includes("POST-MIGRATE") || line.includes("Migration Started") || line.includes("Migration finished")) return "<span class=ok>" + line + "</span>";
+  return "<span class=info>" + line + "</span>";
+}
+async function refresh() {
+  try {
+    const r = await fetch("/api/migration_status");
+    const d = await r.json();
+    document.getElementById("stats").innerHTML =
+      "<div class=stat><span>Items Done</span><b>" + d.done + " / " + d.total + "</b></div>" +
+      "<div class=stat><span>Failed</span><b class=" + (d.failed > 0 ? "fail" : "") + ">" + d.failed + "</b></div>" +
+      "<div class=stat><span>Phase</span><b class=pending>" + d.phase + "</b></div>" +
+      "<div class=stat><span>Progress</span><b>" + d.pct + "%</b></div>" +
+      "<div class=stat><span>Transferred</span><b>" + d.transferred_gb + " GB</b></div>" +
+      "<div class=stat><span>Remaining</span><b class=pending>" + d.remaining_gb + " GB</b></div>" +
+      "<div class=stat><span>Speed</span><b>" + d.speed_mbps + " MB/s</b></div>" +
+      "<div class=stat><span>ETA</span><b class=pending>" + d.eta + "</b></div>" +
+      "<div class=stat><span>Running</span><b class=" + (d.running ? "ok" : "fail") + ">" + (d.running ? "YES" : "NO") + "</b></div>" +
+      "<div class=stat><span>Last Item</span><b style=font-size:11px;color:#aaa;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap>" + (d.last_item || "—") + "</b></div>";
+    const log = document.getElementById("log");
+    log.innerHTML = d.log.map(colorize).join("\\n");
+    log.scrollTop = log.scrollHeight;
+    document.getElementById("status").textContent = "Last updated: " + new Date().toLocaleTimeString() + " — refreshing every 10s";
+  } catch(e) { document.getElementById("status").textContent = "Fetch error: " + e; }
+}
+refresh();
+setInterval(refresh, 10000);
+</script>
+</body>
+</html>'''
+
+@app.route("/api/migration_status")
+@login_required
+def api_migration_status():
+    import subprocess as _sp, re as _re, time as _time
+
+    log_file   = "/var/log/storagebox-migration.log"
+    state_file = "/var/log/storagebox-migration.state"
+    speed_cache_file = "/tmp/migration_speed_cache.json"
+
+    # Read last 120 lines of log
+    lines = []
+    try:
+        with open(log_file) as f:
+            lines = f.readlines()[-120:]
+        lines = [l.rstrip() for l in lines]
+    except:
+        pass
+
+    # Parse state
+    done, failed = [], []
+    try:
+        with open(state_file) as f:
+            s = json.load(f)
+            done   = s.get("done", [])
+            failed = s.get("failed", [])
+    except:
+        pass
+
+    # Determine phase + last item
+    phase = "MOVIES"
+    last_item = ""
+    for line in reversed(lines):
+        if "=== TV:" in line:   phase = "TV";     break
+        if "=== MOVIES:" in line: phase = "MOVIES"; break
+    for line in reversed(lines):
+        if "] START:" in line or "] OK:" in line:
+            last_item = line.split("] ", 1)[-1][:60] if "] " in line else line[:60]
+            break
+
+    # Total GB local (what still needs to go)
+    total_bytes = 0
+    try:
+        for d in ["/mnt/hdd/torrents/MOVIES", "/mnt/hdd/torrents/TV"]:
+            r = _sp.run(["du", "-sb", d], capture_output=True, text=True)
+            if r.returncode == 0:
+                total_bytes += int(r.stdout.split()[0])
+    except: pass
+
+    # GB transferred — track via speed cache (poll storagebox du every 90s)
+    transferred_bytes = 0
+    speed_mbps = 0.0
+    try:
+        cache = {}
+        try:
+            with open(speed_cache_file) as f:
+                cache = json.load(f)
+        except: pass
+
+        now = _time.time()
+        if now - cache.get("ts", 0) > 90:
+            # Use CIFS mount (already mounted at /mnt/storagebox)
+            total_sb = 0
+            for d in ["/mnt/storagebox/MOVIES", "/mnt/storagebox/TV"]:
+                r2 = _sp.run(["du", "-sb", d], capture_output=True, text=True, timeout=30)
+                if r2.returncode == 0:
+                    try: total_sb += int(r2.stdout.split()[0])
+                    except: pass
+            r = type("R", (), {"returncode": 0 if total_sb > 0 else 1, "stdout": str(total_sb)})()
+            if r.returncode == 0 and r.stdout.strip().isdigit():
+                new_bytes = int(r.stdout.strip())
+                prev_bytes = cache.get("bytes", 0)
+                prev_ts    = cache.get("ts", now)
+                elapsed = now - prev_ts
+                if elapsed > 0 and new_bytes > prev_bytes:
+                    speed_mbps = ((new_bytes - prev_bytes) / elapsed) / (1024 * 1024)
+                cache = {"ts": now, "bytes": new_bytes, "speed": speed_mbps}
+                with open(speed_cache_file, "w") as f:
+                    json.dump(cache, f)
+            transferred_bytes = cache.get("bytes", 0)
+            speed_mbps        = cache.get("speed", 0.0)
+        else:
+            transferred_bytes = cache.get("bytes", 0)
+            speed_mbps        = cache.get("speed", 0.0)
+    except: pass
+
+    # Also parse last logged speed from log as fallback
+    if speed_mbps == 0:
+        for line in reversed(lines):
+            m = _re.search(r'@ ([\d.]+) MB/s', line)
+            if m:
+                speed_mbps = float(m.group(1))
+                break
+
+    # Item counts — reliable with DELETE_LOCAL_AFTER_TRANSFER=True
+    remaining_items = 0
+    try:
+        remaining_items = len(os.listdir("/mnt/hdd/torrents/MOVIES")) + len(os.listdir("/mnt/hdd/torrents/TV"))
+    except: pass
+    total_items = len(done) + remaining_items
+    pct = (len(done) / total_items * 100) if total_items > 0 else 0
+
+    # ETA based on remaining local bytes (decreases as files are deleted) + log-parsed speed
+    remaining_bytes = total_bytes  # total_bytes = current local remaining (bytes already deleted as transferred)
+    eta_str = "—"
+    if speed_mbps > 0 and remaining_bytes > 0:
+        eta_secs = remaining_bytes / (speed_mbps * 1024 * 1024)
+        if eta_secs < 3600:
+            eta_str = f"{int(eta_secs/60)}m"
+        elif eta_secs < 86400:
+            eta_str = f"{eta_secs/3600:.1f}h"
+        else:
+            eta_str = f"{eta_secs/86400:.1f}d"
+
+    running = _sp.run(["pgrep", "-f", "storagebox-migrate"], capture_output=True).returncode == 0
+
+    return jsonify({
+        "done":              len(done),
+        "failed":            len(failed),
+        "total":             total_items,
+        "phase":             phase,
+        "last_item":         last_item,
+        "running":           running,
+        "transferred_gb":    round(transferred_bytes / 1024**3, 1) if transferred_bytes else "—",
+        "remaining_gb":      round(remaining_bytes / 1024**3, 1),
+        "total_gb":          round((transferred_bytes + remaining_bytes) / 1024**3, 1) if transferred_bytes else "—",
+        "pct":               round(pct, 1),
+        "speed_mbps":        round(speed_mbps, 1),
+        "eta":               eta_str,
+        "log":               lines,
+    })
+
+
+@app.route("/hevc-reclaim")
+@login_required
+def hevc_reclaim_monitor():
+    return '''<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>HEVC Reclaim</title>
+<style>
+  body { background:#0a0a0a; color:#ccc; font-family:monospace; margin:0; padding:20px; }
+  h2 { color:#0f0; margin:0 0 10px; }
+  .stats { display:flex; gap:20px; margin-bottom:16px; flex-wrap:wrap; }
+  .stat { background:#111; border:1px solid #222; padding:10px 18px; border-radius:6px; }
+  .stat span { display:block; font-size:11px; color:#666; }
+  .stat b { font-size:22px; color:#0f0; }
+  .stat b.fail { color:#f44; }
+  .stat b.pending { color:#fa0; }
+  #log { background:#0d0d0d; border:1px solid #1a1a1a; padding:12px; height:60vh;
+         overflow-y:auto; white-space:pre-wrap; font-size:12px; line-height:1.5; border-radius:6px; }
+  .ok { color:#0f0; } .fail { color:#f44; } .skip { color:#555; }
+  .progress { color:#08f; } .info { color:#aaa; }
+  #status { margin-bottom:8px; font-size:12px; color:#555; }
+  a { color:#08f; text-decoration:none; } a:hover { text-decoration:underline; }
+</style>
+</head>
+<body>
+<h2>&#x1F4E5; HEVC Reclaim — StorageBox &rarr; Local KEEP</h2>
+<div class="stats" id="stats">Loading...</div>
+<div id="status">Refreshing every 10s &mdash; <a href="/dashboard">&#8592; Dashboard</a></div>
+<div id="log"></div>
+<script>
+function colorize(line) {
+  if (line.includes("] OK:") || line.includes("RETRY OK")) return "<span class=ok>" + line + "</span>";
+  if (line.includes("] FAILED") || line.includes("RETRY FAILED") || line.includes("ERROR")) return "<span class=fail>" + line + "</span>";
+  if (line.includes("] SKIP:")) return "<span class=skip>" + line + "</span>";
+  if (line.includes("MB/s")) return "<span class=progress>" + line + "</span>";
+  if (line.includes("reclaim complete") || line.includes("Reclaim") || line.includes("====")) return "<span class=ok>" + line + "</span>";
+  return "<span class=info>" + line + "</span>";
+}
+async function refresh() {
+  try {
+    const r = await fetch("/api/hevc_reclaim_status");
+    const d = await r.json();
+    document.getElementById("stats").innerHTML =
+      "<div class=stat><span>Items Done</span><b>" + d.done + " / " + d.total + "</b></div>" +
+      "<div class=stat><span>Failed</span><b class=" + (d.failed > 0 ? "fail" : "") + ">" + d.failed + "</b></div>" +
+      "<div class=stat><span>Progress</span><b>" + d.pct + "%</b></div>" +
+      "<div class=stat><span>Reclaimed</span><b>" + d.reclaimed_gb + " GB</b></div>" +
+      "<div class=stat><span>Remaining</span><b class=pending>" + d.remaining_gb + " GB</b></div>" +
+      "<div class=stat><span>Speed</span><b>" + d.speed_mbps + " MB/s</b></div>" +
+      "<div class=stat><span>ETA</span><b class=pending>" + d.eta + "</b></div>" +
+      "<div class=stat><span>Running</span><b class=" + (d.running ? "ok" : "fail") + ">" + (d.running ? "YES" : "NO") + "</b></div>" +
+      "<div class=stat><span>Current Item</span><b style=font-size:11px;color:#aaa;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap>" + (d.last_item || "—") + "</b></div>";
+    const log = document.getElementById("log");
+    log.innerHTML = d.log.map(colorize).join("\\n");
+    log.scrollTop = log.scrollHeight;
+    document.getElementById("status").textContent = "Last updated: " + new Date().toLocaleTimeString() + " — refreshing every 10s";
+  } catch(e) { document.getElementById("status").textContent = "Fetch error: " + e; }
+}
+refresh();
+setInterval(refresh, 10000);
+</script>
+</body>
+</html>'''
+
+@app.route("/api/hevc_reclaim_status")
+@login_required
+def api_hevc_reclaim_status():
+    import subprocess as _sp, re as _re, time as _time
+
+    log_file   = "/var/log/hevc-reclaim.log"
+    state_file = "/var/log/hevc-reclaim.state"
+    total_items = 24  # fixed list
+
+    lines = []
+    try:
+        with open(log_file) as f:
+            lines = f.readlines()[-120:]
+        lines = [l.rstrip() for l in lines]
+    except:
+        pass
+
+    done, failed = [], []
+    try:
+        with open(state_file) as f:
+            s = json.load(f)
+            done   = s.get("done", [])
+            failed = s.get("failed", [])
+    except:
+        pass
+
+    last_item = ""
+    for line in reversed(lines):
+        if "] START [" in line or "] OK:" in line:
+            last_item = line.split("] ", 1)[-1][:60] if "] " in line else line[:60]
+            break
+
+    # Speed from log
+    speed_mbps = 0.0
+    for line in reversed(lines):
+        m = _re.search(r'@ ([\d.]+) MB/s', line)
+        if m:
+            speed_mbps = float(m.group(1))
+            break
+
+    # Remaining GB on StorageBox (items not yet done)
+    remaining_items = [
+        (s, n) for s, n in [
+            ("TV","Ted.S01.1080p.x265-MeGusta"),
+            ("TV","Invincible 2021 S03 1080p 10bit WEBRip 6CH x265 HEVC-PSA"),
+            ("TV","Naked.Attraction.S10E01.1080p.HEVC.x265-MeGusta"),
+            ("TV","Naked.Attraction.S10E02.1080p.HEVC.x265-MeGusta"),
+            ("TV","Naked.Attraction.S10E03.1080p.HEVC.x265-MeGusta"),
+            ("TV","Severance 2022 Season 1 S01 2160p ATVP WEB-DL x265 HEVC 10bit DDP 5 1 Vyndros"),
+            ("TV","Slow Horses 2022 Season 1 S01 2160p ATVP WEB-DL x265 HEVC 10bit DDP 5 1 Vyndros"),
+            ("TV","Slow Horses 2022 Season 2 S02 2160p ATVP WEB-DL x265 HEVC 10bit DDP 5 1 Vyndros"),
+            ("TV","The Pitt S01 1080p DUAL HMAX WEB-DL x265 EAC3 5 1 Atmos-HdT"),
+            ("TV","Your.Friends.and.Neighbors.S01.1080p.x265-ELiTE"),
+            ("MOVIES","Billy Madison 1995 10bit hevc-d3g"),
+            ("MOVIES","Captain Phillips 2013 1080p BluRay x265-YAWNTiC"),
+            ("MOVIES","Creed II 2018 1080p BluRay x265-YAWNTiC"),
+            ("MOVIES","Hoppers 2026 1080p WebRip EAC3 5 1 x265-Lootera"),
+            ("MOVIES","Hustle.2022.1080p.WEBRip.x265"),
+            ("MOVIES","Interstellar (2014) IMAX hevc-d3g"),
+            ("MOVIES","Senna.2010.1080p.BluRay.x265"),
+            ("MOVIES","Sicario 2015 1080p BluRayRip EAC3 5 1 x265-Lootera"),
+            ("MOVIES","Steve.Jobs.2015.1080p.BluRay.x265"),
+            ("MOVIES","The Blind Side 2009 HEVC D3FiL3R (bd50)"),
+            ("MOVIES","The Founder 2016 10bit dts hevc-d3g"),
+            ("MOVIES","The Hurt Locker (2008) hevc-d3g"),
+            ("MOVIES","The.Covenant.2023.1080p.BluRay.x265.10bit.5.1-LAMA"),
+            ("MOVIES","The.Waterboy.1998.1080p.BluRay.x265"),
+        ] if f"{s}/{n}" not in done
+    ]
+
+    remaining_bytes = 0
+    reclaimed_bytes = 0
+    for subdir, name in remaining_items:
+        p = os.path.join("/mnt/storagebox", subdir, name)
+        try:
+            r2 = _sp.run(["du", "-sb", p], capture_output=True, text=True, timeout=5)
+            if r2.returncode == 0:
+                remaining_bytes += int(r2.stdout.split()[0])
+        except: pass
+    for subdir, name in [(s,n) for s,n in [
+            ("TV","Ted.S01.1080p.x265-MeGusta"),("TV","Invincible 2021 S03 1080p 10bit WEBRip 6CH x265 HEVC-PSA"),
+            ("TV","Naked.Attraction.S10E01.1080p.HEVC.x265-MeGusta"),("TV","Naked.Attraction.S10E02.1080p.HEVC.x265-MeGusta"),
+            ("TV","Naked.Attraction.S10E03.1080p.HEVC.x265-MeGusta"),
+            ("TV","Severance 2022 Season 1 S01 2160p ATVP WEB-DL x265 HEVC 10bit DDP 5 1 Vyndros"),
+            ("TV","Slow Horses 2022 Season 1 S01 2160p ATVP WEB-DL x265 HEVC 10bit DDP 5 1 Vyndros"),
+            ("TV","Slow Horses 2022 Season 2 S02 2160p ATVP WEB-DL x265 HEVC 10bit DDP 5 1 Vyndros"),
+            ("TV","The Pitt S01 1080p DUAL HMAX WEB-DL x265 EAC3 5 1 Atmos-HdT"),
+            ("TV","Your.Friends.and.Neighbors.S01.1080p.x265-ELiTE"),
+            ("MOVIES","Billy Madison 1995 10bit hevc-d3g"),("MOVIES","Captain Phillips 2013 1080p BluRay x265-YAWNTiC"),
+            ("MOVIES","Creed II 2018 1080p BluRay x265-YAWNTiC"),("MOVIES","Hoppers 2026 1080p WebRip EAC3 5 1 x265-Lootera"),
+            ("MOVIES","Hustle.2022.1080p.WEBRip.x265"),("MOVIES","Interstellar (2014) IMAX hevc-d3g"),
+            ("MOVIES","Senna.2010.1080p.BluRay.x265"),("MOVIES","Sicario 2015 1080p BluRayRip EAC3 5 1 x265-Lootera"),
+            ("MOVIES","Steve.Jobs.2015.1080p.BluRay.x265"),("MOVIES","The Blind Side 2009 HEVC D3FiL3R (bd50)"),
+            ("MOVIES","The Founder 2016 10bit dts hevc-d3g"),("MOVIES","The Hurt Locker (2008) hevc-d3g"),
+            ("MOVIES","The.Covenant.2023.1080p.BluRay.x265.10bit.5.1-LAMA"),("MOVIES","The.Waterboy.1998.1080p.BluRay.x265"),
+        ] if f"{s}/{n}" in done]:
+        p = os.path.join("/mnt/hdd/torrents/KEEP", name)
+        try:
+            r2 = _sp.run(["du", "-sb", p], capture_output=True, text=True, timeout=5)
+            if r2.returncode == 0:
+                reclaimed_bytes += int(r2.stdout.split()[0])
+        except: pass
+
+    pct = round(len(done) / total_items * 100, 1) if total_items > 0 else 0
+
+    eta_str = "—"
+    if speed_mbps > 0 and remaining_bytes > 0:
+        eta_secs = remaining_bytes / (speed_mbps * 1024 * 1024)
+        if eta_secs < 3600:
+            eta_str = f"{int(eta_secs/60)}m"
+        elif eta_secs < 86400:
+            eta_str = f"{eta_secs/3600:.1f}h"
+        else:
+            eta_str = f"{eta_secs/86400:.1f}d"
+
+    running = _sp.run(["pgrep", "-f", "hevc-reclaim"], capture_output=True).returncode == 0
+
+    return jsonify({
+        "done":          len(done),
+        "failed":        len(failed),
+        "total":         total_items,
+        "pct":           pct,
+        "reclaimed_gb":  round(reclaimed_bytes / 1024**3, 1) if reclaimed_bytes else 0,
+        "remaining_gb":  round(remaining_bytes / 1024**3, 1) if remaining_bytes else "—",
+        "speed_mbps":    round(speed_mbps, 1),
+        "eta":           eta_str,
+        "last_item":     last_item,
+        "running":       running,
+        "log":           lines,
+    })
+
+
+QUEUE_FILE   = "/var/lib/storagebox-queue.json"
+
+@app.route("/api/bandwidth")
+@login_required
+def api_bandwidth():
+    import time as _time
+    def _read_net():
+        stats = {}
+        with open("/proc/net/dev") as f:
+            for line in f:
+                parts = line.split()
+                if len(parts) >= 10 and parts[0].endswith(":"):
+                    iface = parts[0].rstrip(":")
+                    if iface != "lo":
+                        stats[iface] = {"rx": int(parts[1]), "tx": int(parts[9])}
+        return stats
+    s1 = _read_net(); _time.sleep(1); s2 = _read_net()
+    result = {}
+    for iface in s1:
+        if iface in s2:
+            rx_mbps = (s2[iface]["rx"] - s1[iface]["rx"]) * 8 / 1_000_000
+            tx_mbps = (s2[iface]["tx"] - s1[iface]["tx"]) * 8 / 1_000_000
+            result[iface] = {"rx_mbps": round(rx_mbps, 2), "tx_mbps": round(tx_mbps, 2)}
+    return jsonify(result)
+
+@app.route("/api/storagebox_disk")
+@login_required
+def api_storagebox_disk():
+    try:
+        r = subprocess.run(["df", "-B1", "/mnt/storagebox"], capture_output=True, text=True, timeout=10)
+        if r.returncode != 0:
+            return jsonify({"error": "not mounted"}), 503
+        lines = r.stdout.strip().splitlines()
+        if len(lines) < 2:
+            return jsonify({"error": "parse failed"}), 500
+        parts = lines[1].split()
+        total = int(parts[1]); used = int(parts[2]); avail = int(parts[3])
+        pct = round(used / total * 100, 1) if total else 0
+        return jsonify({
+            "total_gb": round(total / 1024**3, 1),
+            "used_gb":  round(used  / 1024**3, 1),
+            "free_gb":  round(avail / 1024**3, 1),
+            "pct":      pct,
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+
+QUEUE_LOG    = "/mnt/hdd/logs/storagebox-queue.log"
+QUEUE_CRON_MARKER = "storagebox-queue-worker"
+
+def _get_queue():
+    try:
+        with open(QUEUE_FILE) as f:
+            return json.load(f)
+    except:
+        return []
+
+def _get_cron_schedule():
+    r = subprocess.run(["crontab", "-l"], capture_output=True, text=True)
+    for line in r.stdout.splitlines():
+        if QUEUE_CRON_MARKER in line and not line.strip().startswith("#"):
+            parts = line.strip().split()
+            if len(parts) >= 5:
+                return {"minute": parts[0], "hour": parts[1], "expression": " ".join(parts[:5])}
+    return {"minute": "0", "hour": "23", "expression": "0 23 * * *"}
+
+def _get_size_bytes(path):
+    try:
+        if os.path.isdir(path):
+            r = subprocess.run(["du", "-sb", path], capture_output=True, text=True, timeout=5)
+            return int(r.stdout.split()[0]) if r.returncode == 0 else 0
+        return os.path.getsize(path)
+    except:
+        return 0
+
+@app.route("/api/queue")
+@login_required
+def api_queue():
+    queue = _get_queue()
+    worker_running = subprocess.run(
+        ["systemctl", "is-active", "storagebox-queue-worker"],
+        capture_output=True, text=True).stdout.strip() == "active"
+    cron = _get_cron_schedule()
+    items = []
+    total_bytes = 0
+    for item in queue:
+        sz = _get_size_bytes(item.get("src",""))
+        total_bytes += sz
+        items.append({
+            "name":       item.get("name",""),
+            "label":      item.get("label",""),
+            "src":        item.get("src",""),
+            "processing": item.get("processing", False),
+            "retries":    item.get("retries", 0),
+            "size_gb":    round(sz / 1024**3, 2),
+        })
+    return jsonify({
+        "items":        items,
+        "count":        len(items),
+        "total_gb":     round(total_bytes / 1024**3, 2),
+        "worker_active": worker_running,
+        "cron":         cron,
+    })
+
+@app.route("/api/queue/run", methods=["POST"])
+@login_required
+@csrf_required
+def api_queue_run():
+    r = subprocess.run(["sudo", "systemctl", "start", "storagebox-queue-worker"],
+                       capture_output=True, text=True)
+    if r.returncode != 0:
+        return jsonify({"ok": False, "error": r.stderr.strip()}), 500
+    return jsonify({"ok": True})
+
+@app.route("/api/queue/schedule", methods=["POST"])
+@login_required
+@csrf_required
+def api_queue_schedule():
+    data = request.get_json(silent=True) or {}
+    hour   = str(data.get("hour", 23))
+    minute = str(data.get("minute", 0))
+    if not hour.isdigit() or not minute.isdigit():
+        return jsonify({"ok": False, "error": "Invalid time"}), 400
+    if not (0 <= int(hour) <= 23 and 0 <= int(minute) <= 59):
+        return jsonify({"ok": False, "error": "Time out of range"}), 400
+    r = subprocess.run(["crontab", "-l"], capture_output=True, text=True)
+    lines = r.stdout.splitlines()
+    new_lines = [l for l in lines if QUEUE_CRON_MARKER not in l]
+    new_lines.append(f"{minute} {hour} * * * sudo systemctl start {QUEUE_CRON_MARKER}")
+    new_crontab = "\n".join(new_lines) + "\n"
+    r2 = subprocess.run(["crontab", "-"], input=new_crontab, capture_output=True, text=True)
+    if r2.returncode != 0:
+        return jsonify({"ok": False, "error": r2.stderr.strip()}), 500
+    return jsonify({"ok": True, "expression": f"{minute} {hour} * * *"})
+
+@app.route("/api/queue/log")
+@login_required
+def api_queue_log():
+    try:
+        with open(QUEUE_LOG) as f:
+            lines = f.readlines()[-60:]
+        return jsonify({"lines": [l.rstrip() for l in lines]})
+    except:
+        return jsonify({"lines": []})
+
 
 if __name__ == "__main__":
     os.makedirs(DATA_DIR, exist_ok=True)

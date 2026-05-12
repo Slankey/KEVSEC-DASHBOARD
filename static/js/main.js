@@ -122,10 +122,13 @@ function loadTab(tab) {
   }
   if (tab === 'command') {
     loadServerStats();
+    loadQueue();
+    loadBandwidth();
+    loadStorageboxDisk();
+    loadTarpitStats();
     setTimeout(() => loadProxmox(),           1*M);
     setTimeout(() => loadGoals(),             2*M);
     setTimeout(() => loadDjStatus(),          3*M);
-    setTimeout(() => loadTarpitStats(),       4*M);
     setTimeout(() => buildSvcControlGrid(),   4*M + 5000);
     setTimeout(() => loadExtServices(),       5*M);  // heaviest — runs last
   }
@@ -154,13 +157,155 @@ function loadTab(tab) {
     setTimeout(() => loadHealthLog(),    3*M);
     setTimeout(() => loadPersonalNews(), 4*M);
   }
-  if (tab === 'garden') { loadGarden(); loadWateringLog(); renderInvasives(); }
+  if (tab === 'garden') { loadGarden(); loadWateringLog(); renderInvasives(); setTimeout(initLawnMap, 100); }
 }
 function refreshAllCommand() {
   const btn = document.querySelector('[onclick="refreshAllCommand()"]');
   if (btn) { btn.textContent = '⟳ REFRESHING...'; btn.disabled = true; }
-  loadServerStats(true); loadProxmox(true); loadExtServices(true);
+  loadServerStats(true); loadProxmox(true); loadExtServices(true); loadQueue(true); loadBandwidth(); loadStorageboxDisk();
   setTimeout(() => { if (btn) { btn.textContent = '⟳ REFRESH ALL'; btn.disabled = false; } }, 3000);
+}
+
+// ── Network Bandwidth ──────────────────────────────────────────────────────
+async function loadBandwidth() {
+  try {
+    const d = await fetch('/api/bandwidth').then(r => r.json());
+    document.getElementById('bw-ts').textContent = new Date().toLocaleTimeString();
+    // Sum across all interfaces (usually just eth0)
+    let rx = 0, tx = 0;
+    for (const iface of Object.values(d)) { rx += iface.rx_mbps; tx += iface.tx_mbps; }
+    const total = rx + tx;
+    document.getElementById('bw-rx').textContent    = rx.toFixed(1);
+    document.getElementById('bw-tx').textContent    = tx.toFixed(1);
+    document.getElementById('bw-total').textContent = total.toFixed(1);
+    // Bar: 0–1000 Mbps range
+    const pct = Math.min(100, total / 10);
+    const bar = document.getElementById('bw-bar');
+    if (bar) {
+      bar.style.width = pct + '%';
+      bar.style.background = total > 500 ? '#f87171' : total > 200 ? '#f59e0b' : 'var(--accent)';
+    }
+  } catch(e) {
+    const el = document.getElementById('bw-rx');
+    if (el) el.textContent = 'err';
+  }
+}
+
+// ── StorageBox Disk ────────────────────────────────────────────────────────
+async function loadStorageboxDisk() {
+  try {
+    const d = await fetch('/api/storagebox_disk').then(r => r.json());
+    if (d.error) {
+      document.getElementById('sb-used').textContent = d.error === 'not mounted' ? 'offline' : 'err';
+      return;
+    }
+    document.getElementById('sb-used').textContent  = d.used_gb;
+    document.getElementById('sb-free').textContent  = d.free_gb;
+    document.getElementById('sb-pct').textContent   = d.pct + '%';
+    document.getElementById('sb-total').textContent = 'Total: ' + d.total_gb + ' GB';
+    const bar = document.getElementById('sb-bar');
+    if (bar) {
+      bar.style.width = d.pct + '%';
+      bar.style.background = d.pct > 90 ? '#f87171' : d.pct > 75 ? '#f59e0b' : 'var(--accent)';
+    }
+  } catch(e) {
+    const el = document.getElementById('sb-used');
+    if (el) el.textContent = 'err';
+  }
+}
+
+// ── StorageBox Transfer Queue ──────────────────────────────────────────────
+async function loadQueue(force) {
+  const el = document.getElementById('queue-items');
+  if (!el) return;
+  try {
+    const d = await fetch('/api/queue').then(r => r.json());
+    document.getElementById('queue-ts').textContent = new Date().toLocaleTimeString();
+    document.getElementById('queue-count').textContent = d.count;
+    document.getElementById('queue-size').textContent = d.total_gb + ' GB';
+    const workerEl = document.getElementById('queue-worker');
+    if (d.worker_active) {
+      workerEl.innerHTML = '<span style="color:#4ade80">🟢 Transferring now</span>';
+    } else {
+      const cron = d.cron || {};
+      const h = String(cron.hour||23).padStart(2,'0'), m = String(cron.minute||0).padStart(2,'0');
+      workerEl.innerHTML = `<span style="color:var(--text-dim)">⏸ Idle — runs at ${h}:${m} UTC</span>`;
+      document.getElementById('queue-hour').value   = cron.hour   || 23;
+      document.getElementById('queue-minute').value = cron.minute || 0;
+      document.getElementById('queue-cron-display').textContent = `cron: ${cron.expression||'0 23 * * *'}`;
+    }
+      const runBtn = document.getElementById('queue-run-btn');
+    if (runBtn) runBtn.disabled = d.worker_active;
+    if (!d.items || !d.items.length) {
+      el.innerHTML = '<div style="padding:12px 16px;color:var(--text-dim);font-size:11px">Queue is empty — no pending transfers.</div>';
+      return;
+    }
+    el.innerHTML = d.items.map((item, i) => `
+      <div style="padding:10px 16px;border-bottom:1px solid var(--border2);display:flex;align-items:center;gap:12px">
+        <span style="font-size:9px;letter-spacing:2px;color:${item.label==='TV'?'#818cf8':'#f59e0b'};min-width:50px">${item.label}</span>
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${item.src}">${item.name}</span>
+        <span style="color:var(--text-dim);min-width:55px;text-align:right">${item.size_gb} GB</span>
+        <span style="font-size:9px;min-width:60px;text-align:right;color:${item.processing?'#4ade80':item.retries>0?'#f87171':'var(--text-dim)'}">${item.processing?'ACTIVE':item.retries>0?'RETRY '+item.retries:'QUEUED'}</span>
+      </div>`).join('');
+  } catch(e) {
+    if (el) el.innerHTML = '<div style="padding:12px 16px;color:var(--red2)">Failed to load queue.</div>';
+  }
+}
+
+async function queueRunNow() {
+  const btn = document.getElementById('queue-run-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Starting...'; }
+  try {
+    const csrf = document.querySelector('meta[name="csrf-token"]');
+    const r = await fetch('/api/queue/run', {method:'POST', headers:{'X-CSRF-Token': csrf ? csrf.content : ''}}).then(r=>r.json());
+    if (r.ok) {
+      if (btn) btn.textContent = '✓ Started';
+      setTimeout(() => loadQueue(true), 2000);
+    } else {
+      if (btn) { btn.textContent = '✕ Error'; btn.disabled = false; }
+      console.error(r.error);
+    }
+  } catch(e) {
+    if (btn) { btn.textContent = '✕ Error'; btn.disabled = false; }
+  }
+  setTimeout(() => { if (btn) { btn.textContent = '▶ Run Now'; btn.disabled = false; } }, 5000);
+}
+
+async function queueSaveSchedule() {
+  const h = parseInt(document.getElementById('queue-hour').value);
+  const m = parseInt(document.getElementById('queue-minute').value);
+  const fb = document.getElementById('queue-sched-feedback');
+  fb.textContent = 'Saving...';
+  try {
+    const r = await fetch('/api/queue/schedule', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','X-CSRF-Token': (document.querySelector('meta[name="csrf-token"]')||{}).content||''},
+      body: JSON.stringify({hour: h, minute: m})
+    }).then(r=>r.json());
+    if (r.ok) {
+      fb.textContent = `✓ Saved — cron: ${r.expression}`;
+      document.getElementById('queue-cron-display').textContent = `cron: ${r.expression}`;
+      setTimeout(() => { fb.textContent = ''; }, 4000);
+    } else {
+      fb.textContent = '✕ ' + (r.error||'Failed');
+    }
+  } catch(e) { fb.textContent = '✕ Request failed'; }
+}
+
+function toggleQueueLog() {
+  const el = document.getElementById('queue-log');
+  const tog = document.getElementById('queue-log-toggle');
+  if (el.style.display === 'none') {
+    el.style.display = 'block';
+    tog.textContent = '(hide)';
+    fetch('/api/queue/log').then(r=>r.json()).then(d => {
+      el.textContent = d.lines.join('\n') || 'No log entries yet.';
+      el.scrollTop = el.scrollHeight;
+    }).catch(() => { el.textContent = 'Failed to load log.'; });
+  } else {
+    el.style.display = 'none';
+    tog.textContent = '(show)';
+  }
 }
 
 window.addEventListener('load', () => {
@@ -1323,6 +1468,9 @@ function loadGarden(force) {
     const frostRisk  = wdata.frost_risk  || frost.risk  || '—';
     const hist       = gdata.precip_history || [];
 
+    renderMowingPanel(gdata.mowing, gdata.lawn_week);
+    renderFertilizerPanel(gdata.fertilizer);
+
     // Soil Moisture panel
     const smEl = document.getElementById('soil-moisture-panel');
     if (smEl) {
@@ -1568,6 +1716,324 @@ function deleteWateringLog(idx) {
     headers: {'X-CSRF-Token': csrf, 'Content-Type':'application/json'},
     body: JSON.stringify({_csrf: csrf})
   }).then(r => r.json()).then(d => { if (d.ok) loadWateringLog(); });
+}
+
+// ── Mowing Panel ─────────────────────────────────────────────────────────────
+
+function renderLawnWeek(week) {
+  const el = document.getElementById('lawn-week-panel');
+  if (!el || !week || !week.length) return;
+
+  const tasks = [
+    { key: 'mow',      icon: '✂',  label: 'Mow'          },
+    { key: 'edge',     icon: '📐', label: 'Edge'         },
+    { key: 'weed',     icon: '🌿', label: 'Weed Control' },
+    { key: 'fert',     icon: '🧪', label: 'Fertilize'    },
+    { key: 'overseed', icon: '🌱', label: 'Overseed'     },
+  ];
+
+  const statusStyle = s => ({
+    GOOD:  'background:#1a3a1a;color:#4caf50;border:1px solid #4caf50',
+    OK:    'background:#2a2a0a;color:#cc9900;border:1px solid #cc9900',
+    AVOID: 'background:#1e1a0a;color:#cc7700;border:1px solid #cc7700',
+    NO:    'background:#1a0a0a;color:#555;border:1px solid #333',
+  }[s] || 'background:#111;color:#555');
+
+  const statusDot = s => ({
+    GOOD: '🟢', OK: '🟡', AVOID: '🟠', NO: '⚫',
+  }[s] || '⚫');
+
+  const days = week.map(day => {
+    const dt   = new Date(day.date + 'T12:00:00');
+    const dow  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][dt.getDay()];
+    const mday = (dt.getMonth()+1) + '/' + dt.getDate();
+
+    const cells = tasks.map(t => {
+      const task = day[t.key] || {};
+      const s = task.status || 'NO';
+      return `<td style="padding:6px 4px;text-align:center;border-right:1px solid var(--border)">
+        <div style="display:inline-block;${statusStyle(s)};padding:2px 7px;border-radius:3px;
+             font-family:var(--font-m);font-size:9px;letter-spacing:1px;cursor:default"
+             title="${task.reason || ''}">${statusDot(s)} ${s}</div>
+      </td>`;
+    }).join('');
+
+    const rainStr = day.rain_in > 0
+      ? `${day.rain_in}"` + (day.rain_prob ? ` (${day.rain_prob}%)` : '')
+      : day.rain_prob > 20 ? `${day.rain_prob}% chance` : 'Dry';
+
+    return `<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:8px 12px;white-space:nowrap;border-right:1px solid var(--border)">
+        <div style="font-family:var(--font-m);font-size:11px;color:var(--accent)">${dow}</div>
+        <div style="font-size:9px;color:var(--text-dim)">${mday}</div>
+      </td>
+      <td style="padding:6px 8px;text-align:center;border-right:1px solid var(--border)">
+        <div style="font-size:18px">${day.wx}</div>
+        <div style="font-size:9px;color:var(--text-dim);white-space:nowrap">${rainStr}</div>
+        <div style="font-size:9px;color:var(--text-dim)">${Math.round(day.tmin_f)}–${Math.round(day.tmax_f)}°F</div>
+      </td>
+      ${cells}
+    </tr>`;
+  }).join('');
+
+  // Legend + notes for today's best tasks
+  const today = week[0];
+  const todayBest = tasks.filter(t => (today[t.key]?.status || 'NO') === 'GOOD').map(t => t.label);
+  const todayOk   = tasks.filter(t => (today[t.key]?.status || 'NO') === 'OK').map(t => t.label);
+  const todaySummary = todayBest.length
+    ? `<div style="padding:8px 16px;font-size:11px;color:#4caf50;border-bottom:1px solid var(--border)">
+        ✅ <strong>Today:</strong> ${todayBest.join(', ')} ${todayOk.length ? '— also OK: '+todayOk.join(', ') : ''}
+       </div>`
+    : todayOk.length
+    ? `<div style="padding:8px 16px;font-size:11px;color:#cc9900;border-bottom:1px solid var(--border)">
+        🟡 <strong>Today:</strong> Acceptable for: ${todayOk.join(', ')}
+       </div>`
+    : `<div style="padding:8px 16px;font-size:11px;color:#555;border-bottom:1px solid var(--border)">
+        ⚫ <strong>Today:</strong> No recommended lawn tasks
+       </div>`;
+
+  // Hover tooltip hint
+  el.innerHTML = todaySummary + `
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse">
+        <thead>
+          <tr style="border-bottom:2px solid var(--border);background:var(--bg2)">
+            <th style="padding:6px 12px;text-align:left;font-size:9px;letter-spacing:2px;color:var(--text-dim);border-right:1px solid var(--border)">DAY</th>
+            <th style="padding:6px 8px;text-align:center;font-size:9px;letter-spacing:2px;color:var(--text-dim);border-right:1px solid var(--border)">WX</th>
+            ${tasks.map(t => `<th style="padding:6px 8px;text-align:center;font-size:9px;letter-spacing:1px;color:var(--text-dim);border-right:1px solid var(--border)">${t.icon} ${t.label.toUpperCase()}</th>`).join('')}
+          </tr>
+        </thead>
+        <tbody>${days}</tbody>
+      </table>
+    </div>
+    <div style="padding:6px 16px;font-size:9px;color:var(--text-dim);border-top:1px solid var(--border)">
+      Hover cells for reason · 🟢 GOOD · 🟡 OK · 🟠 AVOID · ⚫ NO
+    </div>`;
+}
+
+function renderMowingPanel(mow, week) {
+  const el = document.getElementById('mowing-panel');
+  if (!el) return;
+
+  // ── Status badge ──────────────────────────────────────────────────────────
+  const statusColor = {OK:'#4a9c4a', SOON:'#cc9900', DUE:'#cc9900', OVERDUE:'#cc4444', UNKNOWN:'#666'}[mow?.status] || '#666';
+  const statusLabel = mow?.status || 'UNKNOWN';
+  const daysSince   = mow?.days_since != null ? `${mow.days_since}d ago` : 'Never logged';
+  const message     = mow?.message || 'Log your first mow to get recommendations.';
+  const interval    = mow?.ideal_interval || 7;
+
+  // ── 7-day mow window from lawn_week ──────────────────────────────────────
+  const mowDays = (week || []).map(d => {
+    const dt  = new Date(d.date + 'T12:00:00');
+    const dow = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][dt.getDay()];
+    const s   = d.mow?.status || 'NO';
+    const bg  = {GOOD:'#1a3a1a', OK:'#1e1e08', AVOID:'#1e1008', NO:'#111'}[s];
+    const col = {GOOD:'#4caf50', OK:'#cc9900',  AVOID:'#cc5500', NO:'#444'}[s];
+    const label = {GOOD:'MOW', OK:'OK', AVOID:'WET', NO:'NO'}[s];
+    return `<div title="${d.mow?.reason || ''}"
+      style="flex:1;min-width:52px;padding:8px 4px;background:${bg};border:1px solid ${col}22;
+             text-align:center;cursor:default;border-radius:3px">
+      <div style="font-family:var(--font-m);font-size:9px;color:var(--text-dim)">${dow}</div>
+      <div style="font-size:16px;margin:2px 0">${d.wx || '🌤'}</div>
+      <div style="font-size:9px;color:var(--text-dim)">${Math.round(d.tmax_f||70)}°</div>
+      <div style="font-family:var(--font-m);font-size:9px;color:${col};margin-top:3px;letter-spacing:1px">${label}</div>
+    </div>`;
+  }).join('');
+
+  // ── Mow history (last 5) ──────────────────────────────────────────────────
+  const hist = (mow?.log || []).map(e =>
+    `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);font-size:11px">
+      <span style="color:var(--accent);font-family:var(--font-m)">${e.date}</span>
+      <span style="color:var(--text-dim);font-size:10px">${e.note || ''}</span>
+    </div>`).join('') || '<div style="color:var(--text-dim);font-size:11px;padding:4px 0">No mow events logged yet.</div>';
+
+  el.innerHTML = `
+    <div style="padding:16px;border-bottom:1px solid var(--border)">
+
+      <!-- Status row -->
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px">
+        <div>
+          <div style="font-size:11px;color:var(--text-dim);letter-spacing:2px;margin-bottom:2px">LAST MOWED</div>
+          <div style="font-size:22px;font-weight:bold;color:var(--text-hi)">${daysSince}</div>
+        </div>
+        <div style="flex:1"></div>
+        <div style="text-align:right">
+          <div style="font-family:var(--font-m);font-size:13px;color:${statusColor};
+               border:1px solid ${statusColor};padding:4px 14px;border-radius:3px">${statusLabel}</div>
+          <div style="font-size:9px;color:var(--text-dim);margin-top:4px">every ~${interval}d this season</div>
+        </div>
+      </div>
+
+      <!-- Message -->
+      <div style="font-size:12px;color:var(--text-hi);margin-bottom:14px">${message}</div>
+
+      <!-- Toro height reference -->
+      <div style="padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:3px;margin-bottom:14px">
+        <div style="font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:8px">✂ TORO CUT HEIGHT — NOTCH REFERENCE</div>
+        <div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">
+          <img src="https://manuals.toro.com/128616/media/images/g225876.png"
+               alt="Toro notch chart"
+               style="max-width:220px;border:1px solid var(--border);border-radius:2px;background:#fff;padding:4px">
+          <div style="font-size:11px;line-height:2">
+            <div style="color:var(--text-dim)">1 → 1"</div>
+            <div style="color:var(--text-dim)">2 → 1⅜"</div>
+            <div style="color:var(--text-dim)">3 → 1¾"</div>
+            <div style="color:var(--text-dim)">4 → 2⅛"</div>
+            <div style="color:var(--accent);font-weight:bold">5 → 2½" ← YOUR TARGET</div>
+            <div style="color:var(--text-dim)">6 → 2⅞"</div>
+            <div style="color:var(--text-dim)">7 → 3¼"</div>
+            <div style="color:var(--text-dim)">8 → 3⅝"</div>
+            <div style="color:var(--text-dim)">9 → 4"</div>
+            <div style="margin-top:6px;font-size:10px;color:#cc9900">Never below 2.5" in summer heat</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 7-day strip -->
+      <div style="display:flex;gap:4px;flex-wrap:nowrap;overflow-x:auto">${mowDays || '<span style="color:var(--text-dim);font-size:11px">Loading forecast...</span>'}</div>
+      <div style="font-size:9px;color:var(--text-dim);margin-top:6px">Hover days for reason · MOW=ideal · OK=acceptable · WET=avoid · NO=skip</div>
+    </div>
+
+    <!-- Log form -->
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+      <div style="font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:8px">LOG MOW — tap after you mow</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <input type="date" id="mow-date"
+               style="background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:4px 8px;font-size:12px"
+               value="${new Date().toISOString().slice(0,10)}">
+        <input type="text" id="mow-note" placeholder="Note (optional, e.g. bagged, mulched)"
+               style="background:var(--bg2);border:1px solid var(--border);color:var(--text);
+                      padding:4px 8px;font-size:12px;flex:1;min-width:140px">
+        <button class="refresh-btn" onclick="submitMowLog()" style="padding:5px 16px;font-size:11px">✂ Logged Mow</button>
+      </div>
+    </div>
+
+    <!-- History -->
+    <div style="padding:10px 16px">
+      <div style="font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:6px">RECENT MOW HISTORY</div>
+      ${hist}
+    </div>`;
+}
+
+function renderFertilizerPanel(fert) { /* API kept, panel removed from view per user request */ }
+
+function submitMowLog() {
+  const date = document.getElementById('mow-date')?.value || new Date().toISOString().slice(0,10);
+  const note = document.getElementById('mow-note')?.value || '';
+  const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+  fetch('/api/mowing_log', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json','X-CSRF-Token': csrf},
+    body: JSON.stringify({date, note, _csrf: csrf})
+  }).then(r => r.json()).then(d => {
+    if (d.ok) { document.getElementById('mow-note').value = ''; loadGarden(true); }
+    else alert('Error: ' + (d.error || 'unknown'));
+  });
+}
+
+function submitFertLog() { /* kept for API compat */ }
+
+// ── Lawn Map (Leaflet + Esri satellite + freehand polygon drawing) ──────────
+
+let _lawnMap = null;
+let _drawLayer = null;
+let _drawColor = '#4caf50';
+let _drawing = false;
+let _currentPoly = null;
+let _polyPoints = [];
+
+const LAWN_CENTER = [43.38744, -87.88103];  // 841 W 4th Ave, Port Washington WI
+const LAWN_ZOOM   = 20;
+
+function initLawnMap() {
+  if (_lawnMap) return;
+  const el = document.getElementById('lawn-map');
+  if (!el) return;
+  _lawnMap = L.map('lawn-map', { zoomControl: true }).setView(LAWN_CENTER, LAWN_ZOOM);
+  L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    { attribution: 'Imagery © Esri', maxZoom: 20 }
+  ).addTo(_lawnMap);
+  _drawLayer = L.layerGroup().addTo(_lawnMap);
+
+  // Load saved drawings from localStorage
+  const saved = localStorage.getItem('lawn-map-drawings');
+  if (saved) {
+    try {
+      const zones = JSON.parse(saved);
+      zones.forEach(z => {
+        L.polygon(z.latlngs, { color: z.color, fillOpacity: 0.35, weight: 2 })
+          .bindTooltip(z.label || '', { permanent: true, direction: 'center', className: 'lawn-label' })
+          .addTo(_drawLayer);
+      });
+    } catch(e) {}
+  }
+
+  // Click-to-draw polygon
+  _lawnMap.on('click', function(e) {
+    if (!_drawing) return;
+    _polyPoints.push([e.latlng.lat, e.latlng.lng]);
+    if (_currentPoly) _lawnMap.removeLayer(_currentPoly);
+    if (_polyPoints.length >= 2) {
+      _currentPoly = L.polygon(_polyPoints, { color: _drawColor, fillOpacity: 0.35, weight: 2, dashArray: '6,4' }).addTo(_lawnMap);
+    }
+  });
+
+  _lawnMap.on('dblclick', function(e) {
+    if (!_drawing || _polyPoints.length < 3) return;
+    e.originalEvent.preventDefault();
+    finishPolygon();
+  });
+}
+
+function toggleMapDraw() {
+  _drawing = !_drawing;
+  const btn = document.getElementById('map-draw-btn');
+  if (_drawing) {
+    _polyPoints = [];
+    if (btn) btn.textContent = '⏹ Finish (dbl-click)';
+    _lawnMap.getContainer().style.cursor = 'crosshair';
+  } else {
+    if (btn) btn.textContent = '✏ Draw Zone';
+    _lawnMap.getContainer().style.cursor = '';
+  }
+}
+
+function finishPolygon() {
+  if (_currentPoly) _lawnMap.removeLayer(_currentPoly);
+  const label = prompt('Label this zone (e.g. Front Lawn, Back Yard):') || '';
+  L.polygon(_polyPoints, { color: _drawColor, fillOpacity: 0.35, weight: 2 })
+    .bindTooltip(label, { permanent: !!label, direction: 'center', className: 'lawn-label' })
+    .addTo(_drawLayer);
+  _polyPoints = [];
+  _currentPoly = null;
+  _drawing = false;
+  const btn = document.getElementById('map-draw-btn');
+  if (btn) btn.textContent = '✏ Draw Zone';
+  _lawnMap.getContainer().style.cursor = '';
+}
+
+function setDrawColor(c) { _drawColor = c; }
+
+function clearMapDrawings() {
+  if (confirm('Clear all drawn zones?')) {
+    if (_drawLayer) _drawLayer.clearLayers();
+    localStorage.removeItem('lawn-map-drawings');
+  }
+}
+
+function saveMapDrawings() {
+  if (!_drawLayer) return;
+  const zones = [];
+  _drawLayer.eachLayer(l => {
+    if (l.getLatLngs) {
+      const latlngs = l.getLatLngs()[0].map(p => [p.lat, p.lng]);
+      const label = l.getTooltip ? l.getTooltip()?.getContent() || '' : '';
+      zones.push({ latlngs, color: l.options.color, label });
+    }
+  });
+  localStorage.setItem('lawn-map-drawings', JSON.stringify(zones));
+  alert(`Saved ${zones.length} zone(s) to local storage.`);
 }
 
 function renderInvasives() {
@@ -1969,6 +2435,7 @@ function loadFirewallDrops() {
   api('/api/firewall_drops', data => {
     const ts = document.getElementById('fw-ts');
     if (ts) ts.textContent = data.fetched || '';
+    renderBanControl(data.ban_control || {});
 
     // UFW raw drops
     const drops = data.drops || [];
@@ -2005,11 +2472,48 @@ function loadFirewallDrops() {
   });
 }
 
+function renderBanControl(bc) {
+  const statusEl = document.getElementById('ban-control-status');
+  const summaryEl = document.getElementById('ban-control-summary');
+  const listEl = document.getElementById('local-ban-list');
+  const suspended = !!bc.suspended;
+  const state = suspended ? 'SUSPENDED' : 'ACTIVE';
+  const color = suspended ? 'var(--red2)' : 'var(--accent)';
+  const line = `<span style="color:${color}">${state}</span> · fail2ban ${bc.fail2ban || 'unknown'} · ` +
+    `${bc.custom_active || 0} local TTL bans · ${bc.compiled || 0} compiled entries · TTL ${bc.ttl_days || 3}d`;
+  if (statusEl) statusEl.innerHTML = line;
+  if (summaryEl) summaryEl.innerHTML = line;
+  if (listEl) {
+    const rows = bc.recent || [];
+    if (!rows.length) {
+      listEl.innerHTML = '<span style="color:var(--text-dim)">No local TTL bans tracked yet</span>';
+    } else {
+      listEl.innerHTML = `<table class="fw-table" style="width:100%">
+        <thead><tr><th>IP</th><th>Last Seen</th><th>Age</th><th>Expires</th><th>Hits</th><th>Sources</th></tr></thead>
+        <tbody>${rows.slice(0, 12).map(r => {
+          const exp = r.expires_h != null ? r.expires_h : null;
+          const expColor = exp != null && exp < 12 ? 'var(--red2)' : 'var(--text-dim)';
+          const expStr = exp != null ? (exp < 0 ? 'expired' : exp.toFixed(1) + 'h') : '—';
+          return `<tr>
+            <td class="fw-src">${r.ip}</td>
+            <td style="color:var(--text-dim);white-space:nowrap">${r.last_seen || '—'}</td>
+            <td style="color:var(--text-dim)">${r.age_h != null ? r.age_h + 'h' : '—'}</td>
+            <td style="color:${expColor}">${expStr}</td>
+            <td style="color:var(--accent)">${r.count || 0}</td>
+            <td style="color:var(--text-dim);font-size:9px">${r.sources || '—'}</td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>`;
+    }
+  }
+}
+
 function loadTarpitStats(force) {
   const errEl = document.getElementById('tarpit-error');
   api(force ? '/api/tarpit_stats?force=1' : '/api/tarpit_stats', data => {
     const ts = document.getElementById('tarpit-ts');
     if (ts) ts.textContent = data.fetched || '';
+    renderBanControl(data.ban_control || {});
     if (errEl) errEl.style.display = 'none';
 
     if (data.error) {
@@ -3559,6 +4063,31 @@ function runBlacklistUpdate() {
     }
     _ipFeedback(data.ok ? 'Blacklist updated' : 'Update failed', data.ok);
     if (outEl) outEl.textContent = data.output || '(no output)';
+  });
+}
+
+function banControl(action) {
+  const labels = {
+    suspend: 'Suspend banning?',
+    resume: 'Resume banning?',
+    open: 'Remove all active/local bans and suspend banning?',
+    purge: 'Purge expired local bans now?',
+    'unban-all': 'Remove all active/local bans?'
+  };
+  if (labels[action] && !confirm(labels[action])) return;
+  const outEl = document.getElementById('blacklist-output');
+  if (outEl) { outEl.style.display = 'block'; outEl.textContent = 'Running ' + action + '...'; }
+  _ipFeedback('Running ' + action + '...', true);
+  _csrfPost('/api/ban_control', { action, reason: 'dashboard_' + action }, data => {
+    if (data.error) {
+      _ipFeedback('Error: ' + data.error, false);
+      if (outEl) outEl.textContent = 'Error: ' + data.error;
+      return;
+    }
+    renderBanControl(data.status || {});
+    _ipFeedback(action + (data.ok ? ' complete' : ' failed'), data.ok);
+    if (outEl) outEl.textContent = data.output || '(no output)';
+    setTimeout(() => loadFirewallDrops(), 1500);
   });
 }
 
