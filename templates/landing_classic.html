@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kevin Maslanka — Cybersecurity Professional</title>
+<meta name="description" content="Cybersecurity professional specializing in threat intelligence, OSINT research, and active defense. Operator of the KEVSEC security platform.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,500&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4f3ee;
+    --bg2: #ffffff;
+    --surface: #efede8;
+    --text: #14151c;
+    --muted: #5c5d6e;
+    --border: #dddcd5;
+    --accent: #1e3a8a;
+    --accent-hover: #1e40af;
+    --accent-light: #dbeafe;
+    --warm: #9a6d38;
+    --red: #b91c1c;
+    --green: #16a34a;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Jost', system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    font-weight: 400;
+    overflow-x: hidden;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 56px; height: 60px;
+    background: rgba(244, 243, 238, 0.92);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 21px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: 0.3px;
+    user-select: none;
+  }
+  .nav-logo em { color: var(--accent); font-style: normal; }
+  .nav-links { display: flex; gap: 36px; }
+  .nav-links a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--text); }
+
+  /* ── HERO ── */
+  .hero-wrap {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    padding: 80px 56px 60px;
+  }
+  .hero-inner {
+    max-width: 1200px;
+    width: 100%;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    align-items: center;
+  }
+  .hero-eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    opacity: 0;
+    animation: fade-up 0.55s ease forwards 0.1s;
+  }
+  .hero-eyebrow::before {
+    content: '';
+    display: block;
+    width: 24px;
+    height: 1px;
+    background: var(--accent);
+  }
+  h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(54px, 7vw, 90px);
+    font-weight: 700;
+    line-height: 1.0;
+    letter-spacing: -1.5px;
+    color: var(--text);
+    margin-bottom: 16px;
+    opacity: 0;
+    animation: fade-up 0.55s ease forwards 0.25s;
+  }
+  .hero-role {
+    font-size: 16px;
+    color: var(--muted);
+    font-weight: 400;
+    margin-bottom: 24px;
+    letter-spacing: 0.2px;
+    opacity: 0;
+    animation: fade-up 0.55s ease forwards 0.4s;
+  }
+  .hero-role strong { color: var(--text); font-weight: 500; }
+  .hero-desc {
+    font-size: 15px;
+    color: var(--muted);
+    max-width: 440px;
+    line-height: 1.85;
+    margin-bottom: 40px;
+    opacity: 0;
+    animation: fade-up 0.55s ease forwards 0.55s;
+  }
+  .hero-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    opacity: 0;
+    animation: fade-up 0.55s ease forwards 0.7s;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-family: 'Jost', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    padding: 11px 22px;
+    border-radius: 5px;
+    text-decoration: none;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    border: 1px solid var(--accent);
+  }
+  .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); transform: translateY(-1px); }
+  .btn-secondary {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover { border-color: var(--muted); transform: translateY(-1px); }
+
+  /* Stats panel */
+  .stats-panel {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.05);
+    opacity: 0;
+    animation: fade-up 0.55s ease forwards 0.35s;
+  }
+  .stats-header {
+    padding: 14px 22px;
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .pulse-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 0 0 rgba(22,163,74,0.35);
+    animation: pulse-ring 2s ease infinite;
+    flex-shrink: 0;
+  }
+  @keyframes pulse-ring {
+    0% { box-shadow: 0 0 0 0 rgba(22,163,74,0.35); }
+    70% { box-shadow: 0 0 0 6px rgba(22,163,74,0); }
+    100% { box-shadow: 0 0 0 0 rgba(22,163,74,0); }
+  }
+  .stat-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 17px 22px;
+    border-bottom: 1px solid var(--border);
+  }
+  .stat-row:last-child { border-bottom: none; }
+  .stat-lbl { font-size: 13px; color: var(--muted); }
+  .stat-val {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.5px;
+  }
+  .stat-val.live { color: var(--accent); }
+  .stat-val.ok { font-family: 'Jost', sans-serif; font-size: 13px; font-weight: 500; color: var(--green); letter-spacing: 0; }
+
+  /* ── DIVIDER ── */
+  .divider { height: 1px; background: var(--border); margin: 0 56px; }
+
+  /* ── SECTIONS ── */
+  .section { padding: 96px 56px; }
+  .section-inner { max-width: 1200px; margin: 0 auto; }
+  .section-alt { background: var(--bg2); }
+  .section-eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+  h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(30px, 4vw, 46px);
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.1;
+    letter-spacing: -0.5px;
+    margin-bottom: 52px;
+  }
+
+  /* ── ABOUT ── */
+  .about-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 80px;
+    align-items: start;
+  }
+  .about-text p {
+    font-size: 15px;
+    color: var(--muted);
+    line-height: 1.85;
+    margin-bottom: 20px;
+  }
+  .about-text p:last-child { margin-bottom: 0; }
+  .about-text strong { color: var(--text); font-weight: 500; }
+
+  .focus-list {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .focus-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+  .focus-item:last-child { border-bottom: none; }
+  .focus-item:hover { background: var(--surface); }
+  .focus-name { font-size: 14px; font-weight: 500; color: var(--text); }
+  .focus-tag {
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: var(--accent-light);
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-weight: 500;
+  }
+
+  /* ── EXPERTISE ── */
+  .caps-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .cap-card {
+    background: var(--bg2);
+    padding: 32px;
+    transition: background 0.2s;
+  }
+  .cap-card:hover { background: #fafaf8; }
+  .cap-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 13px;
+    font-style: italic;
+    color: var(--warm);
+    margin-bottom: 20px;
+    display: block;
+  }
+  .cap-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 10px;
+    letter-spacing: -0.2px;
+  }
+  .cap-desc {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.75;
+  }
+
+  /* ── PROJECTS ── */
+  .projects-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+  }
+  .project-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 28px;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+  }
+  .project-card:hover {
+    border-color: var(--accent);
+    box-shadow: 0 8px 28px rgba(30,58,138,0.08);
+    transform: translateY(-2px);
+  }
+  .project-type {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--warm);
+    font-weight: 600;
+  }
+  .project-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.2px;
+    line-height: 1.3;
+  }
+  .project-desc {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.7;
+    flex: 1;
+  }
+  .project-link {
+    font-size: 12px;
+    color: var(--accent);
+    font-weight: 500;
+    margin-top: 6px;
+  }
+
+  /* ── CONTACT ── */
+  .contact-layout {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 80px;
+    align-items: start;
+  }
+  .contact-intro {
+    font-size: 15px;
+    color: var(--muted);
+    line-height: 1.85;
+  }
+  .contact-links { display: flex; flex-direction: column; gap: 10px; }
+  .contact-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    text-decoration: none;
+    color: var(--text);
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .contact-item:hover { border-color: var(--accent); background: var(--bg2); }
+  .contact-icon {
+    width: 36px; height: 36px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+    color: var(--muted);
+  }
+  .contact-info { display: flex; flex-direction: column; gap: 2px; }
+  .contact-label { font-size: 11px; color: var(--muted); font-weight: 400; }
+  .contact-value { font-size: 14px; color: var(--text); font-weight: 500; }
+
+  /* ── FOOTER ── */
+  footer {
+    padding: 28px 56px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .footer-brand {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .footer-links { display: flex; gap: 24px; }
+  .footer-links a {
+    font-size: 12px;
+    color: var(--muted);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .footer-links a:hover { color: var(--text); }
+  .footer-copy { font-size: 12px; color: var(--muted); }
+
+  /* ── LOGIN MODAL ── */
+  #login-overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    background: rgba(20, 21, 28, 0.8);
+    backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  #login-overlay.visible { opacity: 1; pointer-events: all; }
+
+  .login-panel {
+    width: 100%; max-width: 400px;
+    margin: 20px;
+    background: #ffffff;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.25);
+    transform: translateY(10px) scale(0.98);
+    transition: transform 0.25s;
+  }
+  #login-overlay.visible .login-panel { transform: translateY(0) scale(1); }
+
+  .login-header {
+    padding: 22px 26px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .login-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .login-close {
+    background: none; border: none; cursor: pointer;
+    color: var(--muted); font-size: 18px; line-height: 1;
+    padding: 4px; border-radius: 4px;
+    transition: color 0.2s, background 0.2s;
+  }
+  .login-close:hover { color: var(--text); background: var(--surface); }
+
+  .login-body { padding: 26px; }
+
+  .login-error {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 5px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--red);
+    margin-bottom: 18px;
+  }
+
+  .login-field { margin-bottom: 16px; }
+  .login-field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    margin-bottom: 7px;
+    letter-spacing: 0.3px;
+  }
+  .login-field input {
+    width: 100%;
+    padding: 10px 13px;
+    font-family: 'Jost', sans-serif;
+    font-size: 14px;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .login-field input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(30,58,138,0.08);
+    background: #fff;
+  }
+
+  .login-btn {
+    width: 100%;
+    background: var(--accent);
+    color: #ffffff;
+    border: none;
+    border-radius: 5px;
+    padding: 12px;
+    font-family: 'Jost', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-top: 6px;
+  }
+  .login-btn:hover { background: var(--accent-hover); }
+  .login-btn:disabled { opacity: 0.65; cursor: default; }
+
+  /* ── SCROLL REVEAL ── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  .reveal.revealed { opacity: 1; transform: none; }
+  .reveal-1 { transition-delay: 0.08s; }
+  .reveal-2 { transition-delay: 0.16s; }
+  .reveal-3 { transition-delay: 0.24s; }
+  .reveal-4 { transition-delay: 0.32s; }
+  .reveal-5 { transition-delay: 0.40s; }
+  .reveal-6 { transition-delay: 0.48s; }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 1024px) {
+    .hero-inner { grid-template-columns: 1fr; gap: 48px; }
+    .stats-panel { display: none; }
+    .about-grid { grid-template-columns: 1fr; gap: 40px; }
+    .caps-grid { grid-template-columns: 1fr 1fr; }
+    .projects-grid { grid-template-columns: 1fr 1fr; }
+    .contact-layout { grid-template-columns: 1fr; gap: 36px; }
+  }
+  @media (max-width: 768px) {
+    nav { padding: 0 20px; }
+    .nav-links { display: none; }
+    .hero-wrap, .section { padding-left: 24px; padding-right: 24px; }
+    .divider { margin: 0 24px; }
+    footer { padding: 24px; flex-direction: column; gap: 8px; align-items: flex-start; }
+    .footer-links { display: none; }
+    .caps-grid { grid-template-columns: 1fr; }
+    .projects-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 480px) {
+    h1 { font-size: 50px; }
+    .hero-wrap { padding-top: 90px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <span class="nav-logo">Kevin <em>Maslanka</em></span>
+  <div class="nav-links">
+    <a href="#about">About</a>
+    <a href="#expertise">Expertise</a>
+    <a href="#projects">Projects</a>
+    <a href="#contact">Contact</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero-wrap">
+  <div class="hero-inner">
+    <div>
+      <div class="hero-eyebrow">Cybersecurity Professional</div>
+      <h1>Kevin<br>Maslanka</h1>
+      <p class="hero-role">Threat Intelligence &nbsp;·&nbsp; OSINT &nbsp;·&nbsp; <strong>Active Defense</strong></p>
+      <p class="hero-desc">
+        Security professional and infrastructure engineer. I build and defend systems,
+        research adversary tradecraft, and operate a live threat intelligence platform
+        monitoring real-world attacks around the clock.
+      </p>
+      <div class="hero-actions">
+        <a href="https://resume.kevsec.com" class="btn btn-primary" target="_blank" rel="noopener">View Resume ↗</a>
+        <a href="#contact" class="btn btn-secondary">Get in Touch</a>
+      </div>
+    </div>
+    <div>
+      <div class="stats-panel">
+        <div class="stats-header">
+          <div class="pulse-dot"></div>
+          KEVSEC Platform — Live
+        </div>
+        <div class="stat-row">
+          <span class="stat-lbl">IPs Blocked</span>
+          <span class="stat-val live" id="ips-blocked">—</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-lbl">Probes Caught</span>
+          <span class="stat-val live" id="probes-caught">—</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-lbl">Monitoring</span>
+          <span class="stat-val">24/7</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-lbl">Platform Status</span>
+          <span class="stat-val ok">Operational</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ABOUT -->
+<div class="section">
+  <div class="section-inner" id="about">
+    <div class="section-eyebrow reveal">About</div>
+    <h2 class="reveal reveal-1">Background</h2>
+    <div class="about-grid">
+      <div class="about-text">
+        <p class="reveal reveal-2">
+          I'm a cybersecurity professional with hands-on experience in <strong>threat intelligence,
+          OSINT research, and infrastructure defense</strong>. KEVSEC is my personal security
+          operations platform — a live environment I designed, built, and actively maintain
+          to monitor and respond to real-world threats targeting my infrastructure 24/7.
+        </p>
+        <p class="reveal reveal-3">
+          My work spans network perimeter defense, adversary tradecraft research, malware
+          analysis, and digital forensics. I've built this platform end-to-end: automated
+          threat blocking pipelines, multi-source intelligence aggregation, and a unified
+          operations interface that surfaces what matters in real time.
+        </p>
+        <p class="reveal reveal-4">
+          I approach security as an engineering discipline — every system I build is
+          designed to be measurable, automatable, and continuously improved. The goal
+          is operational clarity: understanding what's hitting you, attributing it,
+          and responding faster than the adversary expects.
+        </p>
+      </div>
+      <div class="reveal reveal-2">
+        <div class="focus-list">
+          <div class="focus-item"><span class="focus-name">Open Source Intelligence</span><span class="focus-tag">OSINT</span></div>
+          <div class="focus-item"><span class="focus-name">Threat Intelligence</span><span class="focus-tag">TI</span></div>
+          <div class="focus-item"><span class="focus-name">Perimeter Defense</span><span class="focus-tag">NetSec</span></div>
+          <div class="focus-item"><span class="focus-name">Malware Analysis</span><span class="focus-tag">RE</span></div>
+          <div class="focus-item"><span class="focus-name">Digital Forensics</span><span class="focus-tag">DFIR</span></div>
+          <div class="focus-item"><span class="focus-name">Infrastructure Engineering</span><span class="focus-tag">Ops</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- EXPERTISE -->
+<div class="section section-alt" id="expertise">
+  <div class="section-inner">
+    <div class="section-eyebrow reveal">Expertise</div>
+    <h2 class="reveal reveal-1">Operational Domains</h2>
+    <div class="caps-grid">
+      <div class="cap-card reveal reveal-1">
+        <span class="cap-num">01</span>
+        <div class="cap-title">Threat Intelligence</div>
+        <div class="cap-desc">Real-time aggregation across security feeds, CVE disclosures, and OSINT sources. IOC correlation and automated triage of critical disclosures.</div>
+      </div>
+      <div class="cap-card reveal reveal-2">
+        <span class="cap-num">02</span>
+        <div class="cap-title">Active Defense</div>
+        <div class="cap-desc">Multi-layer perimeter enforcement. Automated detection and blocking of credential stuffers, infrastructure scanners, and malicious actors at scale.</div>
+      </div>
+      <div class="cap-card reveal reveal-3">
+        <span class="cap-num">03</span>
+        <div class="cap-title">OSINT Research</div>
+        <div class="cap-desc">Passive reconnaissance, actor attribution, cross-referencing against threat databases, and adversarial infrastructure mapping.</div>
+      </div>
+      <div class="cap-card reveal reveal-1">
+        <span class="cap-num">04</span>
+        <div class="cap-title">Malware Analysis</div>
+        <div class="cap-desc">Static and behavioral analysis, reverse engineering, and sandbox techniques for dissecting adversary tooling and malware families.</div>
+      </div>
+      <div class="cap-card reveal reveal-2">
+        <span class="cap-num">05</span>
+        <div class="cap-title">Digital Forensics</div>
+        <div class="cap-desc">Log analysis, incident reconstruction, and evidence preservation across host and network artifacts. DFIR methodology applied to real incidents.</div>
+      </div>
+      <div class="cap-card reveal reveal-3">
+        <span class="cap-num">06</span>
+        <div class="cap-title">Infrastructure Engineering</div>
+        <div class="cap-desc">Bare-metal Linux, virtualization, automated deployment pipelines, and continuous monitoring across self-hosted distributed systems.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- PROJECTS -->
+<div class="section" id="projects">
+  <div class="section-inner">
+    <div class="section-eyebrow reveal">Projects</div>
+    <h2 class="reveal reveal-1">What I've Built</h2>
+    <div class="projects-grid">
+      <div class="project-card reveal reveal-1">
+        <div class="project-type">Security Platform</div>
+        <div class="project-name">KEVSEC Intelligence Dashboard</div>
+        <div class="project-desc">Personal security operations center aggregating threat feeds, CVE monitoring, news intelligence, and real-time infrastructure telemetry. Built with Python/Flask, self-hosted on hardened Linux.</div>
+        <div class="project-link">kevsec.com</div>
+      </div>
+      <a class="project-card reveal reveal-2" href="https://github.com/Slankey/OSINT-SLANK-USERNAMERATOR" target="_blank" rel="noopener">
+        <div class="project-type">OSINT Tool</div>
+        <div class="project-name">OSINT Username Enumerator</div>
+        <div class="project-desc">Python tool for cross-platform username enumeration across hundreds of sites. Used for passive reconnaissance, digital footprint analysis, and actor attribution workflows.</div>
+        <div class="project-link">github.com/Slankey ↗</div>
+      </a>
+      <a class="project-card reveal reveal-3" href="https://create.kevsec.com" target="_blank" rel="noopener">
+        <div class="project-type">Web Application</div>
+        <div class="project-name">Resume Builder</div>
+        <div class="project-desc">Public-facing web application hosted at create.kevsec.com. Designed, built, and deployed independently as part of the broader KEVSEC platform stack.</div>
+        <div class="project-link">create.kevsec.com ↗</div>
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- CONTACT -->
+<div class="section section-alt" id="contact">
+  <div class="section-inner">
+    <div class="section-eyebrow reveal">Contact</div>
+    <h2 class="reveal reveal-1">Get in Touch</h2>
+    <div class="contact-layout">
+      <div class="reveal reveal-2">
+        <p class="contact-intro">
+          Open to cybersecurity roles, consulting, and collaboration.
+          The best ways to reach me are email and LinkedIn.
+        </p>
+      </div>
+      <div class="contact-links reveal reveal-2">
+        <a class="contact-item" href="mailto:ops@kevsec.com">
+          <div class="contact-icon">✉</div>
+          <div class="contact-info">
+            <span class="contact-label">Email</span>
+            <span class="contact-value">ops@kevsec.com</span>
+          </div>
+        </a>
+        <a class="contact-item" href="https://www.linkedin.com/in/kevin-earl-maslanka-625001b2/" target="_blank" rel="noopener">
+          <div class="contact-icon" style="font-size:12px;font-weight:700">in</div>
+          <div class="contact-info">
+            <span class="contact-label">LinkedIn</span>
+            <span class="contact-value">kevin-earl-maslanka</span>
+          </div>
+        </a>
+        <a class="contact-item" href="https://github.com/Slankey" target="_blank" rel="noopener">
+          <div class="contact-icon">⌥</div>
+          <div class="contact-info">
+            <span class="contact-label">GitHub</span>
+            <span class="contact-value">github.com/Slankey</span>
+          </div>
+        </a>
+        <a class="contact-item" href="https://resume.kevsec.com" target="_blank" rel="noopener">
+          <div class="contact-icon">↗</div>
+          <div class="contact-info">
+            <span class="contact-label">Resume</span>
+            <span class="contact-value">resume.kevsec.com</span>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <span class="footer-brand">Kevin Maslanka</span>
+  <div class="footer-links">
+    <a href="#about">About</a>
+    <a href="#expertise">Expertise</a>
+    <a href="#projects">Projects</a>
+    <a href="#contact">Contact</a>
+    <a href="https://github.com/Slankey" target="_blank" rel="noopener">GitHub</a>
+  </div>
+  <span class="footer-copy">© 2026 Kevin Maslanka — KEVSEC</span>
+</footer>
+
+<!-- LOGIN MODAL -->
+<div id="login-overlay">
+  <div class="login-panel">
+    <div class="login-header">
+      <span class="login-title">Operations Access</span>
+      <button class="login-close" id="login-close-btn" title="Close">✕</button>
+    </div>
+    <div class="login-body">
+      {% if error %}
+      <div class="login-error">{{ error }}</div>
+      {% endif %}
+      <form method="POST" action="/ops">
+        <div class="login-field">
+          <label>Username</label>
+          <input type="text" name="username" id="login-user" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="login-field">
+          <label>Password</label>
+          <input type="password" name="password" id="login-pass" autocomplete="off">
+        </div>
+        <button class="login-btn" type="submit" id="login-submit-btn">Sign In</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Live stats from API
+  fetch('/api/public/stats').then(r => r.json()).then(d => {
+    function countUp(el, target, ms) {
+      if (!el) return;
+      const inc = target / (ms / 16);
+      let cur = 0;
+      const t = setInterval(() => {
+        cur = Math.min(cur + inc, target);
+        el.textContent = Math.floor(cur).toLocaleString();
+        if (cur >= target) clearInterval(t);
+      }, 16);
+    }
+    if (d.blocked) countUp(document.getElementById('ips-blocked'), d.blocked, 1400);
+    if (d.caught)  countUp(document.getElementById('probes-caught'), d.caught, 1200);
+  }).catch(() => {});
+
+  // Scroll reveal
+  (function() {
+    const obs = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) { e.target.classList.add('revealed'); obs.unobserve(e.target); }
+      });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+  })();
+
+  // Login modal
+  function openLogin() {
+    document.getElementById('login-overlay').classList.add('visible');
+    setTimeout(() => { const u = document.getElementById('login-user'); if (u) u.focus(); }, 80);
+  }
+  function closeLogin() {
+    document.getElementById('login-overlay').classList.remove('visible');
+  }
+
+  document.getElementById('login-close-btn').addEventListener('click', closeLogin);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLogin(); });
+
+  // "kev" keystroke hidden trigger
+  let _seq = '', _timer = null;
+  document.addEventListener('keydown', e => {
+    if (['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) return;
+    _seq += e.key.toLowerCase();
+    if (_seq.length > 3) _seq = _seq.slice(-3);
+    clearTimeout(_timer);
+    _timer = setTimeout(() => { _seq = ''; }, 2000);
+    if (_seq === 'kev') { _seq = ''; openLogin(); }
+  });
+
+  // Submit loading state
+  const submitBtn = document.getElementById('login-submit-btn');
+  if (submitBtn) {
+    submitBtn.closest('form').addEventListener('submit', () => {
+      submitBtn.textContent = 'Signing in...';
+      submitBtn.disabled = true;
+    });
+  }
+
+  {% if show_modal %}
+  document.addEventListener('DOMContentLoaded', () => openLogin());
+  {% endif %}
+</script>
+</body>
+</html>

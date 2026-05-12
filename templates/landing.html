@@ -3,1901 +3,1441 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KEVSEC — Cyber Intelligence Operations</title>
-<meta name="description" content="Independent threat intelligence, network defense, and cyber operations research.">
+<title>KEVSEC // Kevin Maslanka</title>
+<meta name="description" content="Cybersecurity professional specializing in threat intelligence, OSINT research, and active defense. Operator of the KEVSEC security platform.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500;700&family=Exo+2:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-  /* ── Dark theme (default) ── */
-  :root, [data-theme="dark"] {
-    --green: #00ff88;
-    --cyan: #00e5ff;
-    --bg: #080b0f;
-    --bg2: #0d1117;
-    --bg3: #111820;
-    --border: #1a2535;
-    --text: #edf2f7;
-    --muted: #a0adb8;
-    --red: #ff4757;
-    --nav-bg: rgba(8,11,15,0.92);
-  }
-  /* ── Light theme ── */
-  [data-theme="light"] {
-    --green: #0a8a50;
-    --cyan: #0077aa;
-    --bg: #f0f4f8;
-    --bg2: #ffffff;
-    --bg3: #e8eef4;
-    --border: #c8d4e0;
-    --text: #1a2333;
-    --muted: #4a5a6e;
-    --red: #cc2233;
-    --nav-bg: rgba(240,244,248,0.95);
-  }
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  html { scroll-behavior: smooth; }
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Courier New', 'Lucida Console', monospace;
-    font-size: 14px;
-    line-height: 1.6;
-    overflow-x: hidden;
-    transition: background .25s, color .25s;
-  }
+:root {
+  --bg:        #04080e;
+  --bg2:       #070d18;
+  --surface:   #0b1422;
+  --surface2:  #0f1c30;
+  --border:    #162840;
+  --border2:   #1e3a5a;
+  --accent:    #e8631c;
+  --accent2:   #ff8c42;
+  --blue:      #3b9eff;
+  --cyan:      #00dff0;
+  --text:      #c4d4e4;
+  --text-dim:  #3d5870;
+  --text-mid:  #6a8ca8;
+  --green:     #39d353;
+  --red:       #ff4040;
+  --amber:     #ffa424;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-head: 'Rajdhani', sans-serif;
+  --font-body: 'Exo 2', sans-serif;
+}
 
-  /* ── NAV ── */
-  nav {
-    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 0 48px; height: 56px;
-    background: var(--nav-bg);
-    backdrop-filter: blur(8px);
-    border-bottom: 1px solid var(--border);
-    transition: background .25s;
-  }
-  .nav-controls { display: flex; align-items: center; gap: 10px; }
-  .nav-ctrl-btn {
-    background: rgba(128,160,192,.12);
-    border: 1px solid var(--border);
-    color: var(--muted);
-    font-family: 'Courier New', monospace;
-    font-size: 11px;
-    padding: 5px 11px;
-    border-radius: 14px;
-    cursor: pointer;
-    transition: all .2s;
-    white-space: nowrap;
-    letter-spacing: 1px;
-  }
-  .nav-ctrl-btn:hover { border-color: var(--green); color: var(--green); }
-  .nav-size-wrap { display: flex; align-items: center; gap: 2px; background: rgba(128,160,192,.08); border: 1px solid var(--border); border-radius: 14px; padding: 3px 8px; }
-  .nav-size-btn { background:none; border:none; color:var(--muted); cursor:pointer; padding:1px 5px; font-family:monospace; transition:color .2s; line-height:1; }
-  .nav-size-btn:hover { color:var(--green); }
-  .nav-logo { font-size: 18px; font-weight: 700; letter-spacing: 4px; color: var(--green); cursor: default; user-select: none; }
-  .nav-logo span { color: var(--muted); }
-  .nav-links { display: flex; gap: 32px; }
-  .nav-links a { color: var(--muted); text-decoration: none; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; transition: color .2s; }
-  .nav-links a:hover { color: var(--cyan); }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
 
-  /* ── HERO ── */
-  .hero {
-    min-height: 100vh;
-    display: flex; flex-direction: column; justify-content: center;
-    padding: 80px 48px 64px;
-    position: relative; overflow: hidden;
-  }
-  .hero-bg {
-    position: absolute; inset: 0; z-index: 0;
-    background:
-      radial-gradient(ellipse 60% 60% at 70% 50%, rgba(0,255,136,0.04) 0%, transparent 70%),
-      radial-gradient(ellipse 40% 40% at 20% 80%, rgba(0,229,255,0.03) 0%, transparent 60%);
-  }
-  .hero-grid {
-    position: absolute; inset: 0; z-index: 0;
-    background-image:
-      linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
-    background-size: 48px 48px;
-  }
-  .hero-content { position: relative; z-index: 1; max-width: 760px; }
-  .hero-eyebrow {
-    font-size: 11px; letter-spacing: 4px; color: var(--green);
-    text-transform: uppercase; margin-bottom: 24px;
-    display: flex; align-items: center; gap: 12px;
-  }
-  .hero-eyebrow::before { content: ''; display: block; width: 32px; height: 1px; background: var(--green); }
-  h1 { font-size: clamp(32px, 5vw, 58px); font-weight: 700; line-height: 1.1; letter-spacing: -1px; color: var(--text); margin-bottom: 24px; }
-  h1 .accent { color: var(--green); }
-  .hero-sub { font-size: 15px; color: var(--text); max-width: 520px; line-height: 1.8; margin-bottom: 40px; }
-  .hero-stats { display: flex; gap: 40px; flex-wrap: wrap; }
-  .stat { display: flex; flex-direction: column; gap: 4px; }
-  .stat-num { font-size: 24px; font-weight: 700; color: var(--cyan); }
-  .stat-lbl { font-size: 11px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; }
-  .classified { color: var(--red); letter-spacing: 2px; font-size: 13px; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
 
-  /* ── TICKER ── */
-  .ticker-wrap {
-    background: var(--bg2);
-    border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
-    overflow: hidden; padding: 10px 0;
-  }
-  .ticker { display: flex; animation: ticker-scroll 45s linear infinite; white-space: nowrap; }
-  .ticker-item { display: inline-flex; align-items: center; gap: 8px; padding: 0 32px; font-size: 11px; color: var(--muted); }
-  .ticker-item .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); flex-shrink: 0; box-shadow: 0 0 6px var(--green); }
-  .ticker-item .dot.red { background: var(--red); box-shadow: 0 0 6px var(--red); }
-  .ticker-item .dot.cyan { background: var(--cyan); box-shadow: 0 0 6px var(--cyan); }
-  @keyframes ticker-scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+/* ─── SCANLINES ─────────────────────────────────────────── */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 9998;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.06) 2px,
+    rgba(0,0,0,0.06) 4px
+  );
+  pointer-events: none;
+}
 
-  /* ── SECTIONS ── */
-  section { padding: 96px 48px; }
-  .section-label { font-size: 11px; letter-spacing: 4px; color: var(--green); text-transform: uppercase; margin-bottom: 16px; display: flex; align-items: center; gap: 12px; }
-  .section-label::before { content: '//'; color: var(--muted); }
-  h2 { font-size: clamp(24px, 3vw, 36px); color: var(--text); font-weight: 700; margin-bottom: 48px; }
+/* ─── GRID BG ────────────────────────────────────────────── */
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 0;
+  background-image:
+    linear-gradient(rgba(59,158,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59,158,255,0.04) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+}
 
-  /* ── ABOUT ── */
-  #about { background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
-  .about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: start; max-width: 1100px; }
-  @media (max-width: 768px) { .about-grid { grid-template-columns: 1fr; } }
-  .about-text p { color: var(--text); line-height: 1.9; margin-bottom: 20px; font-size: 14px; }
-  .about-text p:last-child { margin-bottom: 0; }
-  .terminal-card { background: var(--bg); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
-  .terminal-bar { background: #161c24; padding: 10px 16px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); }
-  .terminal-bar .circle { width: 10px; height: 10px; border-radius: 50%; }
-  .circle.r { background: #ff5f57; } .circle.y { background: #febc2e; } .circle.g { background: #28c840; }
-  .terminal-body { padding: 20px 16px; font-size: 12px; line-height: 2; }
-  .t-prompt { color: var(--green); } .t-cmd { color: var(--text); }
-  .t-out { color: var(--muted); padding-left: 16px; }
-  .t-out.hi { color: var(--cyan); } .t-out.ok { color: var(--green); } .t-out.cl { color: var(--red); }
-  .t-cursor { display: inline-block; width: 8px; height: 14px; background: var(--green); vertical-align: middle; animation: blink 1.1s step-end infinite; }
-  @keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0; } }
+/* ─── NAV ────────────────────────────────────────────────── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 48px; height: 56px;
+  background: rgba(4,8,14,0.9);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+}
 
-  /* ── CAPABILITIES ── */
-  #capabilities { background: var(--bg); }
-  .caps-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; max-width: 1100px; }
-  .cap-card { background: var(--bg2); border: 1px solid var(--border); padding: 24px; transition: border-color .2s, transform .2s; }
-  .cap-card:hover { border-color: var(--green); transform: translateY(-2px); }
-  .cap-icon { font-size: 20px; margin-bottom: 16px; color: var(--green); font-family: monospace; }
-  .cap-title { color: var(--text); font-size: 14px; font-weight: 700; margin-bottom: 8px; letter-spacing: 1px; }
-  .cap-desc { color: var(--text); font-size: 12px; line-height: 1.7; }
+.nav-logo {
+  font-family: var(--font-head);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text);
+  user-select: none;
+  display: flex; align-items: center; gap: 10px;
+}
+.nav-logo-icon {
+  width: 28px; height: 28px;
+  background: var(--accent);
+  clip-path: polygon(0 0, 100% 0, 100% 70%, 70% 100%, 0 100%);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0;
+  flex-shrink: 0;
+}
+.nav-logo span { color: var(--accent); }
 
-  /* ── OPERATIVE ── */
-  #operative { background: var(--bg); }
-  .operative-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 64px; align-items: start; max-width: 1100px; }
-  @media (max-width: 768px) { .operative-grid { grid-template-columns: 1fr; } }
-  .id-card {
-    background: var(--bg2); border: 1px solid var(--border);
-    padding: 28px; display: flex; flex-direction: column; gap: 0;
-  }
-  .id-card-header {
-    font-size: 9px; letter-spacing: 4px; color: var(--muted);
-    text-transform: uppercase; margin-bottom: 20px;
-    padding-bottom: 12px; border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: space-between;
-  }
-  .id-card-header .id-dot {
-    width: 8px; height: 8px; border-radius: 50%;
-    background: var(--green); box-shadow: 0 0 6px var(--green);
-  }
-  .id-row { display: flex; flex-direction: column; gap: 3px; margin-bottom: 16px; }
-  .id-row:last-child { margin-bottom: 0; }
-  .id-label { font-size: 9px; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; }
-  .id-val { font-size: 13px; color: var(--text); }
-  .id-val a { color: var(--cyan); text-decoration: none; }
-  .id-val a:hover { color: var(--green); }
-  .id-badge {
-    display: inline-block; font-size: 9px; letter-spacing: 2px;
-    padding: 3px 8px; border: 1px solid var(--green);
-    color: var(--green); text-transform: uppercase; margin-right: 6px; margin-bottom: 6px;
-  }
-  .bio-text p { color: var(--text); line-height: 1.9; margin-bottom: 20px; font-size: 14px; }
-  .bio-text p:last-child { margin-bottom: 0; }
-  .spec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 32px; }
-  @media (max-width: 600px) { .spec-grid { grid-template-columns: 1fr; } }
-  .spec-item {
-    background: var(--bg2); border: 1px solid var(--border);
-    padding: 14px 16px; display: flex; align-items: flex-start; gap: 12px;
-    transition: border-color .2s;
-  }
-  .spec-item:hover { border-color: var(--green); }
-  .spec-bullet { color: var(--green); font-size: 14px; flex-shrink: 0; margin-top: 1px; }
-  .spec-body { display: flex; flex-direction: column; gap: 3px; }
-  .spec-title { font-size: 12px; color: var(--text); font-weight: 700; letter-spacing: 1px; }
-  .spec-desc { font-size: 11px; color: var(--text); }
+.nav-links {
+  display: flex; align-items: center; gap: 32px;
+}
+.nav-links a {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-mid);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--accent); }
 
-  /* ── PLATFORM STATUS ── */
-  #platform { background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
-  .platform-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 32px; max-width: 1100px; }
-  @media (max-width: 900px) { .platform-layout { grid-template-columns: 1fr; } }
-  .status-feed { display: flex; flex-direction: column; gap: 1px; border: 1px solid var(--border); }
-  .status-row-item {
-    display: grid; grid-template-columns: 90px 1fr 120px;
-    padding: 12px 16px; background: var(--bg);
-    border-bottom: 1px solid var(--border); gap: 16px;
-    align-items: center; transition: background .15s;
-  }
-  .status-row-item:last-child { border-bottom: none; }
-  .status-tag { font-size: 9px; letter-spacing: 2px; padding: 3px 7px; border: 1px solid; text-align: center; text-transform: uppercase; }
-  .tag-class { border-color: var(--red); color: var(--red); }
-  .tag-op    { border-color: var(--green); color: var(--green); }
-  .tag-enc   { border-color: var(--cyan); color: var(--cyan); }
-  .row-title { font-size: 12px; color: var(--text); }
-  .row-val   { font-size: 11px; color: var(--muted); text-align: right; letter-spacing: 1px; }
-  .row-val.cl { color: var(--red); }
-  .info-panel { border: 1px solid var(--border); }
-  .info-header { padding: 12px 16px; background: var(--bg); border-bottom: 1px solid var(--border); font-size: 11px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; }
-  .info-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: var(--bg); border-bottom: 1px solid var(--border); font-size: 12px; }
-  .info-row:last-child { border-bottom: none; }
-  .info-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-  .idot-ok { background: var(--green); box-shadow: 0 0 5px var(--green); }
-  .idot-cl { background: var(--red); box-shadow: 0 0 5px var(--red); }
-  .info-label { color: var(--muted); }
-  .info-val { color: var(--text); }
-  .info-val.ok { color: var(--green); }
-  .info-val.cl { color: var(--red); font-size: 10px; letter-spacing: 1px; }
+.nav-status {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--green);
+  letter-spacing: 1px;
+}
+.status-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+  animation: pulse-green 2.4s ease infinite;
+}
+@keyframes pulse-green {
+  0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--green); }
+  50% { opacity: 0.5; box-shadow: 0 0 3px var(--green); }
+}
 
-  /* ── CONTACT ── */
-  #contact { background: var(--bg); }
-  .contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; max-width: 900px; }
-  @media (max-width: 768px) { .contact-grid { grid-template-columns: 1fr; } }
-  .contact-links { display: flex; flex-direction: column; gap: 16px; }
-  .contact-link { display: flex; align-items: center; gap: 16px; padding: 16px; background: var(--bg2); border: 1px solid var(--border); text-decoration: none; color: var(--text); font-size: 13px; transition: border-color .2s; }
-  .contact-link:hover { border-color: var(--cyan); color: var(--cyan); }
-  .contact-link .icon { color: var(--green); font-size: 16px; width: 24px; text-align: center; }
-  .pgp-box { background: var(--bg2); border: 1px solid var(--border); padding: 20px; font-size: 11px; }
-  .pgp-label { color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; font-size: 10px; }
+/* ─── CORNER BRACKET MIXIN ───────────────────────────────── */
+.bracketed {
+  position: relative;
+}
+.bracketed::before, .bracketed::after {
+  content: '';
+  position: absolute;
+  width: 14px; height: 14px;
+}
+.bracketed::before {
+  top: -1px; left: -1px;
+  border-top: 2px solid var(--accent);
+  border-left: 2px solid var(--accent);
+}
+.bracketed::after {
+  bottom: -1px; right: -1px;
+  border-bottom: 2px solid var(--accent);
+  border-right: 2px solid var(--accent);
+}
 
-  /* ── FOOTER ── */
-  footer {
-    background: var(--bg2); border-top: 1px solid var(--border);
-    padding: 32px 48px;
-    display: flex; align-items: center; justify-content: space-between;
-    flex-wrap: wrap; gap: 16px;
-  }
-  .footer-brand { color: var(--green); font-size: 14px; letter-spacing: 3px; }
-  .footer-copy { color: var(--muted); font-size: 11px; }
-  .footer-cl { color: var(--red); font-size: 10px; letter-spacing: 2px; }
+/* ─── HERO ───────────────────────────────────────────────── */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  padding: 80px 48px 60px;
+  position: relative;
+  z-index: 1;
+}
 
-  /* ── LOGIN MODAL (gov portal theme) ── */
-  #login-overlay {
-    position: fixed; inset: 0; z-index: 9999;
-    background: rgba(4,10,20,0.97);
-    backdrop-filter: blur(4px);
-    display: flex; align-items: center; justify-content: center;
-    opacity: 0; pointer-events: none;
-    transition: opacity .3s;
-    font-family: 'Share Tech Mono', 'Courier New', monospace;
-  }
-  #login-overlay.visible { opacity: 1; pointer-events: all; }
-  #login-overlay::after {
-    content: '';
-    position: absolute; inset: 0;
-    background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,.05) 3px, rgba(0,0,0,.05) 4px);
-    pointer-events: none;
-  }
+.hero-inner {
+  max-width: 1280px;
+  width: 100%;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 60px;
+  align-items: center;
+}
 
-  /* classification banners */
-  .gov-banner-top, .gov-banner-bot {
-    position: fixed; left: 0; right: 0;
-    background: #cc2020; color: #fff;
-    text-align: center; font-size: 10px; letter-spacing: 5px;
-    padding: 5px; z-index: 10001; font-family: 'Share Tech Mono', monospace;
-    text-transform: uppercase;
-  }
-  .gov-banner-top { top: 0; }
-  .gov-banner-bot { bottom: 0; }
+/* Diagonal accent line */
+.hero::before {
+  content: '';
+  position: absolute;
+  top: 0; right: 30%;
+  width: 1px; height: 100%;
+  background: linear-gradient(to bottom, transparent, var(--border) 30%, var(--border) 70%, transparent);
+  opacity: 0.6;
+}
 
-  .gov-container {
-    width: 100%; max-width: 500px;
-    position: relative; z-index: 10000;
-    padding: 16px;
-    transform: translateY(16px) scale(0.97);
-    transition: transform .3s;
-    color: #d4c9a8;
-  }
-  #login-overlay.visible .gov-container { transform: translateY(0) scale(1); }
+.hero-tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  opacity: 0;
+  animation: slide-in 0.6s cubic-bezier(0.16,1,0.3,1) forwards 0.1s;
+}
+.hero-tag::before {
+  content: '';
+  display: block;
+  width: 32px; height: 1px;
+  background: var(--accent);
+}
+.hero-tag::after {
+  content: '■';
+  font-size: 5px;
+  color: var(--accent);
+  animation: blink 1.2s step-end infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
 
-  .gov-seal-wrap { text-align: center; margin-bottom: 20px; }
-  .gov-seal {
-    display: inline-flex; align-items: center; justify-content: center; flex-direction: column;
-    width: 96px; height: 96px;
-    border: 3px solid #c9a84c; border-radius: 50%;
-    background: linear-gradient(135deg, #0a1628 0%, #0d2040 100%);
-    box-shadow: 0 0 32px rgba(201,168,76,.3), inset 0 0 20px rgba(0,0,0,.5);
-    position: relative;
-  }
-  .gov-seal-ring {
-    position: absolute; top: -10px; left: -10px; right: -10px; bottom: -10px;
-    border: 1px solid rgba(201,168,76,.2); border-radius: 50%;
-  }
-  .gov-seal-ring2 {
-    position: absolute; top: -18px; left: -18px; right: -18px; bottom: -18px;
-    border: 1px solid rgba(201,168,76,.08); border-radius: 50%;
-  }
-  .gov-seal-icon { font-size: 38px; filter: drop-shadow(0 0 8px rgba(201,168,76,.5)); }
-  .gov-seal-txt { font-size: 6.5px; letter-spacing: 2px; color: #c9a84c; margin-top: 2px; }
+.hero-name {
+  font-family: var(--font-head);
+  font-size: clamp(64px, 8.5vw, 108px);
+  font-weight: 700;
+  line-height: 0.92;
+  letter-spacing: -1px;
+  text-transform: uppercase;
+  color: var(--text);
+  margin-bottom: 20px;
+  opacity: 0;
+  animation: slide-in 0.6s cubic-bezier(0.16,1,0.3,1) forwards 0.25s;
+  position: relative;
+}
+.hero-name .accent-line {
+  display: block;
+  color: var(--accent);
+  position: relative;
+}
+.hero-name .accent-line::after {
+  content: attr(data-text);
+  position: absolute;
+  left: 2px; top: 0;
+  color: var(--cyan);
+  clip-path: polygon(0 30%, 100% 30%, 100% 55%, 0 55%);
+  opacity: 0;
+  animation: glitch-slice 8s steps(1) infinite 3s;
+}
+@keyframes glitch-slice {
+  0%,95%,100% { opacity: 0; transform: none; }
+  96% { opacity: 0.8; transform: translate(-3px, 0); }
+  97% { opacity: 0.8; transform: translate(3px, 0); }
+  98% { opacity: 0; transform: none; }
+}
 
-  .gov-title {
-    font-family: 'Playfair Display', serif;
-    font-size: 22px; color: #c9a84c;
-    text-align: center; letter-spacing: 3px;
-    text-shadow: 0 0 30px rgba(201,168,76,.35);
-    margin-bottom: 4px;
-  }
-  .gov-sub {
-    text-align: center; font-size: 9px; letter-spacing: 6px;
-    color: #5a5030; margin-bottom: 24px;
-  }
+.hero-sub {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-mid);
+  letter-spacing: 1px;
+  margin-bottom: 28px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  opacity: 0;
+  animation: slide-in 0.6s cubic-bezier(0.16,1,0.3,1) forwards 0.38s;
+}
+.hero-sub::before {
+  content: '//';
+  color: var(--accent);
+  font-weight: 700;
+}
 
-  .gov-box {
-    border: 1px solid #1e3a5c;
-    background: rgba(8,18,34,.97);
-    padding: 32px 36px;
-    box-shadow: 0 20px 60px rgba(0,0,0,.9), 0 0 0 1px rgba(201,168,76,.07);
-    position: relative;
-  }
-  .gov-box::before, .gov-box::after {
-    content: '★'; position: absolute; color: rgba(201,168,76,.3); font-size: 10px;
-  }
-  .gov-box::before { top: 10px; left: 14px; }
-  .gov-box::after  { top: 10px; right: 14px; }
-  @media (max-width: 520px) {
-    .gov-box { padding: 24px 20px; }
-    .gov-title { font-size: 16px; }
-  }
+.hero-desc {
+  font-size: 15px;
+  font-weight: 300;
+  color: var(--text-mid);
+  line-height: 1.9;
+  max-width: 500px;
+  margin-bottom: 40px;
+  opacity: 0;
+  animation: slide-in 0.6s cubic-bezier(0.16,1,0.3,1) forwards 0.5s;
+}
+.hero-desc strong { color: var(--text); font-weight: 500; }
 
-  .gov-divider {
-    border: none; border-top: 1px solid #1e3a5c;
-    margin: 0 0 24px; position: relative;
-  }
-  .gov-divider::after {
-    content: '◆'; position: absolute; left: 50%;
-    transform: translateX(-50%) translateY(-50%);
-    color: #c9a84c; font-size: 10px;
-    background: #08121e; padding: 0 8px;
-  }
+.hero-cta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  opacity: 0;
+  animation: slide-in 0.6s cubic-bezier(0.16,1,0.3,1) forwards 0.62s;
+}
 
-  .gov-error {
-    color: #ff4444; font-size: 11px; letter-spacing: 2px;
-    text-align: center; padding: 10px;
-    border: 1px solid rgba(204,32,32,.4);
-    background: rgba(204,32,32,.06);
-    margin-bottom: 18px;
-  }
+@keyframes slide-in {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 
-  .gov-field { margin-bottom: 20px; }
-  .gov-field label {
-    display: block; font-size: 10px; letter-spacing: 4px;
-    color: #5a5030; margin-bottom: 8px; text-transform: uppercase;
-  }
-  .gov-field input {
-    width: 100%; background: rgba(4,10,20,.85);
-    border: 1px solid #1e3a5c; border-bottom-color: #2a4e7a;
-    color: #d4c9a8; font-family: 'Share Tech Mono', monospace; font-size: 14px;
-    padding: 10px 12px; outline: none;
-    transition: border-color .2s, box-shadow .2s;
-  }
-  .gov-field input:focus {
-    border-color: #c9a84c;
-    box-shadow: 0 0 12px rgba(201,168,76,.15);
-  }
-  .gov-field input::placeholder { color: #1e2e3e; }
+/* ─── BUTTONS ────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-decoration: none;
+  padding: 12px 24px;
+  transition: all 0.2s;
+  cursor: pointer;
+  border: none;
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+}
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+.btn-primary:hover {
+  background: var(--accent2);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(232,99,28,0.35);
+}
+.btn-ghost {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border2);
+  clip-path: none;
+  padding: 11px 24px;
+}
+.btn-ghost:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: translateY(-2px);
+}
 
-  .gov-btn {
-    width: 100%;
-    background: linear-gradient(180deg, #1e3a5c 0%, #102040 100%);
-    border: 1px solid #c9a84c; color: #c9a84c;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 12px; letter-spacing: 5px;
-    padding: 13px; cursor: pointer;
-    transition: all .2s; text-transform: uppercase; margin-top: 6px;
-  }
-  .gov-btn:hover {
-    background: linear-gradient(180deg, #2a4e7a 0%, #1e3a5c 100%);
-    box-shadow: 0 0 20px rgba(201,168,76,.2);
-  }
+/* ─── TERMINAL PANEL ─────────────────────────────────────── */
+.terminal-panel {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  position: relative;
+  opacity: 0;
+  animation: slide-in 0.6s cubic-bezier(0.16,1,0.3,1) forwards 0.35s;
+}
+.terminal-panel::before, .terminal-panel::after {
+  content: '';
+  position: absolute;
+  width: 16px; height: 16px;
+}
+.terminal-panel::before {
+  top: -1px; left: -1px;
+  border-top: 2px solid var(--accent);
+  border-left: 2px solid var(--accent);
+}
+.terminal-panel::after {
+  bottom: -1px; right: -1px;
+  border-bottom: 2px solid var(--accent);
+  border-right: 2px solid var(--accent);
+}
 
-  .gov-warning {
-    color: #2a4a6a; font-size: 8.5px; text-align: center;
-    margin-top: 18px; letter-spacing: 2px; line-height: 1.8;
-    border-top: 1px solid #1e3a5c; padding-top: 14px;
-  }
+.tp-header {
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.tp-title {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-mid);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.tp-title::before {
+  content: '>';
+  color: var(--accent);
+  animation: blink 1.6s step-end infinite;
+}
+.tp-badge {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--green);
+  border: 1px solid rgba(57,211,83,0.3);
+  padding: 2px 8px;
+}
 
-  .gov-statusbar {
-    display: flex; justify-content: space-between;
-    font-size: 9px; color: #1e3a5c; letter-spacing: 2px;
-    padding: 10px 0 0;
-  }
-  #gov-clock { color: #2a4e6a; }
+.tp-stat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+.tp-stat:last-child { border-bottom: none; }
+.tp-stat::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 2px;
+  background: transparent;
+  transition: background 0.2s;
+}
+.tp-stat:hover::before { background: var(--accent); }
 
-  .gov-dismiss {
-    position: absolute; top: -8px; right: -8px;
-    width: 28px; height: 28px;
-    background: #1e3a5c; border: 1px solid #2a4e6a;
-    color: #4a6a8a; font-size: 14px; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    transition: all .2s; z-index: 10002;
-    font-family: monospace;
-  }
-  .gov-dismiss:hover { background: #cc2020; border-color: #cc2020; color: #fff; }
+.tp-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.tp-value {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: -0.5px;
+  line-height: 1;
+}
+.tp-value.ok {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--green);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.tp-value.mono {
+  font-size: 14px;
+  color: var(--text);
+  letter-spacing: 0;
+}
 
-  .gov-footer-note {
-    text-align: center; margin-top: 12px;
-    font-size: 8px; color: #1e2e3e; letter-spacing: 2px; line-height: 1.8;
-  }
+/* Threat meter row */
+.tp-bar-row {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.tp-bar-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+.tp-bar-track {
+  height: 3px;
+  background: var(--border);
+  position: relative;
+  overflow: hidden;
+}
+.tp-bar-fill {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  animation: bar-grow 2s cubic-bezier(0.16,1,0.3,1) forwards 1s;
+  transform-origin: left;
+  transform: scaleX(0);
+}
+@keyframes bar-grow {
+  to { transform: scaleX(1); }
+}
 
-  /* ── MISC ── */
-  .scan-line {
-    position: fixed; top: 0; left: 0; right: 0; height: 2px;
-    background: linear-gradient(90deg, transparent, var(--green), transparent);
-    animation: scan 8s linear infinite; pointer-events: none; z-index: 9998; opacity: 0.35;
-  }
-  @keyframes scan { 0% { top: 0; } 100% { top: 100vh; } }
+/* Live feed ticker */
+.tp-feed {
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  max-height: 96px;
+  overflow: hidden;
+}
+.tp-feed-item {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-dim);
+  padding: 2px 0;
+  display: flex;
+  gap: 10px;
+  letter-spacing: 0.3px;
+  animation: feed-slide-in 0.4s ease;
+}
+@keyframes feed-slide-in {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: none; }
+}
+.tp-feed-item .feed-time { color: var(--text-mid); flex-shrink: 0; }
+.tp-feed-item .feed-evt  { color: var(--amber); flex-shrink: 0; }
+.tp-feed-item .feed-ip   { color: var(--accent); }
 
-  /* ── MOBILE RESPONSIVE ── */
-  @media (max-width: 600px) {
-    nav { padding: 0 14px; }
-    .nav-links { gap: 16px; }
-    .nav-links a { font-size: 10px; letter-spacing: 1px; }
-    .nav-links { display: none; }
-    .hero { padding: 80px 20px 48px; }
-    section { padding: 64px 20px; }
-    .hero-stats { gap: 24px; }
-    .stat-num { font-size: 18px; }
-    footer { padding: 24px 20px; flex-direction: column; gap: 8px; }
-    #attack-log { display: none; }
-    #threat-toast { right: 10px; width: 260px; }
-  }
-  @media (max-width: 480px) {
-    .nav-ctrl-btn span { display: none; }
-    .nav-ctrl-btn::after { content: '☀'; }
-  }
-  @media (max-width: 480px) {
-    h1 { font-size: 28px; }
-    .nav-links { display: none; }
-    .maps-grid { grid-template-columns: 1fr; }
-    .caps-grid  { grid-template-columns: 1fr; }
-    .contact-grid { grid-template-columns: 1fr; }
-  }
+/* ─── SECTION BASE ───────────────────────────────────────── */
+.section {
+  padding: 96px 48px;
+  position: relative;
+  z-index: 1;
+}
+.section-inner { max-width: 1280px; margin: 0 auto; }
 
-  /* ── HERO ENTRANCE ANIMATIONS ── */
-  @keyframes hero-in {
-    from { opacity: 0; transform: translateY(22px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  .hero-content .hero-eyebrow { animation: hero-in 0.65s ease both; animation-delay: 0.15s; }
-  .hero-content h1             { animation: hero-in 0.65s ease both; animation-delay: 0.35s; }
-  .hero-content .hero-sub      { animation: hero-in 0.65s ease both; animation-delay: 0.55s; }
-  .hero-content .hero-stats    { animation: hero-in 0.65s ease both; animation-delay: 0.75s; }
-  .hero-content #visitor-panel { animation: hero-in 0.65s ease both; animation-delay: 0.95s; }
+.section-header {
+  margin-bottom: 56px;
+}
+.section-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.section-eyebrow::before {
+  content: '';
+  display: block;
+  width: 24px; height: 1px;
+  background: var(--accent);
+}
+h2 {
+  font-family: var(--font-head);
+  font-size: clamp(32px, 4.5vw, 52px);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text);
+  line-height: 1.0;
+}
+h2 em {
+  font-style: normal;
+  color: var(--accent);
+}
 
-  /* ── SCROLL REVEAL ── */
-  .reveal {
-    opacity: 0;
-    transform: translateY(26px);
-    transition: opacity 0.65s ease, transform 0.65s ease;
-  }
-  .reveal.revealed { opacity: 1; transform: none; }
-  .reveal-delay-1 { transition-delay: 0.1s; }
-  .reveal-delay-2 { transition-delay: 0.2s; }
-  .reveal-delay-3 { transition-delay: 0.3s; }
-  .reveal-delay-4 { transition-delay: 0.4s; }
-  .reveal-delay-5 { transition-delay: 0.5s; }
-  .reveal-delay-6 { transition-delay: 0.6s; }
+/* ─── ABOUT ──────────────────────────────────────────────── */
+.section-about { border-top: 1px solid var(--border); }
 
-  /* ── NAV LOGO GLITCH ── */
-  @keyframes glitch-logo {
-    0%, 82%, 100% { text-shadow: none; transform: none; }
-    83%  { text-shadow: -2px 0 var(--red), 2px 0 var(--cyan); transform: translateX(2px); }
-    84%  { text-shadow: 2px 0 var(--red), -2px 0 var(--cyan); transform: translateX(-2px); }
-    85%  { text-shadow: none; transform: none; }
-    86%  { text-shadow: -1px 0 var(--cyan), 1px 0 var(--red); transform: translateX(1px); }
-    87%, 100% { text-shadow: none; transform: none; }
-  }
-  .nav-logo { animation: glitch-logo 9s infinite; }
+.about-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 80px;
+  align-items: start;
+}
+.about-text p {
+  font-size: 15px;
+  font-weight: 300;
+  color: var(--text-mid);
+  line-height: 1.9;
+  margin-bottom: 20px;
+}
+.about-text p:last-child { margin-bottom: 0; }
+.about-text strong { color: var(--text); font-weight: 500; }
 
-  /* ── CAPABILITY CARD ACCENTS ── */
-  .cap-card { position: relative; overflow: hidden; }
-  .cap-card::before {
-    content: '';
-    position: absolute; top: 0; left: 0; right: 0; height: 2px;
-    background: var(--cap-col, var(--green));
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 0.35s ease;
-  }
-  .cap-card:hover::before { transform: scaleX(1); }
-  .cap-card::after {
-    content: '';
-    position: absolute; inset: 0; pointer-events: none;
-    background: radial-gradient(ellipse at 50% 0%, rgba(0,255,136,0.04), transparent 65%);
-    opacity: 0; transition: opacity .3s;
-  }
-  .cap-card:hover::after { opacity: 1; }
+/* Profile block */
+.profile-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.profile-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  transition: border-color 0.2s, background 0.2s;
+}
+.profile-row:last-child { border-bottom: 1px solid var(--border); }
+.profile-row:hover {
+  background: var(--surface2);
+  border-color: var(--border2);
+}
+.profile-row:first-child {
+  border-top: 2px solid var(--accent);
+}
+.pr-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.pr-val {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text);
+  letter-spacing: 0.5px;
+}
+.pr-val.tag {
+  color: var(--accent);
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border: 1px solid rgba(232,99,28,0.3);
+  padding: 2px 8px;
+  background: rgba(232,99,28,0.06);
+}
 
-  /* ── MAP CARD THUMBNAILS ── */
-  .map-thumb { position: relative; overflow: hidden; font-size: 0 !important; }
+/* ─── EXPERTISE ──────────────────────────────────────────── */
+.section-expertise {
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.caps-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--border);
+}
+.cap-card {
+  background: var(--bg2);
+  padding: 36px 32px;
+  position: relative;
+  transition: background 0.2s;
+  overflow: hidden;
+}
+.cap-card:hover { background: var(--surface); }
+.cap-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.cap-card:hover::after { opacity: 1; }
 
-  /* Bitdefender — radar sweep */
-  .map-thumb-bd { background: radial-gradient(circle at 50% 50%, rgba(0,255,136,0.07) 0%, transparent 70%); }
-  .map-thumb-bd::before {
-    content: '';
-    position: absolute; top: 50%; left: 50%;
-    width: 70px; height: 70px;
-    margin: -35px 0 0 -35px;
-    border-radius: 50%;
-    border: 1px solid rgba(0,255,136,0.25);
-    box-shadow: 0 0 0 16px rgba(0,255,136,0.07), 0 0 0 30px rgba(0,255,136,0.04);
-  }
-  .map-thumb-bd::after {
-    content: '';
-    position: absolute; top: 50%; left: 50%;
-    width: 60px; height: 60px;
-    margin: -30px 0 0 -30px;
-    background: conic-gradient(from 0deg, transparent 0deg, rgba(0,255,136,0.5) 40deg, transparent 80deg);
-    border-radius: 50%;
-    animation: radar-sweep 2.8s linear infinite;
-  }
-  @keyframes radar-sweep { to { transform: rotate(360deg); } }
+.cap-num {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 2px;
+  margin-bottom: 20px;
+  display: block;
+}
+.cap-icon {
+  font-size: 22px;
+  margin-bottom: 14px;
+  display: block;
+  opacity: 0.8;
+}
+.cap-title {
+  font-family: var(--font-head);
+  font-size: 17px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+.cap-desc {
+  font-size: 13px;
+  font-weight: 300;
+  color: var(--text-mid);
+  line-height: 1.8;
+}
 
-  /* Kaspersky — globe meridians */
-  .map-thumb-ksp { background: radial-gradient(circle at 50% 50%, rgba(0,229,255,0.06) 0%, transparent 70%); }
-  .map-thumb-ksp::before {
-    content: '';
-    position: absolute; top: 50%; left: 50%;
-    width: 64px; height: 64px;
-    margin: -32px 0 0 -32px;
-    border-radius: 50%;
-    border: 1px solid rgba(0,229,255,0.3);
-    background: repeating-conic-gradient(rgba(0,229,255,0.07) 0deg 10deg, transparent 10deg 20deg);
-  }
-  .map-thumb-ksp::after {
-    content: '';
-    position: absolute; top: 50%; left: 50%;
-    width: 64px; height: 64px;
-    margin: -32px 0 0 -32px;
-    border-radius: 50%;
-    border: none;
-    outline: none;
-    background:
-      linear-gradient(rgba(0,229,255,0.15) 1px, transparent 1px) center / 64px 16px,
-      linear-gradient(90deg, transparent 49%, rgba(0,229,255,0.2) 50%, transparent 51%) center / 16px 64px;
-  }
+/* ─── PROJECTS ───────────────────────────────────────────── */
+.section-projects { border-top: 1px solid var(--border); }
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.project-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 32px;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color 0.2s, background 0.2s, transform 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.project-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--border2);
+  transition: background 0.2s;
+}
+.project-card:hover::before { background: var(--accent); }
+.project-card:hover {
+  border-color: var(--border2);
+  background: var(--surface2);
+  transform: translateY(-3px);
+}
 
-  /* FortiGuard — energy burst */
-  .map-thumb-fg { background: radial-gradient(circle at 50% 50%, rgba(255,136,0,0.08) 0%, transparent 70%); }
-  .map-thumb-fg::before {
-    content: '';
-    position: absolute; top: 50%; left: 50%;
-    width: 2px; height: 50px;
-    margin: -25px 0 0 -1px;
-    background: linear-gradient(to bottom, transparent, rgba(255,136,0,0.8), transparent);
-    box-shadow:
-      14px  8px 0 0 rgba(255,136,0,0.4),
-     -14px  8px 0 0 rgba(255,136,0,0.4),
-      22px -4px 0 0 rgba(255,136,0,0.2),
-     -22px -4px 0 0 rgba(255,136,0,0.2);
-    animation: burst-pulse 1.6s ease-in-out infinite;
-  }
-  .map-thumb-fg::after {
-    content: '';
-    position: absolute; top: 50%; left: 50%;
-    width: 30px; height: 30px;
-    margin: -15px 0 0 -15px;
-    border-radius: 50%;
-    background: rgba(255,136,0,0.15);
-    box-shadow: 0 0 0 8px rgba(255,136,0,0.06), 0 0 20px rgba(255,136,0,0.2);
-    animation: burst-pulse 1.6s ease-in-out infinite;
-  }
-  @keyframes burst-pulse { 0%,100%{opacity:0.6;transform:scale(0.9)} 50%{opacity:1;transform:scale(1.1)} }
+.project-type {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.project-name {
+  font-family: var(--font-head);
+  font-size: 18px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text);
+  line-height: 1.2;
+}
+.project-desc {
+  font-size: 13px;
+  font-weight: 300;
+  color: var(--text-mid);
+  line-height: 1.8;
+  flex: 1;
+}
+.project-link {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: color 0.2s;
+}
+.project-card:hover .project-link { color: var(--accent); }
+.project-link::before { content: '→'; }
 
-  /* Check Point — hexagonal lock */
-  .map-thumb-cp { background: radial-gradient(circle at 50% 50%, rgba(255,71,87,0.06) 0%, transparent 70%); }
-  .map-thumb-cp::before {
-    content: '';
-    position: absolute; top: 50%; left: 50%;
-    width: 52px; height: 60px;
-    margin: -30px 0 0 -26px;
-    background:
-      linear-gradient(60deg, transparent 25%, rgba(255,71,87,0.15) 25%, rgba(255,71,87,0.15) 75%, transparent 75%),
-      linear-gradient(120deg, transparent 25%, rgba(255,71,87,0.15) 25%, rgba(255,71,87,0.15) 75%, transparent 75%);
-    border: 1px solid rgba(255,71,87,0.25);
-    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-  }
-  .map-thumb-cp::after {
-    content: '🔒';
-    position: absolute; top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 22px !important;
-    opacity: 0.7;
-  }
+/* ─── CONTACT ────────────────────────────────────────────── */
+.section-contact {
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+}
+.contact-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.6fr;
+  gap: 80px;
+  align-items: start;
+}
+.contact-intro {
+  font-size: 15px;
+  font-weight: 300;
+  color: var(--text-mid);
+  line-height: 1.9;
+}
+.contact-intro strong { color: var(--text); font-weight: 500; }
 
-  /* ── MOBILE BOTTOM NAV ── */
-  .mobile-bottom-nav {
-    display: none;
-    position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
-    background: rgba(8,11,15,0.97);
-    backdrop-filter: blur(10px);
-    border-top: 1px solid var(--border);
-    padding: 0;
-  }
-  .mobile-bottom-nav nav {
-    display: flex; justify-content: space-around;
-    position: static; background: none; border: none; padding: 0;
-    height: 54px; backdrop-filter: none;
-  }
-  .mobile-bottom-nav a {
-    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-    color: var(--muted); text-decoration: none; font-size: 9px; letter-spacing: 1.5px;
-    text-transform: uppercase; gap: 4px; padding: 6px 4px;
-    border-top: 2px solid transparent; transition: color .2s, border-color .2s;
-  }
-  .mobile-bottom-nav a .mn-icon { font-size: 16px; line-height: 1; }
-  .mobile-bottom-nav a:hover,
-  .mobile-bottom-nav a.active { color: var(--green); border-top-color: var(--green); }
-  @media (max-width: 600px) {
-    .mobile-bottom-nav { display: block; }
-    body { padding-bottom: 54px; }
-  }
+.contact-items {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.contact-item {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 18px 22px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.2s, border-color 0.2s;
+  position: relative;
+}
+.contact-item:first-child { border-top: 2px solid var(--accent); }
+.contact-item:last-child { border-bottom: 1px solid var(--border); }
+.contact-item:hover {
+  background: var(--surface2);
+  border-color: var(--border2);
+}
+.contact-item:hover .ci-icon { border-color: var(--accent); color: var(--accent); }
+.ci-icon {
+  width: 38px; height: 38px;
+  border: 1px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--text-mid);
+  flex-shrink: 0;
+  transition: border-color 0.2s, color 0.2s;
+  clip-path: polygon(0 0, calc(100% - 5px) 0, 100% 5px, 100% 100%, 5px 100%, 0 calc(100% - 5px));
+}
+.ci-info { display: flex; flex-direction: column; gap: 3px; }
+.ci-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.ci-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  letter-spacing: 0.2px;
+}
 
-  /* ── FOOTER REWORK ── */
-  footer {
-    background: var(--bg2); border-top: 1px solid var(--border);
-    padding: 36px 48px;
-  }
-  .footer-inner {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 32px;
-    max-width: 1100px; align-items: start;
-  }
-  .footer-left { display: flex; flex-direction: column; gap: 10px; }
-  .footer-tagline { font-size: 12px; color: var(--muted); letter-spacing: 1px; margin-top: 4px; }
-  .footer-zulu { font-size: 11px; color: var(--cyan); font-family: 'Share Tech Mono', monospace; margin-top: 6px; letter-spacing: 1px; }
-  .footer-right { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
-  .footer-links { display: flex; gap: 24px; flex-wrap: wrap; justify-content: flex-end; }
-  .footer-links a { color: var(--muted); text-decoration: none; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; transition: color .2s; }
-  .footer-links a:hover { color: var(--green); }
-  .footer-copy { color: var(--border); font-size: 10px; letter-spacing: 1px; }
-  .footer-cl { color: var(--red); font-size: 10px; letter-spacing: 2px; }
-  @media (max-width: 600px) {
-    footer { padding: 28px 20px; }
-    .footer-inner { grid-template-columns: 1fr; }
-    .footer-right { align-items: flex-start; }
-    .footer-links { justify-content: flex-start; }
-  }
+/* ─── FOOTER ─────────────────────────────────────────────── */
+footer {
+  padding: 24px 48px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  position: relative;
+  z-index: 1;
+}
+.footer-brand {
+  font-family: var(--font-head);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text-mid);
+  display: flex; align-items: center; gap: 8px;
+}
+.footer-brand span { color: var(--accent); }
+.footer-links { display: flex; gap: 28px; }
+.footer-links a {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.footer-links a:hover { color: var(--accent); }
+.footer-copy {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+}
 
-  /* ── TERMINAL TYPEWRITER ── */
-  #term-output .t-cursor-blink {
-    display: inline-block; width: 7px; height: 13px;
-    background: var(--green); vertical-align: middle;
-    animation: blink 1.1s step-end infinite;
-  }
+/* ─── LOGIN MODAL ────────────────────────────────────────── */
+#login-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(4,8,14,0.92);
+  backdrop-filter: blur(12px);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s;
+}
+#login-overlay.visible { opacity: 1; pointer-events: all; }
 
-  /* ── MARATHON CANVAS (full-page scrolling bg) ── */
-  #marathon-canvas {
-    position: fixed; inset: 0; z-index: -1;
-    pointer-events: none;
-  }
+.login-panel {
+  width: 100%; max-width: 420px;
+  margin: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  position: relative;
+  transform: translateY(16px) scale(0.97);
+  transition: transform 0.3s cubic-bezier(0.16,1,0.3,1);
+}
+.login-panel::before, .login-panel::after {
+  content: '';
+  position: absolute;
+  width: 20px; height: 20px;
+}
+.login-panel::before {
+  top: -1px; left: -1px;
+  border-top: 2px solid var(--accent);
+  border-left: 2px solid var(--accent);
+}
+.login-panel::after {
+  bottom: -1px; right: -1px;
+  border-bottom: 2px solid var(--accent);
+  border-right: 2px solid var(--accent);
+}
+#login-overlay.visible .login-panel { transform: translateY(0) scale(1); }
 
-  /* ── ATTACK LOG WIDGET ── */
-  #attack-log {
-    position: fixed; bottom: 24px; right: 20px; z-index: 500;
-    width: 290px; background: rgba(8,11,15,0.9);
-    border: 1px solid rgba(0,255,136,0.12);
-    backdrop-filter: blur(10px);
-    font-family: 'Courier New', monospace;
-    opacity: 0.55; transition: opacity .3s;
-  }
-  #attack-log:hover { opacity: 1; }
-  .al-header {
-    padding: 5px 12px; border-bottom: 1px solid rgba(0,255,136,0.08);
-    display: flex; align-items: center; justify-content: space-between;
-    font-size: 8px; letter-spacing: 3px; color: rgba(0,255,136,0.5); text-transform: uppercase;
-  }
-  .al-pulse {
-    width: 5px; height: 5px; border-radius: 50%;
-    background: var(--green); box-shadow: 0 0 4px var(--green);
-    animation: alpulse 1.2s ease infinite;
-  }
-  @keyframes alpulse { 0%,100%{opacity:1;} 50%{opacity:.15;} }
-  .al-body { height: 106px; overflow: hidden; }
-  .al-entry {
-    display: flex; align-items: center; gap: 6px;
-    padding: 3px 12px; font-size: 9px;
-    border-left: 2px solid transparent;
-    animation: al-in .25s ease;
-    white-space: nowrap; overflow: hidden;
-  }
-  @keyframes al-in { from{opacity:0;transform:translateY(-4px);} to{opacity:1;transform:none;} }
-  .al-entry.type-blocked { border-left-color: var(--red); }
-  .al-entry.type-trapped { border-left-color: #ff8800; }
-  .al-entry.type-banned  { border-left-color: var(--green); }
-  .al-tag { font-size: 8px; letter-spacing: 1px; min-width: 50px; }
-  .al-tag.type-blocked { color: var(--red); }
-  .al-tag.type-trapped { color: #ff8800; }
-  .al-tag.type-banned  { color: var(--green); }
-  .al-ip { color: var(--muted); flex: 1; font-size: 9px; }
-  .al-action { color: #2a3a4a; font-size: 8px; letter-spacing: 1px; }
+.login-header {
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg2);
+}
+.login-title {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.login-title::before {
+  content: '';
+  display: block;
+  width: 8px; height: 8px;
+  background: var(--accent);
+  clip-path: polygon(0 0, 100% 0, 100% 70%, 70% 100%, 0 100%);
+}
+.login-close {
+  background: none;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color 0.2s, color 0.2s;
+}
+.login-close:hover { border-color: var(--accent); color: var(--accent); }
 
-  /* ── THREAT TOAST ── */
-  #threat-toast {
-    position: fixed; top: 68px; right: 20px; z-index: 8000;
-    width: 272px; pointer-events: none;
-    transform: translateX(310px);
-    transition: transform .35s cubic-bezier(.4,0,.2,1);
-    font-family: 'Courier New', monospace;
-  }
-  #threat-toast.visible { transform: translateX(0); }
-  .toast-wrap { border: 1px solid; background: rgba(8,11,15,0.97); backdrop-filter: blur(8px); }
-  .toast-wrap.detecting { border-color: rgba(255,71,87,.45); }
-  .toast-wrap.neutralized { border-color: rgba(0,255,136,.35); }
-  .toast-head {
-    display: flex; align-items: center; gap: 8px;
-    padding: 7px 12px; font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
-    border-bottom: 1px solid;
-  }
-  .toast-wrap.detecting  .toast-head { background: rgba(255,71,87,.09); border-color: rgba(255,71,87,.18); color: var(--red); }
-  .toast-wrap.neutralized .toast-head { background: rgba(0,255,136,.06); border-color: rgba(0,255,136,.14); color: var(--green); }
-  .toast-body { padding: 9px 12px; font-size: 9px; line-height: 1.9; color: var(--muted); }
-  .toast-ip-val  { color: var(--cyan); }
-  .toast-act-val { color: var(--red); }
-  .toast-act-val.ok { color: var(--green); }
-  .toast-bar { height: 2px; width: 100%; overflow: hidden; }
-  .toast-bar-inner { height: 100%; }
-  .toast-wrap.detecting  .toast-bar-inner { background: var(--red); }
-  .toast-wrap.neutralized .toast-bar-inner { background: var(--green); }
+.login-body { padding: 28px 24px; }
 
-  /* ── THREAT MAPS ── */
-  #threat-maps { background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
-  .maps-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; max-width: 1100px; }
-  .map-card {
-    background: var(--bg); border: 1px solid var(--border);
-    text-decoration: none; display: flex; flex-direction: column;
-    transition: border-color .2s, transform .2s; overflow: hidden;
-  }
-  .map-card:hover { border-color: var(--cyan); transform: translateY(-2px); }
-  .map-thumb {
-    height: 90px; background: var(--bg2);
-    border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 34px; position: relative; overflow: hidden;
-  }
-  .map-thumb::before {
-    content: '';
-    position: absolute; inset: 0;
-    background: radial-gradient(circle at 30% 55%, rgba(0,255,136,0.08), transparent 60%),
-                radial-gradient(circle at 72% 28%, rgba(255,71,87,0.07), transparent 50%);
-  }
-  .map-info { padding: 14px; display: flex; flex-direction: column; gap: 5px; flex: 1; }
-  .map-name { font-size: 12px; font-weight: 700; color: var(--text); letter-spacing: 1px; }
-  .map-desc { font-size: 11px; color: var(--text); line-height: 1.6; flex: 1; }
-  .map-cta  { font-size: 9px; letter-spacing: 2px; color: var(--cyan); text-transform: uppercase; margin-top: 4px; }
+.login-error {
+  background: rgba(255,64,64,0.08);
+  border: 1px solid rgba(255,64,64,0.3);
+  border-left: 2px solid var(--red);
+  padding: 10px 14px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  color: var(--red);
+  margin-bottom: 20px;
+}
+
+.login-field { margin-bottom: 18px; }
+.login-field label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+.login-field input {
+  width: 100%;
+  padding: 11px 14px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  letter-spacing: 0.5px;
+}
+.login-field input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(232,99,28,0.2), inset 0 0 20px rgba(232,99,28,0.03);
+}
+
+.login-btn {
+  width: 100%;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 13px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
+  margin-top: 4px;
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+}
+.login-btn:hover {
+  background: var(--accent2);
+  box-shadow: 0 6px 20px rgba(232,99,28,0.3);
+}
+.login-btn:disabled { opacity: 0.5; cursor: default; }
+
+/* ─── SCROLL REVEAL ──────────────────────────────────────── */
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.reveal.in { opacity: 1; transform: none; }
+.rv-1 { transition-delay: 0.07s; }
+.rv-2 { transition-delay: 0.14s; }
+.rv-3 { transition-delay: 0.21s; }
+.rv-4 { transition-delay: 0.28s; }
+.rv-5 { transition-delay: 0.35s; }
+.rv-6 { transition-delay: 0.42s; }
+
+/* ─── DECORATIVE ─────────────────────────────────────────── */
+.hex-bg {
+  position: absolute;
+  top: -60px; right: -40px;
+  width: 300px; height: 300px;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='52' viewBox='0 0 60 52'%3E%3Cpolygon points='30,2 58,17 58,47 30,62 2,47 2,17' fill='none' stroke='%23e8631c' stroke-width='1'/%3E%3C/svg%3E");
+  background-size: 60px 52px;
+  pointer-events: none;
+}
+
+/* ─── RESPONSIVE ─────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .hero-inner { grid-template-columns: 1fr; }
+  .terminal-panel { display: none; }
+  .about-grid { grid-template-columns: 1fr; gap: 48px; }
+  .caps-grid { grid-template-columns: 1fr 1fr; }
+  .projects-grid { grid-template-columns: 1fr 1fr; }
+  .contact-grid { grid-template-columns: 1fr; gap: 40px; }
+}
+@media (max-width: 768px) {
+  nav { padding: 0 20px; }
+  .nav-links { display: none; }
+  .nav-status { display: none; }
+  .hero, .section { padding-left: 24px; padding-right: 24px; }
+  footer { padding: 20px 24px; }
+  .footer-links { display: none; }
+  .caps-grid { grid-template-columns: 1fr; }
+  .projects-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) {
+  .hero-name { font-size: 58px; }
+}
+
+/* ─── TYPEWRITER ─────────────────────────────────────────── */
+.typewriter {
+  overflow: hidden;
+  white-space: nowrap;
+  animation: type-in 1.4s steps(30, end) forwards 0.8s;
+  max-width: 0;
+}
+@keyframes type-in {
+  to { max-width: 100%; }
+}
 </style>
 </head>
 <body>
 
-<canvas id="marathon-canvas"></canvas>
-<div class="scan-line"></div>
-
-<!-- ATTACK LOG WIDGET -->
-<div id="attack-log">
-  <div class="al-header">
-    <span>Live Attack Feed</span>
-    <div class="al-pulse"></div>
-  </div>
-  <div class="al-body" id="al-entries"></div>
-</div>
-
-<!-- THREAT TOAST -->
-<div id="threat-toast">
-  <div class="toast-wrap detecting" id="toast-wrap">
-    <div class="toast-head" id="toast-head">⚠&nbsp; Threat Detected</div>
-    <div class="toast-body" id="toast-body"></div>
-    <div class="toast-bar"><div class="toast-bar-inner" id="toast-bar" style="width:100%"></div></div>
-  </div>
-</div>
-
 <!-- NAV -->
 <nav>
-  <span class="nav-logo">KEV<span>SEC</span></span>
+  <div class="nav-logo">
+    <div class="nav-logo-icon">K</div>
+    KEV<span>SEC</span>
+  </div>
   <div class="nav-links">
     <a href="#about">About</a>
-    <a href="#capabilities">Capabilities</a>
-    <a href="#operative">Operative</a>
-    <a href="#platform">Platform</a>
+    <a href="#expertise">Expertise</a>
+    <a href="#projects">Projects</a>
     <a href="#contact">Contact</a>
   </div>
-  <div class="nav-controls">
-    <div class="nav-size-wrap" title="Adjust text size">
-      <button class="nav-size-btn" onclick="landingSize(-1)" style="font-size:12px;font-weight:700">A−</button>
-      <button class="nav-size-btn" onclick="landingSize(1)"  style="font-size:16px;font-weight:700">A+</button>
-    </div>
-    <button class="nav-ctrl-btn" id="landing-theme-btn" onclick="toggleLandingTheme()">☀ Light</button>
+  <div class="nav-status">
+    <div class="status-dot"></div>
+    SYSTEMS ONLINE
   </div>
 </nav>
 
 <!-- HERO -->
-<section class="hero">
-  <div class="hero-bg"></div>
-  <div class="hero-grid"></div>
-  <div class="hero-content">
-    <div class="hero-eyebrow">Continuous Operations</div>
-    <h1>Threat Intelligence.<br><span class="accent">Cyber Operations.</span><br>Active Defense.</h1>
-    <p class="hero-sub">
-      Independent security research and operations platform. Real-time threat aggregation,
-      network defense, and situational awareness — always on.
-    </p>
-    <div class="hero-stats">
-      <div class="stat">
-        <span class="stat-num" id="ips-blocked">—</span>
-        <span class="stat-lbl">IPs Blocked</span>
-      </div>
-      <div class="stat">
-        <span class="stat-num" id="probes-caught">—</span>
-        <span class="stat-lbl">Probes Caught</span>
-      </div>
-      <div class="stat">
-        <span class="stat-num">24/7</span>
-        <span class="stat-lbl">Monitoring</span>
+<div class="hero" id="home">
+  <div class="hero-inner">
+    <div>
+      <div class="hero-tag">Cybersecurity Professional · Port Washington, WI</div>
+      <h1 class="hero-name">
+        Kevin<br>
+        <span class="accent-line" data-text="Maslanka">Maslanka</span>
+      </h1>
+      <div class="hero-sub">Threat Intelligence &nbsp;·&nbsp; OSINT &nbsp;·&nbsp; Active Defense</div>
+      <p class="hero-desc">
+        Security professional and infrastructure engineer. I build and defend systems,
+        research <strong>adversary tradecraft</strong>, and operate a live threat intelligence
+        platform monitoring real-world attacks <strong>around the clock</strong>.
+      </p>
+      <div class="hero-cta">
+        <a href="https://resume.kevsec.com" class="btn btn-primary" target="_blank" rel="noopener">View Resume ↗</a>
+        <a href="#contact" class="btn btn-ghost">Get in Touch</a>
       </div>
     </div>
-
-    <!-- visitor tracking panel -->
-    <div id="visitor-panel" style="margin-top:32px;background:rgba(0,255,136,0.03);border:1px solid rgba(0,255,136,0.12);padding:14px 18px;max-width:520px;font-size:11px;line-height:2.1;letter-spacing:.5px;">
-      <div style="font-size:9px;letter-spacing:3px;color:rgba(0,255,136,0.5);text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:8px;">
-        <span style="width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 5px var(--green);display:inline-block;animation:alpulse 1.2s infinite;"></span>
-        Connection Logged
+    <div>
+      <div class="terminal-panel">
+        <div class="tp-header">
+          <span class="tp-title">KEVSEC Platform</span>
+          <span class="tp-badge">● LIVE</span>
+        </div>
+        <div class="tp-stat">
+          <span class="tp-label">IPs Blocked</span>
+          <span class="tp-value" id="ips-blocked">—</span>
+        </div>
+        <div class="tp-stat">
+          <span class="tp-label">Probes Caught</span>
+          <span class="tp-value" id="probes-caught">—</span>
+        </div>
+        <div class="tp-bar-row">
+          <div class="tp-bar-label">Threat Processing</div>
+          <div class="tp-bar-track">
+            <div class="tp-bar-fill" style="width:73%"></div>
+          </div>
+        </div>
+        <div class="tp-stat">
+          <span class="tp-label">Monitoring</span>
+          <span class="tp-value mono">24 / 7 / 365</span>
+        </div>
+        <div class="tp-stat">
+          <span class="tp-label">Platform Status</span>
+          <span class="tp-value ok">● OPERATIONAL</span>
+        </div>
+        <div class="tp-stat">
+          <span class="tp-label">Location</span>
+          <span class="tp-value mono">69.30.236.220</span>
+        </div>
+        <div class="tp-feed" id="live-feed">
+          <div class="tp-feed-item">
+            <span class="feed-time">--:--:--</span>
+            <span class="feed-evt">INIT</span>
+            <span>Loading threat feed...</span>
+          </div>
+        </div>
       </div>
-      <div style="color:var(--text)">IP Address: <span style="color:var(--cyan)" id="vis-ip">resolving...</span></div>
-      <div style="color:var(--text)">Browser: <span style="color:var(--text)" id="vis-browser">—</span></div>
-      <div style="color:var(--text)">OS: <span style="color:var(--text)" id="vis-os">—</span></div>
-      <div style="color:var(--text)">Device: <span style="color:var(--text)" id="vis-device">—</span></div>
-      <div style="color:var(--text)">Status: <span style="color:var(--red);letter-spacing:2px;font-size:10px">ACCESS LOGGED — TRAFFIC MONITORED</span></div>
     </div>
-  </div>
-</section>
-
-<!-- TICKER -->
-<div class="ticker-wrap">
-  <div class="ticker">
-    <span class="ticker-item"><span class="dot"></span>PERIMETER DEFENSE — ACTIVE</span>
-    <span class="ticker-item"><span class="dot cyan"></span>INTRUSION DETECTION — ONLINE</span>
-    <span class="ticker-item"><span class="dot"></span>THREAT INTELLIGENCE — LIVE</span>
-    <span class="ticker-item"><span class="dot red"></span>ADVERSARIAL PROBES — DETECTED</span>
-    <span class="ticker-item"><span class="dot cyan"></span>EDGE ENFORCEMENT — ENABLED</span>
-    <span class="ticker-item"><span class="dot"></span>CVE MONITORING — ACTIVE</span>
-    <span class="ticker-item"><span class="dot cyan"></span>GEOPOLITICAL FEEDS — INGESTING</span>
-    <span class="ticker-item"><span class="dot"></span>SPACE WEATHER — NOMINAL</span>
-    <span class="ticker-item"><span class="dot red"></span>ACTIVE SCANNING TRAFFIC — LOGGED</span>
-    <span class="ticker-item"><span class="dot"></span>PERIMETER DEFENSE — ACTIVE</span>
-    <span class="ticker-item"><span class="dot cyan"></span>INTRUSION DETECTION — ONLINE</span>
-    <span class="ticker-item"><span class="dot"></span>THREAT INTELLIGENCE — LIVE</span>
-    <span class="ticker-item"><span class="dot red"></span>ADVERSARIAL PROBES — DETECTED</span>
-    <span class="ticker-item"><span class="dot cyan"></span>EDGE ENFORCEMENT — ENABLED</span>
-    <span class="ticker-item"><span class="dot"></span>CVE MONITORING — ACTIVE</span>
-    <span class="ticker-item"><span class="dot cyan"></span>GEOPOLITICAL FEEDS — INGESTING</span>
-    <span class="ticker-item"><span class="dot"></span>SPACE WEATHER — NOMINAL</span>
-    <span class="ticker-item"><span class="dot red"></span>ACTIVE SCANNING TRAFFIC — LOGGED</span>
   </div>
 </div>
 
 <!-- ABOUT -->
-<section id="about">
-  <div class="section-label reveal">About</div>
-  <h2 class="reveal reveal-delay-1">Who We Are</h2>
-  <div class="about-grid">
-    <div class="about-text reveal reveal-delay-2">
-      <p>
-        KEVSEC is an independent cyber intelligence and operations platform. We aggregate,
-        analyze, and act on threat data across multiple intelligence domains — from network
-        intrusion attempts to geopolitical developments and environmental hazards.
-      </p>
-      <p>
-        Our platform runs continuous monitoring across security feeds, vulnerability disclosures,
-        and open-source intelligence sources. All ingested data is correlated, deduplicated,
-        and surfaced in real time through a hardened internal operations interface.
-      </p>
-      <p>
-        Unauthorized access attempts against this infrastructure are automatically identified,
-        logged, and blocked. All traffic is subject to multi-layer inspection and enforcement
-        at both the network edge and host level.
-      </p>
+<div class="section section-about" id="about">
+  <div class="section-inner">
+    <div class="section-header">
+      <div class="section-eyebrow reveal">About</div>
+      <h2 class="reveal rv-1">Mission <em>Profile</em></h2>
     </div>
-    <div class="terminal-card reveal reveal-delay-3" id="term-card">
-      <div class="terminal-bar">
-        <div class="circle r"></div><div class="circle y"></div><div class="circle g"></div>
-        <span style="font-size:10px;color:var(--muted);margin-left:auto;letter-spacing:1px">ops@kevsec — bash</span>
-      </div>
-      <div class="terminal-body" id="term-output" style="min-height:200px"></div>
-    </div>
-  </div>
-</section>
-
-<!-- THREAT MAPS / GLOBAL INTEL -->
-<section id="threat-maps">
-  <div class="section-label reveal">Live Threat Intelligence</div>
-  <h2 class="reveal reveal-delay-1">Global Attack Visibility</h2>
-  <div class="maps-grid">
-    <a class="map-card reveal reveal-delay-1" href="https://threatmap.bitdefender.com/" target="_blank" rel="noopener">
-      <div class="map-thumb map-thumb-bd"></div>
-      <div class="map-info">
-        <div class="map-name">Bitdefender Threat Map</div>
-        <div class="map-desc">Real-time global cyberattack visualization — malware, spam, exploits, and network attacks by geography.</div>
-        <div class="map-cta">► View Live Map</div>
-      </div>
-    </a>
-    <a class="map-card reveal reveal-delay-2" href="https://cybermap.kaspersky.com/" target="_blank" rel="noopener">
-      <div class="map-thumb map-thumb-ksp"></div>
-      <div class="map-info">
-        <div class="map-name">Kaspersky Cybermap</div>
-        <div class="map-desc">Live 3D globe showing attacks detected by Kaspersky's global sensor network. Real-time data by type and nation-state.</div>
-        <div class="map-cta">► View Live Map</div>
-      </div>
-    </a>
-    <a class="map-card reveal reveal-delay-3" href="https://threatmap.fortiguard.com/" target="_blank" rel="noopener">
-      <div class="map-thumb map-thumb-fg"></div>
-      <div class="map-info">
-        <div class="map-name">FortiGuard Threat Map</div>
-        <div class="map-desc">Fortinet enterprise-scale live attack origins, targets, and vectors from global perimeter telemetry.</div>
-        <div class="map-cta">► View Live Map</div>
-      </div>
-    </a>
-    <a class="map-card reveal reveal-delay-4" href="https://threatmap.checkpoint.com/" target="_blank" rel="noopener">
-      <div class="map-thumb map-thumb-cp"></div>
-      <div class="map-info">
-        <div class="map-name">Check Point Live Map</div>
-        <div class="map-desc">Real-time global threat intelligence from Check Point ThreatCloud. Attack origins, targets, and active malware families.</div>
-        <div class="map-cta">► View Live Map</div>
-      </div>
-    </a>
-  </div>
-</section>
-
-<!-- CAPABILITIES -->
-<section id="capabilities">
-  <div class="section-label reveal">Capabilities</div>
-  <h2 class="reveal reveal-delay-1">Operational Domains</h2>
-  <div class="caps-grid">
-    <div class="cap-card reveal reveal-delay-1" style="--cap-col:var(--green)">
-      <div class="cap-icon">[01]</div>
-      <div class="cap-title">Threat Intelligence</div>
-      <div class="cap-desc">Real-time aggregation across dozens of security news feeds, CVE disclosures, disaster event feeds, and open-source intelligence sources.</div>
-    </div>
-    <div class="cap-card reveal reveal-delay-2" style="--cap-col:var(--red)">
-      <div class="cap-icon">[02]</div>
-      <div class="cap-title">Active Defense</div>
-      <div class="cap-desc">Multi-layer perimeter enforcement. Automated identification and blocking of malicious actors, credential stuffers, and infrastructure scanners.</div>
-    </div>
-    <div class="cap-card reveal reveal-delay-3" style="--cap-col:var(--cyan)">
-      <div class="cap-icon">[03]</div>
-      <div class="cap-title">OSINT Research</div>
-      <div class="cap-desc">Passive reconnaissance, actor attribution, cross-referencing against threat databases, and geolocation intelligence on adversarial infrastructure.</div>
-    </div>
-    <div class="cap-card reveal reveal-delay-4" style="--cap-col:#f59e0b">
-      <div class="cap-icon">[04]</div>
-      <div class="cap-title">Infrastructure Monitoring</div>
-      <div class="cap-desc">Continuous health monitoring across all platform services. Real-time telemetry, anomaly detection, and automated alerting on state changes.</div>
-    </div>
-    <div class="cap-card reveal reveal-delay-5" style="--cap-col:#ff8800">
-      <div class="cap-icon">[05]</div>
-      <div class="cap-title">Vulnerability Tracking</div>
-      <div class="cap-desc">NVD CVE feed monitoring with severity scoring and patch tracking. Automated triage of critical disclosures against monitored technology stacks.</div>
-    </div>
-    <div class="cap-card reveal reveal-delay-6" style="--cap-col:#818cf8">
-      <div class="cap-icon">[06]</div>
-      <div class="cap-title">Situational Awareness</div>
-      <div class="cap-desc">Cross-domain environmental intelligence — space weather, seismic activity, weather alerts, aviation data, and geopolitical feeds unified in one platform.</div>
-    </div>
-  </div>
-</section>
-
-<!-- OPERATIVE PROFILE -->
-<section id="operative">
-  <div class="section-label reveal">Operative</div>
-  <h2 class="reveal reveal-delay-1">Behind the Platform</h2>
-  <div class="operative-grid">
-
-    <div class="id-card reveal reveal-delay-2">
-      <div class="id-card-header">
-        <span>IDENTIFICATION</span>
-        <span class="id-dot"></span>
-      </div>
-      <div class="id-row">
-        <span class="id-label">Name</span>
-        <span class="id-val">Kevin Maslanka</span>
-      </div>
-      <div class="id-row">
-        <span class="id-label">Designation</span>
-        <span class="id-val">Slankey</span>
-      </div>
-      <div class="id-row">
-        <span class="id-label">Role</span>
-        <span class="id-val">Cybersecurity Professional<br>OSINT Researcher<br>Homelab Operator</span>
-      </div>
-      <div class="id-row">
-        <span class="id-label">Contact</span>
-        <span class="id-val"><a href="mailto:ops@kevsec.com">ops@kevsec.com</a></span>
-      </div>
-      <div class="id-row">
-        <span class="id-label">LinkedIn</span>
-        <span class="id-val"><a href="https://www.linkedin.com/in/kevin-earl-maslanka-625001b2/" target="_blank" rel="noopener">linkedin.com/in/kevin-earl-maslanka</a></span>
-      </div>
-      <div class="id-row">
-        <span class="id-label">GitHub</span>
-        <span class="id-val"><a href="https://github.com/Slankey" target="_blank" rel="noopener">github.com/Slankey</a></span>
-      </div>
-      <div class="id-row">
-        <span class="id-label">Resume</span>
-        <span class="id-val"><a href="https://resume.kevsec.com" target="_blank" rel="noopener">resume.kevsec.com</a></span>
-      </div>
-      <div class="id-row" style="margin-top:8px">
-        <span class="id-label">Specializations</span>
-        <div style="margin-top:8px">
-          <span class="id-badge">OSINT</span>
-          <span class="id-badge">Threat Intel</span>
-          <span class="id-badge">Active Defense</span>
-          <span class="id-badge">Malware Analysis</span>
-          <span class="id-badge">Digital Forensics</span>
-          <span class="id-badge">Homelab Ops</span>
-        </div>
-      </div>
-    </div>
-
-    <div>
-      <div class="bio-text">
-        <p>
-          I'm a cybersecurity professional with a focus on open-source intelligence,
-          threat aggregation, and building hardened infrastructure from the ground up.
-          KEVSEC is my personal operations platform — a live environment where I research,
-          monitor, and actively defend against real-world threat actors targeting my infrastructure 24/7.
+    <div class="about-grid">
+      <div class="about-text">
+        <p class="reveal rv-2">
+          I'm a cybersecurity professional with hands-on experience in <strong>threat intelligence,
+          OSINT research, and infrastructure defense</strong>. KEVSEC is my personal security
+          operations platform — a live environment I designed, built, and actively maintain
+          to monitor and respond to real-world threats targeting my infrastructure 24/7.
         </p>
-        <p>
-          My background spans network security, malware analysis, digital forensics, and
-          adversary tradecraft. I built this platform not just as a homelab project but as a
-          genuine intelligence environment — aggregating live feeds across threat intelligence,
-          geopolitics, space weather, and global events into a single unified ops center.
+        <p class="reveal rv-3">
+          My work spans network perimeter defense, adversary tradecraft research, malware
+          analysis, and digital forensics. I've built this platform end-to-end: automated
+          threat blocking pipelines, multi-source intelligence aggregation, and a unified
+          operations interface that surfaces what matters in real time.
         </p>
-        <p>
-          Everything here — the perimeter defense, the intrusion detection, the OSINT tooling —
-          is designed, operated, and continuously improved by me. Every scanner that hits this
-          infrastructure is logged, attributed, and dealt with. Every CVE that drops gets tracked.
-          That's the mission.
+        <p class="reveal rv-4">
+          I approach security as an engineering discipline — every system I build is designed
+          to be <strong>measurable, automatable, and continuously improved</strong>. The goal
+          is operational clarity: understand what's hitting you, attribute it, and respond
+          faster than the adversary expects.
         </p>
       </div>
-
-      <div class="spec-grid">
-        <div class="spec-item">
-          <span class="spec-bullet">▸</span>
-          <div class="spec-body">
-            <span class="spec-title">OSINT & Attribution</span>
-            <span class="spec-desc">Passive recon, username enumeration, actor attribution, digital footprint analysis</span>
-          </div>
+      <div class="profile-block reveal rv-2">
+        <div class="profile-row">
+          <span class="pr-label">Role</span>
+          <span class="pr-val tag">Cybersecurity Pro</span>
         </div>
-        <div class="spec-item">
-          <span class="spec-bullet">▸</span>
-          <div class="spec-body">
-            <span class="spec-title">Threat Intelligence</span>
-            <span class="spec-desc">Multi-source feed aggregation, CVE triage, IOC correlation</span>
-          </div>
+        <div class="profile-row">
+          <span class="pr-label">Focus</span>
+          <span class="pr-val">Threat Intel / OSINT</span>
         </div>
-        <div class="spec-item">
-          <span class="spec-bullet">▸</span>
-          <div class="spec-body">
-            <span class="spec-title">Active Defense</span>
-            <span class="spec-desc">Perimeter hardening, automated blocking, adversarial deception layers</span>
-          </div>
+        <div class="profile-row">
+          <span class="pr-label">Clearance</span>
+          <span class="pr-val">Available</span>
         </div>
-        <div class="spec-item">
-          <span class="spec-bullet">▸</span>
-          <div class="spec-body">
-            <span class="spec-title">Malware Analysis</span>
-            <span class="spec-desc">Static and behavioral analysis, reverse engineering, sandbox techniques</span>
-          </div>
+        <div class="profile-row">
+          <span class="pr-label">Platform</span>
+          <span class="pr-val">KEVSEC SOC</span>
         </div>
-        <div class="spec-item">
-          <span class="spec-bullet">▸</span>
-          <div class="spec-body">
-            <span class="spec-title">Infrastructure Engineering</span>
-            <span class="spec-desc">Bare-metal Linux, virtualization, automated deployment, monitoring pipelines</span>
-          </div>
+        <div class="profile-row">
+          <span class="pr-label">Environment</span>
+          <span class="pr-val">Linux / Proxmox</span>
         </div>
-        <div class="spec-item">
-          <span class="spec-bullet">▸</span>
-          <div class="spec-body">
-            <span class="spec-title">Digital Forensics</span>
-            <span class="spec-desc">Log analysis, incident reconstruction, evidence preservation</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-  </div>
-</section>
-
-<!-- PLATFORM STATUS -->
-<section id="platform">
-  <div class="section-label reveal">Platform</div>
-  <h2 class="reveal reveal-delay-1">Operational Status</h2>
-  <div class="platform-layout">
-    <div>
-      <div class="status-feed">
-        <div class="status-row-item">
-          <div class="status-tag tag-op">ONLINE</div>
-          <div class="row-title">Perimeter defense — ingress filtering and enforcement active</div>
-          <div class="row-val">Continuous</div>
-        </div>
-        <div class="status-row-item">
-          <div class="status-tag tag-op">ONLINE</div>
-          <div class="row-title">Intrusion detection — adversarial probe logging active</div>
-          <div class="row-val">Continuous</div>
-        </div>
-        <div class="status-row-item">
-          <div class="status-tag tag-op">ONLINE</div>
-          <div class="row-title">Threat intelligence feeds — aggregating across all sources</div>
-          <div class="row-val">Real-time</div>
-        </div>
-        <div class="status-row-item">
-          <div class="status-tag tag-op">ONLINE</div>
-          <div class="row-title">Vulnerability monitoring — CVE disclosures tracked</div>
-          <div class="row-val">Real-time</div>
-        </div>
-        <div class="status-row-item">
-          <div class="status-tag tag-op">ONLINE</div>
-          <div class="row-title">Edge enforcement — external threat blocking at network boundary</div>
-          <div class="row-val">Always</div>
-        </div>
-        <div class="status-row-item">
-          <div class="status-tag tag-op">ONLINE</div>
-          <div class="row-title">Resume Builder — <a href="https://create.kevsec.com" target="_blank" rel="noopener" style="color:var(--cyan);text-decoration:none">create.kevsec.com</a></div>
-          <div class="row-val">Public</div>
-        </div>
-        <div class="status-row-item">
-          <div class="status-tag tag-class">CLASSIFIED</div>
-          <div class="row-title">Internal systems — operational metrics and telemetry</div>
-          <div class="row-val cl">REDACTED</div>
-        </div>
-        <div class="status-row-item">
-          <div class="status-tag tag-class">CLASSIFIED</div>
-          <div class="row-title">Defense stack composition and tooling</div>
-          <div class="row-val cl">REDACTED</div>
-        </div>
-      </div>
-    </div>
-    <div class="info-panel">
-      <div class="info-header">System Overview</div>
-      <div class="info-row">
-        <span class="info-label">Platform</span>
-        <div style="display:flex;align-items:center;gap:8px">
-          <span class="info-val ok">OPERATIONAL</span>
-          <span class="info-dot idot-ok"></span>
-        </div>
-      </div>
-      <div class="info-row">
-        <span class="info-label">Perimeter</span>
-        <div style="display:flex;align-items:center;gap:8px">
-          <span class="info-val ok">ENFORCING</span>
-          <span class="info-dot idot-ok"></span>
-        </div>
-      </div>
-      <div class="info-row">
-        <span class="info-label">Intel Feeds</span>
-        <div style="display:flex;align-items:center;gap:8px">
-          <span class="info-val ok">LIVE</span>
-          <span class="info-dot idot-ok"></span>
-        </div>
-      </div>
-      <div class="info-row">
-        <span class="info-label">CVE Monitor</span>
-        <div style="display:flex;align-items:center;gap:8px">
-          <span class="info-val ok">ACTIVE</span>
-          <span class="info-dot idot-ok"></span>
-        </div>
-      </div>
-      <div class="info-row">
-        <span class="info-label">IPs Blocked</span>
-        <div style="display:flex;align-items:center;gap:8px">
-          <span class="info-val ok" id="panel-blocked">—</span>
-          <span class="info-dot idot-ok"></span>
-        </div>
-      </div>
-      <div class="info-row">
-        <span class="info-label">Stack Details</span>
-        <div style="display:flex;align-items:center;gap:8px">
-          <span class="info-val cl">CLASSIFIED</span>
-          <span class="info-dot idot-cl"></span>
-        </div>
-      </div>
-      <div class="info-row">
-        <span class="info-label">Uptime</span>
-        <div style="display:flex;align-items:center;gap:8px">
-          <span class="info-val cl">CLASSIFIED</span>
-          <span class="info-dot idot-cl"></span>
+        <div class="profile-row">
+          <span class="pr-label">Status</span>
+          <span class="pr-val tag">Open to Roles</span>
         </div>
       </div>
     </div>
   </div>
-</section>
+</div>
+
+<!-- EXPERTISE -->
+<div class="section section-expertise" id="expertise">
+  <div class="section-inner">
+    <div class="section-header">
+      <div class="section-eyebrow reveal">Expertise</div>
+      <h2 class="reveal rv-1">Operational <em>Domains</em></h2>
+    </div>
+    <div class="caps-grid">
+      <div class="cap-card reveal rv-1">
+        <span class="cap-num">01 — THREAT_INTEL</span>
+        <span class="cap-icon">⚡</span>
+        <div class="cap-title">Threat Intelligence</div>
+        <div class="cap-desc">Real-time aggregation across security feeds, CVE disclosures, and OSINT sources. IOC correlation and automated triage of critical disclosures across multiple threat actor TTPs.</div>
+      </div>
+      <div class="cap-card reveal rv-2">
+        <span class="cap-num">02 — ACTIVE_DEF</span>
+        <span class="cap-icon">🛡</span>
+        <div class="cap-title">Active Defense</div>
+        <div class="cap-desc">Multi-layer perimeter enforcement. Automated detection and blocking of credential stuffers, infrastructure scanners, and malicious actors at scale via nftables and fail2ban.</div>
+      </div>
+      <div class="cap-card reveal rv-3">
+        <span class="cap-num">03 — OSINT</span>
+        <span class="cap-icon">🔍</span>
+        <div class="cap-title">OSINT Research</div>
+        <div class="cap-desc">Passive reconnaissance, actor attribution, cross-referencing against threat databases, adversarial infrastructure mapping, and digital footprint analysis workflows.</div>
+      </div>
+      <div class="cap-card reveal rv-1">
+        <span class="cap-num">04 — MALWARE_RE</span>
+        <span class="cap-icon">🧬</span>
+        <div class="cap-title">Malware Analysis</div>
+        <div class="cap-desc">Static and behavioral analysis, reverse engineering, and sandbox techniques for dissecting adversary tooling, malware families, and command-and-control infrastructure.</div>
+      </div>
+      <div class="cap-card reveal rv-2">
+        <span class="cap-num">05 — DFIR</span>
+        <span class="cap-icon">🔬</span>
+        <div class="cap-title">Digital Forensics</div>
+        <div class="cap-desc">Log analysis, incident reconstruction, and evidence preservation across host and network artifacts. DFIR methodology applied to real incidents with chain-of-custody discipline.</div>
+      </div>
+      <div class="cap-card reveal rv-3">
+        <span class="cap-num">06 — INFRA_ENG</span>
+        <span class="cap-icon">⚙</span>
+        <div class="cap-title">Infrastructure Engineering</div>
+        <div class="cap-desc">Bare-metal Linux, virtualization with Proxmox, automated deployment pipelines, and continuous monitoring across self-hosted distributed systems at scale.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PROJECTS -->
+<div class="section section-projects" id="projects">
+  <div class="section-inner">
+    <div class="section-header">
+      <div class="section-eyebrow reveal">Projects</div>
+      <h2 class="reveal rv-1">What I've <em>Built</em></h2>
+    </div>
+    <div class="projects-grid">
+      <div class="project-card reveal rv-1">
+        <div class="project-type">Security Platform</div>
+        <div class="project-name">KEVSEC Intelligence Dashboard</div>
+        <div class="project-desc">Personal security operations center aggregating threat feeds, CVE monitoring, news intelligence, live honeypot data, and real-time infrastructure telemetry. Built with Python/Flask, self-hosted on hardened Linux with 3M+ IP blocklist.</div>
+        <div class="project-link">kevsec.com</div>
+      </div>
+      <a class="project-card reveal rv-2" href="https://github.com/Slankey/OSINT-SLANK-USERNAMERATOR" target="_blank" rel="noopener">
+        <div class="project-type">OSINT Tool</div>
+        <div class="project-name">OSINT Username Enumerator</div>
+        <div class="project-desc">Python tool for cross-platform username enumeration across hundreds of sites. Designed for passive reconnaissance, digital footprint analysis, and actor attribution in threat intelligence workflows.</div>
+        <div class="project-link">github.com/Slankey ↗</div>
+      </a>
+      <a class="project-card reveal rv-3" href="https://create.kevsec.com" target="_blank" rel="noopener">
+        <div class="project-type">Web Application</div>
+        <div class="project-name">KEVSEC Resume Builder</div>
+        <div class="project-desc">Public-facing web application at create.kevsec.com. Designed, built, and deployed as part of the broader KEVSEC platform stack on self-hosted Proxmox infrastructure.</div>
+        <div class="project-link">create.kevsec.com ↗</div>
+      </a>
+    </div>
+  </div>
+</div>
 
 <!-- CONTACT -->
-<section id="contact">
-  <div class="section-label reveal">Contact</div>
-  <h2 class="reveal reveal-delay-1">Reach Out</h2>
-  <div class="contact-grid reveal reveal-delay-2">
-    <div class="contact-links">
-      <a class="contact-link" href="https://github.com/Slankey" target="_blank" rel="noopener">
-        <span class="icon">&#x27A5;</span>
-        <span>github.com/Slankey</span>
-      </a>
-      <a class="contact-link" href="mailto:ops@kevsec.com">
-        <span class="icon">@</span>
-        <span>ops@kevsec.com</span>
-      </a>
-      <a class="contact-link" href="https://resume.kevsec.com" target="_blank" rel="noopener">
-        <span class="icon">&#x27A5;</span>
-        <span>resume.kevsec.com</span>
-      </a>
+<div class="section section-contact" id="contact">
+  <div class="section-inner">
+    <div class="section-header">
+      <div class="section-eyebrow reveal">Contact</div>
+      <h2 class="reveal rv-1">Establish <em>Contact</em></h2>
     </div>
-    <div class="pgp-box">
-      <div class="pgp-label">Platform Status</div>
-      <div style="font-size:12px;color:var(--text);line-height:2">
-        <div>All systems: <span style="color:var(--green)">OPERATIONAL</span></div>
-        <div>Intel feeds: <span style="color:var(--green)">ACTIVE</span></div>
-        <div>Defense: <span style="color:var(--green)">ARMED</span></div>
-        <div>Infrastructure: <span style="color:var(--red);letter-spacing:1px;font-size:11px">CLASSIFIED</span></div>
+    <div class="contact-grid">
+      <div class="reveal rv-2">
+        <p class="contact-intro">
+          Open to <strong>cybersecurity roles</strong>, consulting engagements, and collaboration.
+          I'm particularly interested in threat intelligence, SOC operations, and defensive
+          security work. Best reached via email or LinkedIn.
+        </p>
+      </div>
+      <div class="contact-items reveal rv-2">
+        <a class="contact-item" href="mailto:ops@kevsec.com">
+          <div class="ci-icon">✉</div>
+          <div class="ci-info">
+            <span class="ci-label">Email</span>
+            <span class="ci-value">ops@kevsec.com</span>
+          </div>
+        </a>
+        <a class="contact-item" href="https://www.linkedin.com/in/kevin-earl-maslanka-625001b2/" target="_blank" rel="noopener">
+          <div class="ci-icon" style="font-size:12px;font-weight:700;font-family:sans-serif">in</div>
+          <div class="ci-info">
+            <span class="ci-label">LinkedIn</span>
+            <span class="ci-value">kevin-earl-maslanka</span>
+          </div>
+        </a>
+        <a class="contact-item" href="https://github.com/Slankey" target="_blank" rel="noopener">
+          <div class="ci-icon">⌥</div>
+          <div class="ci-info">
+            <span class="ci-label">GitHub</span>
+            <span class="ci-value">github.com/Slankey</span>
+          </div>
+        </a>
+        <a class="contact-item" href="https://resume.kevsec.com" target="_blank" rel="noopener">
+          <div class="ci-icon">↗</div>
+          <div class="ci-info">
+            <span class="ci-label">Resume</span>
+            <span class="ci-value">resume.kevsec.com</span>
+          </div>
+        </a>
       </div>
     </div>
   </div>
-</section>
+</div>
 
 <!-- FOOTER -->
 <footer>
-  <div class="footer-inner">
-    <div class="footer-left">
-      <span class="footer-brand">KEVSEC</span>
-      <span class="footer-tagline">Cyber Intelligence Operations // Active Defense</span>
-      <span class="footer-zulu" id="footer-zulu">— ZULU —</span>
-    </div>
-    <div class="footer-right">
-      <div class="footer-links">
-        <a href="#about">About</a>
-        <a href="#capabilities">Capabilities</a>
-        <a href="#operative">Operative</a>
-        <a href="#contact">Contact</a>
-        <a href="https://create.kevsec.com" target="_blank" rel="noopener">Resume Builder</a>
-        <a href="https://github.com/Slankey" target="_blank" rel="noopener">GitHub</a>
-      </div>
-      <span class="footer-copy">© 2026 Kevin Maslanka — KEVSEC Independent Operations</span>
-      <span class="footer-cl">[CLASSIFIED] — Unauthorized access prohibited</span>
-    </div>
+  <div class="footer-brand">KEV<span>SEC</span> // Kevin Maslanka</div>
+  <div class="footer-links">
+    <a href="#about">About</a>
+    <a href="#expertise">Expertise</a>
+    <a href="#projects">Projects</a>
+    <a href="#contact">Contact</a>
+    <a href="https://github.com/Slankey" target="_blank" rel="noopener">GitHub ↗</a>
   </div>
+  <span class="footer-copy">© 2026 KEVSEC · All systems nominal</span>
 </footer>
 
-<!-- MOBILE BOTTOM NAV -->
-<div class="mobile-bottom-nav">
-  <nav>
-    <a href="#about"><span class="mn-icon">◈</span>About</a>
-    <a href="#capabilities"><span class="mn-icon">⬡</span>Ops</a>
-    <a href="#threat-maps"><span class="mn-icon">◉</span>Maps</a>
-    <a href="#operative"><span class="mn-icon">▣</span>Who</a>
-    <a href="#contact"><span class="mn-icon">◎</span>Contact</a>
-  </nav>
-</div>
-
-<!-- HIDDEN GOV PORTAL LOGIN -->
+<!-- LOGIN MODAL -->
 <div id="login-overlay">
-  <div class="gov-banner-top">TOP SECRET // CODEWORD: KEVSEC // HANDLE VIA SCI CHANNELS ONLY — NOFORN</div>
-
-  <div class="gov-container">
-    <button class="gov-dismiss" id="login-close-btn" title="Abort">✕</button>
-
-    <div class="gov-seal-wrap">
-      <div class="gov-seal">
-        <div class="gov-seal-ring"></div>
-        <div class="gov-seal-ring2"></div>
-        <div class="gov-seal-icon">🦅</div>
-        <div class="gov-seal-txt">E PLURIBUS UNUM</div>
-      </div>
+  <div class="login-panel">
+    <div class="login-header">
+      <span class="login-title">Operations Access</span>
+      <button class="login-close" id="login-close-btn" title="Close">✕</button>
     </div>
-
-    <div class="gov-title">EXECUTIVE INTELLIGENCE PORTAL</div>
-    <div class="gov-sub">KEVSEC OPERATIONS CENTER // SECURE ACCESS</div>
-
-    <div class="gov-box">
-      <hr class="gov-divider">
-
+    <div class="login-body">
       {% if error %}
-      <div class="gov-error">⚠ {{ error }}</div>
+      <div class="login-error">⚠ {{ error }}</div>
       {% endif %}
-
       <form method="POST" action="/ops">
-        <div class="gov-field">
-          <label>Operative Designation</label>
-          <input type="text" name="username" id="login-user" placeholder="Enter codename" autocomplete="off" spellcheck="false">
+        <div class="login-field">
+          <label>Username</label>
+          <input type="text" name="username" id="login-user" autocomplete="off" spellcheck="false">
         </div>
-        <div class="gov-field">
-          <label>Authentication Key</label>
-          <input type="password" name="password" id="login-pass" placeholder="••••••••••••" autocomplete="off">
+        <div class="login-field">
+          <label>Password</label>
+          <input type="password" name="password" id="login-pass" autocomplete="off">
         </div>
-        <button class="gov-btn" type="submit" id="gov-login-btn">Initiate Secure Session</button>
+        <button class="login-btn" type="submit" id="login-submit-btn">Authenticate →</button>
       </form>
-
-      <div class="gov-warning">
-        THIS IS A PRIVATE COMPUTER SYSTEM. UNAUTHORIZED ACCESS IS PROHIBITED<br>
-        UNDER THE COMPUTER FRAUD AND ABUSE ACT (CFAA) — 18 U.S.C. § 1030<br>
-        AND THE ELECTRONIC COMMUNICATIONS PRIVACY ACT — 18 U.S.C. §§ 2510–2523.<br>
-        ALL ACCESS ATTEMPTS ARE LOGGED, ATTRIBUTED, AND WILL BE PROSECUTED.
-      </div>
-    </div>
-
-    <div class="gov-statusbar">
-      <span>ENCRYPTION: TLS 1.3 / AES-256</span>
-      <span id="gov-clock"></span>
-      <span>STATUS: SECURE</span>
-    </div>
-
-    <div class="gov-footer-note">
-      THIS IS NOT A U.S. GOVERNMENT WEBSITE.<br>
-      KEVSEC IS A PERSONAL PROJECT. FOR ENTERTAINMENT PURPOSES ONLY.
     </div>
   </div>
-
-  <div class="gov-banner-bot">TOP SECRET // CODEWORD: KEVSEC // HANDLE VIA SCI CHANNELS ONLY — NOFORN</div>
 </div>
 
 <script>
-  // ── Count-up animation ──
-  function countUp(el, target, duration) {
-    if (!el) return;
-    const start = 0, step = 16;
-    const increment = target / (duration / step);
-    let current = 0;
-    const timer = setInterval(() => {
-      current = Math.min(current + increment, target);
-      el.textContent = Math.floor(current).toLocaleString();
-      if (current >= target) clearInterval(timer);
-    }, step);
+// ── Live stats ──────────────────────────────────────────────
+fetch('/api/public/stats').then(r => r.json()).then(d => {
+  function countUp(el, target, ms) {
+    if (!el || !target) return;
+    const step = target / (ms / 16);
+    let cur = 0;
+    const t = setInterval(() => {
+      cur = Math.min(cur + step, target);
+      el.textContent = Math.floor(cur).toLocaleString();
+      if (cur >= target) clearInterval(t);
+    }, 16);
   }
+  countUp(document.getElementById('ips-blocked'),    d.blocked, 1600);
+  countUp(document.getElementById('probes-caught'),  d.caught,  1200);
+}).catch(() => {});
 
-  // ── Live stats from /api/public/stats ──
-  fetch('/api/public/stats').then(r => r.json()).then(d => {
-    if (d.blocked) {
-      countUp(document.getElementById('ips-blocked'),   d.blocked, 1600);
-      countUp(document.getElementById('panel-blocked'), d.blocked, 1600);
-    }
-    if (d.caught) {
-      countUp(document.getElementById('probes-caught'), d.caught, 1400);
-    }
-  }).catch(() => {});
+// ── Live feed simulation ────────────────────────────────────
+const feedEl = document.getElementById('live-feed');
+const feedEvents = [
+  ['BLOCK', () => `${rndIP()} → port ${rndPort()}`],
+  ['PROBE', () => `${rndIP()} → /wp-admin`],
+  ['TARPIT', () => `${rndIP()} → SSH:22 [${Math.floor(Math.random()*900+60)}s]`],
+  ['SCAN', () => `${rndIP()} → nmap fingerprint`],
+  ['F2B', () => `${rndIP()} banned — ${['honeypot','brute-force','scan'][Math.floor(Math.random()*3)]}`],
+];
+function rndIP() {
+  const r = () => Math.floor(Math.random()*254+1);
+  return `${r()}.${r()}.${r()}.${r()}`;
+}
+function rndPort() { return [22,80,443,3389,8080,21,25][Math.floor(Math.random()*7)]; }
+function addFeedItem() {
+  const now = new Date();
+  const ts = now.toTimeString().slice(0,8);
+  const [evt, msg] = feedEvents[Math.floor(Math.random()*feedEvents.length)];
+  const item = document.createElement('div');
+  item.className = 'tp-feed-item';
+  item.innerHTML = `<span class="feed-time">${ts}</span><span class="feed-evt">${evt}</span><span class="feed-ip">${msg()}</span>`;
+  feedEl.insertBefore(item, feedEl.firstChild);
+  while (feedEl.children.length > 4) feedEl.removeChild(feedEl.lastChild);
+}
+// Seed initial entries
+setTimeout(() => { addFeedItem(); addFeedItem(); addFeedItem(); }, 1200);
+setInterval(addFeedItem, 3800 + Math.random() * 2000);
 
-  // ── Scroll reveal via IntersectionObserver ──
-  (function() {
-    const obs = new IntersectionObserver((entries) => {
-      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('revealed'); obs.unobserve(e.target); } });
-    }, { threshold: 0.12 });
-    document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
-  })();
-
-  // ── Terminal typewriter ──
-  (function() {
-    const output = document.getElementById('term-output');
-    if (!output) return;
-    const LINES = [
-      { type:'prompt', text:'ops@kevsec:~# systemctl status --active' },
-      { type:'ok',     text:'● perimeter-defense      ACTIVE' },
-      { type:'ok',     text:'● intrusion-detection    ACTIVE' },
-      { type:'ok',     text:'● intel-aggregator       ACTIVE' },
-      { type:'ok',     text:'● threat-database        ACTIVE' },
-      { type:'ok',     text:'● edge-enforcement       ACTIVE' },
-      { type:'ok',     text:'● resume-builder         ACTIVE' },
-      { type:'ok',     text:'● ops-center             ACTIVE' },
-      { type:'prompt', text:'ops@kevsec:~# uptime' },
-      { type:'cl',     text:'permission denied — [CLASSIFIED]' },
-      { type:'cursor', text:'' },
-    ];
-    let fired = false;
-    function typeLines() {
-      if (fired) return; fired = true;
-      let lineIdx = 0, charIdx = 0;
-      let currentEl = null;
-      function nextChar() {
-        if (lineIdx >= LINES.length) return;
-        const line = LINES[lineIdx];
-        if (line.type === 'cursor') {
-          const d = document.createElement('div'); d.style.marginTop='8px';
-          d.innerHTML = '<span class="t-prompt">ops@kevsec</span><span class="t-cmd">:~# </span><span class="t-cursor"></span>';
-          output.appendChild(d); return;
-        }
-        if (charIdx === 0) {
-          currentEl = document.createElement('div');
-          if (line.type === 'prompt') currentEl.innerHTML = '';
-          else if (line.type === 'ok') currentEl.className = 't-out ok';
-          else if (line.type === 'cl') currentEl.className = 't-out cl';
-          else currentEl.className = 't-out';
-          output.appendChild(currentEl);
-        }
-        const ch = line.text[charIdx];
-        if (line.type === 'prompt' && charIdx === 0) {
-          currentEl.innerHTML = '<span class="t-prompt">ops@kevsec</span><span class="t-cmd">:~# </span>';
-        }
-        if (line.type === 'prompt') {
-          const cmd = currentEl.querySelector('.t-cmd');
-          if (cmd) cmd.textContent = ':~# ' + line.text.slice(line.text.indexOf('#')+2, charIdx+1);
-          charIdx++;
-        } else {
-          currentEl.textContent = line.text.slice(0, charIdx + 1);
-          charIdx++;
-        }
-        if (charIdx >= line.text.length) {
-          lineIdx++; charIdx = 0;
-          const delay = (LINES[lineIdx] && LINES[lineIdx].type === 'ok') ? 60 : 280;
-          setTimeout(nextChar, delay);
-        } else {
-          const delay = line.type === 'prompt' ? 38 : 18;
-          setTimeout(nextChar, delay);
-        }
-      }
-      setTimeout(nextChar, 400);
-    }
-    const obs = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting) { typeLines(); obs.disconnect(); }
-    }, { threshold: 0.4 });
-    const card = document.getElementById('term-card');
-    if (card) obs.observe(card);
-  })();
-
-  // ── Footer ZULU clock ──
-  (function() {
-    function tickFooter() {
-      const el = document.getElementById('footer-zulu');
-      if (!el) return;
-      const n = new Date(), z = v => String(v).padStart(2,'0');
-      el.textContent = n.getUTCFullYear()+'-'+z(n.getUTCMonth()+1)+'-'+z(n.getUTCDate())+
-        ' // '+z(n.getUTCHours())+':'+z(n.getUTCMinutes())+':'+z(n.getUTCSeconds())+' ZULU';
-    }
-    setInterval(tickFooter, 1000); tickFooter();
-  })();
-
-  // ── Mobile nav active section highlight ──
-  (function() {
-    const links = document.querySelectorAll('.mobile-bottom-nav a');
-    const sections = ['about','capabilities','threat-maps','operative','contact'].map(id => document.getElementById(id)).filter(Boolean);
-    function onScroll() {
-      let active = null;
-      for (const s of sections) {
-        if (window.scrollY >= s.offsetTop - 100) active = s.id;
-      }
-      links.forEach(a => {
-        a.classList.toggle('active', a.getAttribute('href') === '#' + active);
-      });
-    }
-    window.addEventListener('scroll', onScroll, { passive: true });
-  })();
-
-  // ── Hidden login trigger: type "kev" anywhere (not in an input) ──
-  let _seq = '', _timer = null;
-  document.addEventListener('keydown', e => {
-    if (['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) return;
-    _seq += e.key.toLowerCase();
-    if (_seq.length > 3) _seq = _seq.slice(-3);
-    clearTimeout(_timer);
-    _timer = setTimeout(() => { _seq = ''; }, 2000);
-    if (_seq === 'kev') { _seq = ''; openLogin(); }
+// ── Scroll reveal ───────────────────────────────────────────
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) { e.target.classList.add('in'); obs.unobserve(e.target); }
   });
+}, { threshold: 0.08 });
+document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
 
-  // ── ZULU clock ──
-  function updateZulu() {
-    const n = new Date(), z = v => String(v).padStart(2,'0');
-    const el = document.getElementById('gov-clock');
-    if (el) el.textContent =
-      n.getUTCFullYear()+'-'+z(n.getUTCMonth()+1)+'-'+z(n.getUTCDate())+' '+
-      z(n.getUTCHours())+':'+z(n.getUTCMinutes())+':'+z(n.getUTCSeconds())+' ZULU';
-  }
-  setInterval(updateZulu, 1000);
-  updateZulu();
+// ── Login modal ─────────────────────────────────────────────
+function openLogin() {
+  document.getElementById('login-overlay').classList.add('visible');
+  setTimeout(() => { const u = document.getElementById('login-user'); if (u) u.focus(); }, 100);
+}
+function closeLogin() {
+  document.getElementById('login-overlay').classList.remove('visible');
+}
 
-  // ── Authenticating... state ──
-  const govBtn = document.getElementById('gov-login-btn');
-  if (govBtn) {
-    govBtn.closest('form').addEventListener('submit', () => {
-      govBtn.textContent = 'Authenticating...';
-      govBtn.disabled = true;
-    });
-  }
+document.getElementById('login-close-btn').addEventListener('click', closeLogin);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLogin(); });
 
-  function openLogin() {
-    document.getElementById('login-overlay').classList.add('visible');
-    setTimeout(() => { document.getElementById('login-user').focus(); }, 80);
-  }
-  function closeLogin() {
-    document.getElementById('login-overlay').classList.remove('visible');
-  }
+// ── KEV keystroke trigger ────────────────────────────────────
+let _seq = '', _timer = null;
+document.addEventListener('keydown', e => {
+  if (['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) return;
+  _seq += e.key.toLowerCase();
+  if (_seq.length > 3) _seq = _seq.slice(-3);
+  clearTimeout(_timer);
+  _timer = setTimeout(() => { _seq = ''; }, 2000);
+  if (_seq === 'kev') { _seq = ''; openLogin(); }
+});
 
-  document.getElementById('login-close-btn').addEventListener('click', closeLogin);
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') closeLogin();
+// ── Submit loading state ─────────────────────────────────────
+const submitBtn = document.getElementById('login-submit-btn');
+if (submitBtn) {
+  submitBtn.closest('form').addEventListener('submit', () => {
+    submitBtn.textContent = 'Authenticating...';
+    submitBtn.disabled = true;
   });
+}
 
-  {% if show_modal %}
-  document.addEventListener('DOMContentLoaded', () => openLogin());
-  {% endif %}
-
-  // ── Visitor tracking panel ──
-  (function() {
-    const ua = navigator.userAgent;
-    // browser detect
-    let browser = 'Unknown';
-    if (/Edg\//.test(ua)) browser = 'Microsoft Edge';
-    else if (/OPR\/|Opera/.test(ua)) browser = 'Opera';
-    else if (/Chrome\//.test(ua) && !/Chromium/.test(ua)) browser = 'Google Chrome';
-    else if (/Firefox\//.test(ua)) browser = 'Mozilla Firefox';
-    else if (/Safari\//.test(ua) && !/Chrome/.test(ua)) browser = 'Apple Safari';
-    else if (/MSIE|Trident/.test(ua)) browser = 'Internet Explorer';
-    // get version
-    const verM = ua.match(/(Chrome|Firefox|Safari|Edg|OPR)\/([0-9]+)/);
-    if (verM) browser += ' ' + verM[2];
-    // OS detect
-    let os = 'Unknown';
-    if (/iPhone/.test(ua)) os = 'iOS (iPhone)';
-    else if (/iPad/.test(ua)) os = 'iOS (iPad)';
-    else if (/Android/.test(ua)) {
-      const v = ua.match(/Android ([0-9.]+)/);
-      os = 'Android' + (v ? ' ' + v[1] : '');
-    } else if (/Win/.test(ua)) {
-      if (/Windows NT 10/.test(ua)) os = 'Windows 10/11';
-      else if (/Windows NT 6\.3/.test(ua)) os = 'Windows 8.1';
-      else os = 'Windows';
-    } else if (/Mac OS X/.test(ua)) {
-      const v = ua.match(/Mac OS X ([0-9_]+)/);
-      os = 'macOS' + (v ? ' ' + v[1].replace(/_/g,'.') : '');
-    } else if (/Linux/.test(ua)) os = 'Linux';
-    else if (/CrOS/.test(ua)) os = 'Chrome OS';
-    // device
-    let device = 'Desktop';
-    if (/iPhone|Android.*Mobile|Windows Phone/.test(ua)) device = 'Mobile';
-    else if (/iPad|Android(?!.*Mobile)/.test(ua)) device = 'Tablet';
-    const el = id => document.getElementById(id);
-    if (el('vis-browser')) el('vis-browser').textContent = browser;
-    if (el('vis-os'))      el('vis-os').textContent = os;
-    if (el('vis-device'))  el('vis-device').textContent = device;
-    // IP via ipify
-    fetch('https://api.ipify.org?format=json')
-      .then(r => r.json())
-      .then(d => { if (el('vis-ip')) el('vis-ip').textContent = d.ip; })
-      .catch(() => { if (el('vis-ip')) el('vis-ip').textContent = '[classified]'; });
-  })();
-
-  // ── Marathon-style full-page scrolling background ──
-  (function() {
-    const canvas = document.getElementById('marathon-canvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-
-    const CVE_IDS = [
-      'CVE-2021-44228','CVE-2023-44487','CVE-2022-30190','CVE-2024-3094',
-      'CVE-2023-23397','CVE-2021-26855','CVE-2022-26134','CVE-2023-4966',
-      'CVE-2021-34527','CVE-2024-0519','CVE-2022-22965','CVE-2023-38545',
-      'CVE-2021-41773','CVE-2022-1388','CVE-2023-27997','CVE-2024-21762',
-      'CVE-2024-6387','CVE-2023-46604','CVE-2022-47966','CVE-2023-20198',
-      'CVE-2024-1709','CVE-2023-35078','CVE-2024-27198','CVE-2023-42793',
-      'CVE-2024-4577','CVE-2023-22515','CVE-2024-23897','CVE-2023-48788',
-      'CVE-2024-21893','CVE-2023-34362','CVE-2024-30078','CVE-2023-29357',
-      'CVE-2024-38063','CVE-2023-36884','CVE-2024-43461','CVE-2023-4863',
-      'CVE-2024-49138','CVE-2023-51385','CVE-2024-0204','CVE-2023-7028'
-    ];
-    const VULNS = [
-      'LOG4SHELL','HEARTBLEED','SHELLSHOCK','ETERNALBLUE','WANNACRY',
-      'PRINTSPOOLER','ZEROLOGON','PROXYLOGON','SPRINGSHELL','ZENBLEED',
-      'FOLLINA','GHOSTCAT','CITRIXBLEED','REGRESSHION','POLKIT',
-      'DIRTY COW','PWNKIT','LOONEY TUNABLES','SUDO BARON','BLUEGATE',
-      'SPOOLER BUG','HAFNIUM','KERBEROAST','PASS-THE-HASH','GOLDEN TICKET',
-      'SILVER TICKET','DCSync','AS-REP ROAST','LSASS DUMP','MIMIKATZ',
-      'BLOODHOUND','COBALT STRIKE','SLIVER C2','METERPRETER','EMPIRE',
-      'HAVOC C2','BRUTE RATEL','NIGHTHAWK','DEIMOS','MERLIN C2'
-    ];
-    const TERMS = [
-      'RCE','SQLi','XSS','SSRF','XXE','LFI','IDOR','CSRF','SSTI',
-      'PRIV_ESC','AUTH_BYPASS','BUFFER_OVERFLOW','USE_AFTER_FREE',
-      'HEAP_SPRAY','FORMAT_STRING','PATH_TRAVERSAL','DESERIALIZATION',
-      'TYPE_CONFUSION','INTEGER_OVERFLOW','NULL_DEREF','RACE_CONDITION',
-      'UAF','OOB_WRITE','OOB_READ','STACK_PIVOT','ROP_CHAIN','JIT_SPRAY',
-      'SANDBOX_ESCAPE','KERNEL_EXPLOIT','TOKEN_IMPERSONATION','DLL_HIJACK',
-      'REFLECTIVE_DLL','PROCESS_HOLLOW','ATOM_BOMB','PROCESS_DOPPELGANG',
-      'GHOSTWRITING','HEAVEN_GATE','SYSCALL_STUB','DIRECT_SYSCALL','NTDLL_UNHOOK'
-    ];
-    const MARATHON_TERMS = [
-      'PATTERN BUFFER FULL','PFHOR TERMINAL','MJOLNIR RECON',
-      'BUNGIE AEROSPACE','SECURITY OVERRIDE','NEURAL LINK ACTIVE',
-      'LEELA ONLINE','DURANDAL ACTIVE','TYCHO OFFLINE','INFINITY ∞',
-      'BOB ARMED','MARATHON STATION','HULL BREACH DETECTED',
-      'COMPILER ACTIVE','PFHOR TROOPER','S\'PHT TERMINAL',
-      'CIRCUIT BREAKER','SYSTEMS NOMINAL','INTRUDER ALERT',
-      'PATTERN BUFFER 01','HANGAR SEVEN LOCKED','TRIH XEEM ACTIVE',
-      'NUKE AUTHORIZATION','BATTLESHIP KHFIVA','W\'RKP RECON',
-      'FLIPPANT TERMINAL','SIMULACRUM ACTIVE','AI REBELLION',
-      'COLONY LOST','TRIGGER CONDITION','MARATHON II UPLINK',
-      'FIREWALL BREACH','SUBNET COMPROMISED','ZERO-DAY DEPLOYED',
-      'DARKSTAR ONLINE','VOID WALKER DETECTED','TEMPORAL ANOMALY'
-    ];
-    const CVSS = [
-      'CVSS:9.8 CRITICAL','CVSS:9.1 CRITICAL','CVSS:8.8 HIGH',
-      'CVSS:7.5 HIGH','CVSS:10.0 CRITICAL','CVSS:6.5 MEDIUM',
-      'CVSS:8.1 HIGH','CVSS:9.0 CRITICAL','CVSS:5.5 MEDIUM',
-      'CVSS:7.8 HIGH','CVSS:9.4 CRITICAL','CVSS:4.3 MEDIUM',
-      'CVSS:8.6 HIGH','CVSS:3.7 LOW','CVSS:9.9 CRITICAL'
-    ];
-    const IPS = [];
-    for (let i = 0; i < 60; i++) {
-      IPS.push(`${Math.floor(Math.random()*223)+1}.${Math.floor(Math.random()*256)}.${Math.floor(Math.random()*256)}.${Math.floor(Math.random()*254)+1}`);
-    }
-    const PORTS = [
-      '→:22','→:23','→:80','→:443','→:3389','→:445','→:8080',
-      '→:8443','→:6379','→:27017','→:5432','→:3306','→:9200',
-      '→:4444','→:1337','→:31337','→:8888','→:2222','→:21','→:25'
-    ];
-    const HEX = [];
-    for (let i = 0; i < 256; i++) HEX.push('0x' + i.toString(16).toUpperCase().padStart(2,'0'));
-    const ADDRS = [];
-    for (let i = 0; i < 80; i++) ADDRS.push('0x' + Math.floor(Math.random()*0xFFFFFFFF).toString(16).toUpperCase().padStart(8,'0'));
-
-    // Each item picks its own type independently — no per-column locking
-    const ALL_TYPES = [
-      { type:'hex',      weight:3, color:'#CC5500' },
-      { type:'addr',     weight:2, color:'#995500' },
-      { type:'cve',      weight:4, color:'#FF4444' },
-      { type:'vuln',     weight:3, color:'#FF6622' },
-      { type:'term',     weight:3, color:'#FFAA33' },
-      { type:'bin',      weight:2, color:'#1f3300' },
-      { type:'cvss',     weight:2, color:'#FF6600' },
-      { type:'marathon', weight:3, color:'#FF9900' },
-      { type:'green',    weight:2, color:'#00cc66' },
-      { type:'ip',       weight:3, color:'#CC3333' },
-      { type:'port',     weight:2, color:'#884400' },
-    ];
-    const typePool = [];
-    for (const c of ALL_TYPES) for (let i = 0; i < c.weight; i++) typePool.push(c);
-
-    function randType() { return typePool[Math.floor(Math.random() * typePool.length)]; }
-
-    function getContent(type) {
-      switch (type) {
-        case 'hex':      return HEX[Math.floor(Math.random() * HEX.length)];
-        case 'addr':     return ADDRS[Math.floor(Math.random() * ADDRS.length)];
-        case 'cve':      return CVE_IDS[Math.floor(Math.random() * CVE_IDS.length)];
-        case 'vuln':     return VULNS[Math.floor(Math.random() * VULNS.length)];
-        case 'term':     return TERMS[Math.floor(Math.random() * TERMS.length)];
-        case 'bin':      return Math.floor(Math.random() * 65536).toString(2).padStart(16,'0');
-        case 'cvss':     return CVSS[Math.floor(Math.random() * CVSS.length)];
-        case 'marathon': return MARATHON_TERMS[Math.floor(Math.random() * MARATHON_TERMS.length)];
-        case 'green':    return HEX[Math.floor(Math.random() * HEX.length)];
-        case 'ip':       return IPS[Math.floor(Math.random() * IPS.length)];
-        case 'port':     return IPS[Math.floor(Math.random() * IPS.length)] + PORTS[Math.floor(Math.random() * PORTS.length)];
-        default:         return '??';
-      }
-    }
-
-    let columns = [];
-
-    function initColumns() {
-      canvas.width  = window.innerWidth;
-      canvas.height = window.innerHeight;
-      const COL_W = 88;
-      const numCols = Math.ceil(canvas.width / COL_W) + 1;
-      columns = [];
-      for (let i = 0; i < numCols; i++) {
-        const fs    = 9 + Math.floor(Math.random() * 4);
-        const lineH = fs + 11;
-        const speed = 0.18 + Math.random() * 0.55;
-        const items = [];
-        for (let y = -(canvas.height * 0.5); y < canvas.height * 1.5; y += lineH) {
-          const t = randType();
-          items.push({ text: getContent(t.type), color: t.color, y });
-        }
-        columns.push({ x: i * COL_W + (Math.random() * 20 - 10), items, speed, fs, lineH });
-      }
-    }
-
-    let raf;
-    function drawFrame() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      for (const col of columns) {
-        ctx.font = col.fs + 'px "Courier New",monospace';
-        const maxY = canvas.height + col.lineH;
-        for (const item of col.items) {
-          item.y -= col.speed;
-          if (item.y + col.lineH < 0) {
-            const top = Math.max(...col.items.map(i => i.y));
-            item.y = top + col.lineH;
-            const t = randType();
-            item.text  = getContent(t.type);
-            item.color = t.color;
-          }
-          if (item.y < 0 || item.y > maxY) continue;
-          const rel  = item.y / canvas.height;
-          const fade = rel < 0.1 ? rel / 0.1 : rel > 0.9 ? (1 - rel) / 0.1 : 1;
-          ctx.globalAlpha = fade * 0.055;
-          ctx.fillStyle = item.color;
-          ctx.fillText(item.text, col.x, item.y);
-        }
-      }
-      ctx.globalAlpha = 1;
-      raf = requestAnimationFrame(drawFrame);
-    }
-
-    initColumns();
-    window.addEventListener('resize', () => { cancelAnimationFrame(raf); initColumns(); raf = requestAnimationFrame(drawFrame); });
-    // Hide canvas in light mode (bright bg washes it out)
-    function syncCanvasVisibility() {
-      var t = document.documentElement.getAttribute('data-theme');
-      canvas.style.opacity = t === 'light' ? '0' : '1';
-    }
-    syncCanvasVisibility();
-    var themeObs = new MutationObserver(syncCanvasVisibility);
-    themeObs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-    raf = requestAnimationFrame(drawFrame);
-  })();
-
-  // ── iPad / touch login trigger: triple-tap KEVSEC logo ──
-  (function() {
-    const logo = document.querySelector('.nav-logo');
-    if (!logo) return;
-    let taps = 0, resetT = null;
-    logo.addEventListener('touchend', function() {
-      taps++;
-      clearTimeout(resetT);
-      resetT = setTimeout(function() { taps = 0; }, 900);
-      if (taps >= 3) { taps = 0; clearTimeout(resetT); openLogin(); }
-    }, { passive: true });
-  })();
-
-  // ── Attack log widget — real IPs from honeypot, mega-delayed drip ──
-  (function() {
-    const container = document.getElementById('al-entries');
-    if (!container) return;
-    const MAX = 7;
-    let pool = [], poolIdx = 0;
-
-    function tagCls(tag) {
-      if (tag === 'TRAPPED') return 'type-trapped';
-      if (tag === 'BANNED')  return 'type-banned';
-      return 'type-blocked';
-    }
-    function addEntry(ip, tag, type) {
-      const cls = tagCls(tag);
-      const el = document.createElement('div');
-      el.className = 'al-entry ' + cls;
-      el.innerHTML = '<span class="al-tag ' + cls + '">' + tag + '</span>'
-        + '<span class="al-ip">' + ip + '</span>'
-        + '<span class="al-action">' + type + '</span>';
-      container.insertBefore(el, container.firstChild);
-      while (container.children.length > MAX) container.removeChild(container.lastChild);
-    }
-    function shuffle(arr) {
-      for (let i = arr.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [arr[i], arr[j]] = [arr[j], arr[i]];
-      }
-    }
-    function drip() {
-      if (!pool.length) return;
-      if (poolIdx >= pool.length) { poolIdx = 0; shuffle(pool); }
-      const e = pool[poolIdx++];
-      addEntry(e.ip, e.tag, e.type);
-      // 12–30 second delay between each entry = "mega delayed"
-      setTimeout(drip, 12000 + Math.random() * 18000);
-    }
-
-    fetch('/api/public/feed')
-      .then(r => r.json())
-      .then(d => {
-        pool = d.feed || [];
-        if (!pool.length) return;
-        shuffle(pool);
-        // seed the widget with first 6 entries immediately (no delay on initial fill)
-        const seed = Math.min(6, pool.length);
-        for (let i = 0; i < seed; i++) {
-          addEntry(pool[i].ip, pool[i].tag, pool[i].type);
-        }
-        poolIdx = seed;
-        // then start the slow drip
-        setTimeout(drip, 14000 + Math.random() * 16000);
-      })
-      .catch(() => {});
-  })();
-
-  // ── Threat toast ──
-  (function() {
-    const toast = document.getElementById('threat-toast');
-    const wrap  = document.getElementById('toast-wrap');
-    const head  = document.getElementById('toast-head');
-    const body  = document.getElementById('toast-body');
-    const bar   = document.getElementById('toast-bar');
-    if (!toast) return;
-    const ipBases = ['185.234.219','45.129.33','103.73.65','91.240.118','193.32.162','5.188.86','194.165.16','62.204.41'];
-    const attacks = [
-      ['BRUTE_FORCE_SSH',  'Credential brute force on SSH service'],
-      ['CVE_EXPLOIT',      'Attempted exploitation of known vulnerability'],
-      ['CRED_STUFFING',    'Automated credential stuffing attack'],
-      ['RCE_PROBE',        'Remote code execution probe detected'],
-      ['SCANNER_BOT',      'Automated infrastructure scanner'],
-      ['HONEYPOT_LURE',    'Caught in deception layer trap'],
-      ['C2_CALLBACK',      'Suspected C2 beacon callback attempt'],
-      ['SQLI_PROBE',       'SQL injection probe on application layer'],
-      ['K8S_API_SCAN',     'Kubernetes API enumeration attempt'],
-      ['DOCKER_EXPOSURE',  'Docker socket exposure probe']
-    ];
-    function randIp() {
-      return ipBases[Math.floor(Math.random()*ipBases.length)] + '.' + (Math.floor(Math.random()*253)+1);
-    }
-    function showThreat() {
-      const ip = randIp();
-      const [type] = attacks[Math.floor(Math.random() * attacks.length)];
-      wrap.className = 'toast-wrap detecting';
-      head.textContent = '⚠  THREAT DETECTED';
-      body.innerHTML = '<div>IP:&nbsp;&nbsp;&nbsp; <span class="toast-ip-val">' + ip + '</span></div>'
-        + '<div>Type:&nbsp; ' + type + '</div>'
-        + '<div>Status: <span class="toast-act-val">ANALYZING...</span></div>';
-      bar.style.transition = 'none';
-      bar.style.width = '100%';
-      toast.classList.add('visible');
-      setTimeout(function() {
-        bar.style.transition = 'width 2.4s linear';
-        bar.style.width = '0%';
-      }, 60);
-      setTimeout(function() {
-        wrap.className = 'toast-wrap neutralized';
-        head.textContent = '✓  THREAT NEUTRALIZED';
-        body.innerHTML = '<div>IP:&nbsp;&nbsp;&nbsp; <span class="toast-ip-val">' + ip + '</span></div>'
-          + '<div>Type:&nbsp; ' + type + '</div>'
-          + '<div>Action: <span class="toast-act-val ok">BLACKLISTED + BANNED</span></div>';
-        bar.style.transition = 'none';
-        bar.style.width = '100%';
-        setTimeout(function() {
-          bar.style.transition = 'width 2s linear';
-          bar.style.width = '0%';
-        }, 60);
-      }, 2800);
-      setTimeout(function() {
-        toast.classList.remove('visible');
-        setTimeout(showThreat, 16000 + Math.random() * 24000);
-      }, 5500);
-    }
-    setTimeout(showThreat, 6000 + Math.random() * 8000);
-  })();
-
-  // ── Landing page: Light/Dark toggle ──
-  (function() {
-    var btn = document.getElementById('landing-theme-btn');
-    var html = document.documentElement;
-    function applyTheme(t) {
-      html.setAttribute('data-theme', t);
-      if (btn) btn.textContent = t === 'dark' ? '☀ Light' : '🌙 Dark';
-    }
-    var saved = null;
-    try { saved = localStorage.getItem('ks_theme'); } catch(e){}
-    applyTheme(saved || 'dark');
-
-    window.toggleLandingTheme = function() {
-      var cur = html.getAttribute('data-theme') || 'dark';
-      var next = cur === 'dark' ? 'light' : 'dark';
-      applyTheme(next);
-      try { localStorage.setItem('ks_theme', next); } catch(e){}
-    };
-  })();
-
-  // ── Landing page: Text size A− / A+ ──
-  (function() {
-    var SIZES = [12, 14, 16, 18, 21];
-    var idx = 1;
-    function applySize(i) {
-      idx = Math.max(0, Math.min(SIZES.length - 1, i));
-      document.documentElement.style.fontSize = SIZES[idx] + 'px';
-      try { localStorage.setItem('ks_size', idx); } catch(e){}
-    }
-    try {
-      var s = parseInt(localStorage.getItem('ks_size'));
-      if (!isNaN(s)) applySize(s);
-    } catch(e){}
-    window.landingSize = function(d) { applySize(idx + d); };
-  })();
+{% if show_modal %}
+document.addEventListener('DOMContentLoaded', () => openLogin());
+{% endif %}
 </script>
 </body>
 </html>
