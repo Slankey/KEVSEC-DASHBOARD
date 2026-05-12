@@ -108,17 +108,17 @@ document.querySelectorAll('.tab[data-tab]').forEach(btn => {
 const M = 60000; // 1 minute
 function loadTab(tab) {
   if (tab === 'intel') {
-    // Immediate: fast/local
+    // Immediate: fast/local + cached data (warm cache keeps stocks ready)
     loadNews(); loadThreatLevel(); loadWikipedia(); loadAPOD(); loadOzaukeeAlerts();
+    loadStocks(false, 'intel');
     // Stagger heavier intel pulls 1 min apart
-    setTimeout(() => loadStocks(false, 'intel'),  1*M);
-    setTimeout(() => loadPresidentIntel(),         2*M);
-    setTimeout(() => loadCongressStatus(),         3*M);
-    setTimeout(() => loadMidtermIntel(),           4*M);
-    setTimeout(() => loadPolls(),                  5*M);
-    setTimeout(() => loadF1(),                     6*M);
-    setTimeout(() => loadPolTweets(),              7*M);
-    setTimeout(() => loadGovtIntel(),              8*M);
+    setTimeout(() => loadPresidentIntel(),         1*M);
+    setTimeout(() => loadCongressStatus(),         2*M);
+    setTimeout(() => loadMidtermIntel(),           3*M);
+    setTimeout(() => loadPolls(),                  4*M);
+    setTimeout(() => loadF1(),                     5*M);
+    setTimeout(() => loadPolTweets(),              6*M);
+    setTimeout(() => loadGovtIntel(),              7*M);
   }
   if (tab === 'command') {
     loadServerStats();
@@ -156,6 +156,10 @@ function loadTab(tab) {
     setTimeout(() => loadShowerLog(),    2*M);
     setTimeout(() => loadHealthLog(),    3*M);
     setTimeout(() => loadPersonalNews(), 4*M);
+  }
+  if (tab === 'travel') {
+    loadTrackedFlights();
+    loadFlightDeals(false);
   }
   if (tab === 'garden') { loadGarden(); loadWateringLog(); renderInvasives(); setTimeout(initLawnMap, 100); }
 }
@@ -4577,6 +4581,150 @@ function loadHealthLog() {
 
 function deleteHealthLog(idx) {
   _csrfDelete('/api/personal/log/' + idx).then(() => loadHealthLog());
+}
+
+// ══════════════════════════════════════════════════════════
+//  TRAVEL OPS
+// ══════════════════════════════════════════════════════════
+
+let _lastFlightResult = null;
+
+function searchFlight() {
+  const fnum = (document.getElementById('flight-search-input').value || '').trim().toUpperCase();
+  if (!fnum) return;
+  const el = document.getElementById('flight-result');
+  el.innerHTML = '<div class="loading">Looking up flight...</div>';
+  fetch('/api/flight_search?flight=' + encodeURIComponent(fnum))
+    .then(r => r.json())
+    .then(d => {
+      if (!d.ok) {
+        el.innerHTML = `<div style="color:var(--text-dim);padding:8px">No data found for <strong>${fnum}</strong>. Flight may not be active yet, or IATA code not found.</div>`;
+        _lastFlightResult = null;
+        return;
+      }
+      _lastFlightResult = d.flight;
+      const f = d.flight;
+      const statusColor = f.status === 'landed' || f.status === 'arrived' ? '#4ade80'
+        : f.status === 'active' || f.status === 'en-route' || f.status === 'airborne' ? '#facc15'
+        : f.status === 'cancelled' ? '#f87171' : 'var(--text-dim)';
+      const depDelay = f.dep_delay ? `<span style="color:#f87171;margin-left:6px">+${f.dep_delay}min delay</span>` : '';
+      const arrDelay = f.arr_delay ? `<span style="color:#f87171;margin-left:6px">+${f.arr_delay}min delay</span>` : '';
+      el.innerHTML = `
+        <div style="background:var(--bg2);border:1px solid var(--border);padding:14px 16px;border-left:3px solid ${statusColor}">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">
+            <span style="font-family:var(--font-m);font-size:16px;letter-spacing:2px;color:var(--accent)">${f.flight || fnum}</span>
+            ${f.airline ? `<span style="font-size:11px;color:var(--text-dim)">${f.airline}</span>` : ''}
+            <span style="font-size:10px;letter-spacing:2px;color:${statusColor};text-transform:uppercase">${f.status || 'unknown'}</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 40px 1fr;gap:8px;align-items:center">
+            <div>
+              <div style="font-family:var(--font-m);font-size:20px;color:var(--text)">${f.dep_iata || '—'}</div>
+              <div style="font-size:10px;color:var(--text-dim);margin-top:2px">${f.dep_airport || ''}</div>
+              <div style="font-size:10px;color:var(--text);margin-top:4px">${fmtFlightTime(f.dep_scheduled)}</div>
+              ${f.dep_actual && f.dep_actual !== f.dep_scheduled ? `<div style="font-size:10px;color:#facc15">Actual: ${fmtFlightTime(f.dep_actual)}</div>` : ''}
+              ${depDelay}
+            </div>
+            <div style="text-align:center;color:var(--text-dim);font-size:18px">→</div>
+            <div>
+              <div style="font-family:var(--font-m);font-size:20px;color:var(--text)">${f.arr_iata || '—'}</div>
+              <div style="font-size:10px;color:var(--text-dim);margin-top:2px">${f.arr_airport || ''}</div>
+              <div style="font-size:10px;color:var(--text);margin-top:4px">${fmtFlightTime(f.arr_scheduled)}</div>
+              ${f.arr_actual && f.arr_actual !== f.arr_scheduled ? `<div style="font-size:10px;color:#facc15">Actual: ${fmtFlightTime(f.arr_actual)}</div>` : ''}
+              ${arrDelay}
+            </div>
+          </div>
+        </div>`;
+    })
+    .catch(() => { el.innerHTML = '<div style="color:var(--text-dim);padding:8px">Lookup failed — check flight number.</div>'; });
+}
+
+function fmtFlightTime(iso) {
+  if (!iso) return '—';
+  try {
+    const d = new Date(iso);
+    return d.toLocaleString('en-US', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit', timeZoneName:'short'});
+  } catch(e) { return iso; }
+}
+
+function trackFlight() {
+  const fnum = (document.getElementById('flight-search-input').value || '').trim().toUpperCase();
+  const label = (document.getElementById('flight-label-input').value || '').trim() || fnum;
+  if (!fnum) { alert('Enter a flight number first.'); return; }
+  fetch('/api/flight_track', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({flight: fnum, label: label})
+  }).then(r => r.json()).then(d => {
+    if (d.ok) {
+      document.getElementById('flight-result').innerHTML +=
+        `<div style="margin-top:6px;font-size:11px;color:#4ade80;letter-spacing:1px">📲 Tracking ${fnum} — SMS alerts active</div>`;
+      loadTrackedFlights();
+    }
+  });
+}
+
+function loadTrackedFlights() {
+  fetch('/api/flight_tracked').then(r => r.json()).then(d => {
+    const el = document.getElementById('tracked-flights-list');
+    if (!el) return;
+    const flights = d.flights || {};
+    const keys = Object.keys(flights);
+    if (!keys.length) {
+      el.innerHTML = '<div style="color:var(--text-dim);font-size:11px;padding:8px">No flights tracked. Search a flight and click Track + Alert.</div>';
+      return;
+    }
+    el.innerHTML = keys.map(fnum => {
+      const f = flights[fnum];
+      const statusColor = f.last_status === 'landed' || f.last_status === 'arrived' ? '#4ade80'
+        : f.last_status === 'active' || f.last_status === 'en-route' ? '#facc15'
+        : 'var(--text-dim)';
+      const notifs = [
+        f.notified_dep ? '<span style="color:#4ade80">DEP✓</span>' : '<span style="color:var(--text-dim)">DEP</span>',
+        f.notified_delay ? '<span style="color:#facc15">DLY✓</span>' : '<span style="color:var(--text-dim)">DLY</span>',
+        f.notified_arr ? '<span style="color:#4ade80">ARR✓</span>' : '<span style="color:var(--text-dim)">ARR</span>',
+      ].join(' · ');
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--border2);flex-wrap:wrap">
+        <span style="font-family:var(--font-m);font-size:13px;color:var(--accent);min-width:70px">${fnum}</span>
+        <span style="font-size:12px;flex:1">${f.label || fnum}</span>
+        <span style="font-size:10px;color:${statusColor};letter-spacing:1px;text-transform:uppercase">${f.last_status || 'pending'}</span>
+        <span style="font-size:10px;font-family:var(--font-m)">${notifs}</span>
+        <button class="refresh-btn" onclick="untrackFlight('${fnum}')" style="padding:3px 8px;font-size:10px;color:#f87171;border-color:#f87171">✕</button>
+      </div>`;
+    }).join('');
+  });
+}
+
+function untrackFlight(fnum) {
+  fetch('/api/flight_untrack', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({flight: fnum})
+  }).then(() => loadTrackedFlights());
+}
+
+function loadFlightDeals(force) {
+  const el = document.getElementById('deals-feed');
+  const ts = document.getElementById('deals-ts');
+  if (!el) return;
+  el.innerHTML = '<div class="loading">Fetching travel deals...</div>';
+  fetch(force ? '/api/flight_deals?force=1' : '/api/flight_deals')
+    .then(r => r.json())
+    .then(d => {
+      if (ts) ts.textContent = d.fetched || '';
+      const deals = d.deals || [];
+      if (!deals.length) { el.innerHTML = '<div class="no-data">No deals loaded — RSS feeds may be unavailable.</div>'; return; }
+      el.innerHTML = deals.map(item => `
+        <div style="padding:10px 14px;border-bottom:1px solid var(--border2)">
+          <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:4px;flex-wrap:wrap">
+            <span style="font-size:9px;letter-spacing:2px;color:var(--accent);text-transform:uppercase">${item.source}</span>
+            <span style="font-size:10px;color:var(--text-dim)">${item.pub || ''}</span>
+          </div>
+          <a href="${item.url}" target="_blank" rel="noopener"
+             style="color:var(--text);text-decoration:none;font-size:13px;font-weight:600;line-height:1.4;display:block;margin-bottom:4px">${item.title}</a>
+          ${item.summary ? `<div style="font-size:11px;color:var(--text-dim);line-height:1.6">${item.summary}</div>` : ''}
+        </div>`).join('');
+    })
+    .catch(() => { el.innerHTML = '<div class="no-data">Failed to load deals.</div>'; });
 }
 
 // ── Health & Fitness News ──

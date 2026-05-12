@@ -45,6 +45,7 @@ CF_ZONE_ID        = os.environ.get("CF_ZONE_ID", "")
 CF_API_TOKEN      = os.environ.get("CF_API_TOKEN", "")
 ENV_FILE          = os.path.join(os.path.dirname(__file__), ".env")
 ALERT_EMAIL      = os.environ.get("ALERT_EMAIL", "kevinmaslanka94@gmail.com")
+SMS_GATEWAY      = os.environ.get("SMS_GATEWAY", "")   # e.g. 2623571148@tmomail.net
 MAILCHANNELS_URL = "https://api.mailchannels.net/tx/v1/send"
 DKIM_PRIVATE_KEY = os.environ.get("DKIM_PRIVATE_KEY", "")
 os.makedirs(MEMOS_DIR, exist_ok=True)
@@ -708,6 +709,273 @@ def api_stocks():
     result = {"stocks": data, "fetched": datetime.datetime.now().strftime("%H:%M:%S")}
     cache_set("stocks", result)
     return jsonify(result)
+
+
+# ══════════════════════════════════════════════════════════
+#  TRAVEL — Flight Tracker + Deals
+# ══════════════════════════════════════════════════════════
+
+TRACKED_FLIGHTS_FILE = f"{DATA_DIR}/tracked_flights.json"
+_flight_monitor_lock = threading.Lock()
+
+def _load_tracked_flights():
+    try:
+        with open(TRACKED_FLIGHTS_FILE) as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+def _save_tracked_flights(flights):
+    with open(TRACKED_FLIGHTS_FILE, "w") as f:
+        json.dump(flights, f, indent=2)
+
+def _opensky_lookup(flight_num):
+    """Query OpenSky Network for a flight by callsign. Returns dict with state or None."""
+    try:
+        callsign = flight_num.upper().replace(" ", "").ljust(8)[:8]
+        r = requests.get("https://opensky-network.org/api/states/all",
+            params={"time": 0}, timeout=10)
+        if r.status_code != 200:
+            return None
+        data = r.json()
+        states = data.get("states") or []
+        cs_clean = callsign.strip()
+        for s in states:
+            if s[1] and s[1].strip() == cs_clean:
+                return {
+                    "icao24": s[0], "callsign": s[1].strip(),
+                    "origin_country": s[2], "longitude": s[5], "latitude": s[6],
+                    "altitude_m": s[7], "velocity_ms": s[9], "on_ground": s[8],
+                }
+        return None
+    except Exception as e:
+        app.logger.warning("OpenSky lookup failed: %s", e)
+        return None
+
+def _aeroapi_flight(flight_num):
+    """Query AviationStack free API (no key needed at basic level) or FlightAware AeroAPI."""
+    try:
+        # AviationStack free — no key required for basic lookups
+        r = requests.get(
+            "http://api.aviationstack.com/v1/flights",
+            params={"access_key": os.environ.get("AVIATIONSTACK_KEY",""), "flight_iata": flight_num.upper()},
+            timeout=8)
+        if r.status_code == 200:
+            data = r.json()
+            flights = (data.get("data") or [])
+            if flights:
+                f = flights[0]
+                dep = f.get("departure", {})
+                arr = f.get("arrival", {})
+                return {
+                    "flight": f.get("flight",{}).get("iata",""),
+                    "airline": f.get("airline",{}).get("name",""),
+                    "status": f.get("flight_status","unknown"),
+                    "dep_airport": dep.get("airport",""),
+                    "dep_iata": dep.get("iata",""),
+                    "dep_scheduled": dep.get("scheduled",""),
+                    "dep_actual": dep.get("actual") or dep.get("estimated",""),
+                    "dep_delay": dep.get("delay"),
+                    "arr_airport": arr.get("airport",""),
+                    "arr_iata": arr.get("iata",""),
+                    "arr_scheduled": arr.get("scheduled",""),
+                    "arr_actual": arr.get("actual") or arr.get("estimated",""),
+                    "arr_delay": arr.get("delay"),
+                }
+    except Exception as e:
+        app.logger.warning("AviationStack lookup failed: %s", e)
+    return None
+
+@app.route("/api/flight_search")
+@login_required
+def api_flight_search():
+    """Look up a flight by IATA number — returns dep/arr/delay/status."""
+    flight_num = request.args.get("flight","").strip().upper()
+    if not flight_num:
+        return jsonify({"error": "flight parameter required"})
+    # Check AviationStack first
+    data = _aeroapi_flight(flight_num)
+    if data:
+        return jsonify({"ok": True, "flight": data})
+    # Fallback: OpenSky for live position only (no schedule data)
+    live = _opensky_lookup(flight_num)
+    if live:
+        return jsonify({"ok": True, "flight": {
+            "flight": live["callsign"], "airline": live["origin_country"],
+            "status": "airborne" if not live["on_ground"] else "on_ground",
+            "dep_airport": "", "dep_iata": "", "dep_scheduled": "", "dep_actual": "", "dep_delay": None,
+            "arr_airport": "", "arr_iata": "", "arr_scheduled": "", "arr_actual": "", "arr_delay": None,
+            "live": live,
+        }})
+    return jsonify({"ok": False, "error": f"No data found for {flight_num}"})
+
+@app.route("/api/flight_track", methods=["POST"])
+@login_required
+def api_flight_track():
+    """Add a flight to the tracking list."""
+    body = request.get_json(force=True, silent=True) or {}
+    flight_num = (body.get("flight") or "").strip().upper()
+    label = (body.get("label") or flight_num).strip()
+    if not flight_num:
+        return jsonify({"ok": False, "error": "flight required"})
+    with _flight_monitor_lock:
+        flights = _load_tracked_flights()
+        flights[flight_num] = {
+            "label": label,
+            "added": datetime.datetime.now().isoformat(),
+            "last_status": None,
+            "notified_dep": False,
+            "notified_arr": False,
+            "notified_delay": False,
+        }
+        _save_tracked_flights(flights)
+    return jsonify({"ok": True, "message": f"Now tracking {flight_num}"})
+
+@app.route("/api/flight_untrack", methods=["POST"])
+@login_required
+def api_flight_untrack():
+    """Remove a flight from tracking."""
+    body = request.get_json(force=True, silent=True) or {}
+    flight_num = (body.get("flight") or "").strip().upper()
+    with _flight_monitor_lock:
+        flights = _load_tracked_flights()
+        removed = flights.pop(flight_num, None)
+        _save_tracked_flights(flights)
+    return jsonify({"ok": bool(removed), "message": f"Removed {flight_num}" if removed else "Not found"})
+
+@app.route("/api/flight_tracked")
+@login_required
+def api_flight_tracked():
+    """Return current tracked flights with their latest status."""
+    flights = _load_tracked_flights()
+    return jsonify({"flights": flights, "count": len(flights)})
+
+def _send_sms(subject, body):
+    """Send SMS via email-to-SMS gateway using existing MailChannels send_alert()."""
+    if not SMS_GATEWAY:
+        return
+    try:
+        import json as _json
+        payload = _json.dumps({
+            "personalizations": [{"to": [{"email": SMS_GATEWAY}],
+                "dkim_domain": "kevsec.com", "dkim_selector": "mail", "dkim_private_key": DKIM_PRIVATE_KEY}],
+            "from": {"email": "alerts@kevsec.com", "name": "KEVSec"},
+            "subject": subject,
+            "content": [{"type": "text/plain", "value": body}]
+        }).encode()
+        req = _urllib_req.Request(MAILCHANNELS_URL, data=payload,
+            headers={"Content-Type": "application/json"}, method="POST")
+        _urllib_req.urlopen(req, timeout=15)
+    except Exception as e:
+        app.logger.warning("SMS send failed: %s", e)
+
+def _fmt_time(iso_str):
+    """Format ISO datetime to human-readable local time."""
+    if not iso_str:
+        return "—"
+    try:
+        dt = datetime.datetime.fromisoformat(iso_str.replace("Z", "+00:00"))
+        return dt.strftime("%b %d %I:%M %p UTC")
+    except Exception:
+        return iso_str
+
+def _monitor_flights():
+    """Background worker — checks tracked flights every 5 min and sends SMS alerts."""
+    while True:
+        time.sleep(300)  # 5 minutes
+        try:
+            with _flight_monitor_lock:
+                flights = _load_tracked_flights()
+            changed = False
+            for fnum, state in list(flights.items()):
+                try:
+                    data = _aeroapi_flight(fnum)
+                    if not data:
+                        continue
+                    status = data.get("status", "")
+                    label = state.get("label", fnum)
+                    dep_delay = data.get("dep_delay") or 0
+                    arr_delay = data.get("arr_delay") or 0
+
+                    # Departure notification
+                    if not state.get("notified_dep") and status in ("active", "en-route", "airborne"):
+                        dep_t = _fmt_time(data.get("dep_actual") or data.get("dep_scheduled"))
+                        _send_sms(
+                            f"✈ {label} departed",
+                            f"{label} ({fnum}) departed {data.get('dep_iata','')} at {dep_t}"
+                        )
+                        flights[fnum]["notified_dep"] = True
+                        changed = True
+
+                    # Delay notification
+                    if not state.get("notified_delay") and (dep_delay > 15 or arr_delay > 15):
+                        delay_min = max(dep_delay, arr_delay)
+                        _send_sms(
+                            f"⚠ {label} delayed {delay_min}min",
+                            f"{label} ({fnum}) is delayed ~{delay_min} minutes."
+                        )
+                        flights[fnum]["notified_delay"] = True
+                        changed = True
+
+                    # Landing notification
+                    if not state.get("notified_arr") and status in ("landed", "arrived"):
+                        arr_t = _fmt_time(data.get("arr_actual") or data.get("arr_scheduled"))
+                        _send_sms(
+                            f"✈ {label} landed",
+                            f"{label} ({fnum}) landed at {data.get('arr_iata','')} at {arr_t}"
+                        )
+                        flights[fnum]["notified_arr"] = True
+                        changed = True
+
+                    flights[fnum]["last_status"] = status
+                    changed = True
+                except Exception as e:
+                    app.logger.warning("Flight monitor error for %s: %s", fnum, e)
+            if changed:
+                with _flight_monitor_lock:
+                    _save_tracked_flights(flights)
+        except Exception as e:
+            app.logger.warning("Flight monitor loop error: %s", e)
+
+# Flight deals via RSS feeds (Secret Flying, The Flight Deal)
+_DEAL_FEEDS = [
+    ("Secret Flying", "https://www.secretflying.com/posts/feed/"),
+    ("The Flight Deal", "https://theflightdeal.com/feed/"),
+    ("Airfarewatchdog", "https://www.airfarewatchdog.com/blog/feed/"),
+    ("Scott's Cheap Flights", "https://scottscheapflights.com/alerts/feed"),
+]
+
+@app.route("/api/flight_deals")
+@login_required
+def api_flight_deals():
+    """Fetch flight deal RSS feeds — cached daily."""
+    force = request.args.get("force") == "1"
+    cached = cache_get("flight_deals", ttl=CACHE_TTL_DAY, force=force)
+    if cached:
+        return jsonify(cached)
+    items = []
+    for (source, url) in _DEAL_FEEDS:
+        try:
+            feed = feedparser.parse(url)
+            for e in feed.entries[:6]:
+                pub = ""
+                if hasattr(e, "published"):
+                    pub = e.published
+                elif hasattr(e, "updated"):
+                    pub = e.updated
+                items.append({
+                    "source": source,
+                    "title": e.get("title",""),
+                    "url": e.get("link",""),
+                    "summary": re.sub(r"<[^>]+>", "", e.get("summary",""))[:200],
+                    "pub": pub,
+                })
+        except Exception as ex:
+            app.logger.warning("Deal feed %s failed: %s", source, ex)
+    result = {"deals": items, "fetched": datetime.datetime.now().strftime("%H:%M:%S %Z")}
+    cache_set("flight_deals", result)
+    return jsonify(result)
+
 
 def nws_val(obj):
     """Extract numeric value from NWS unit object."""
@@ -5650,4 +5918,5 @@ if __name__ == "__main__":
             app.logger.warning(f"[NOTES] Seed failed: {e}")
     threading.Thread(target=_warm_cache, daemon=True).start()
     threading.Thread(target=_schedule_daily_refresh, daemon=True).start()
+    threading.Thread(target=_monitor_flights, daemon=True).start()
     app.run(host="127.0.0.1", port=5555, debug=False)
