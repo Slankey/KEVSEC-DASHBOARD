@@ -937,42 +937,71 @@ def _monitor_flights():
         except Exception as e:
             app.logger.warning("Flight monitor loop error: %s", e)
 
-# Flight deals via RSS feeds (Secret Flying, The Flight Deal)
+# Travel feeds — deals and editorial inspiration
 _DEAL_FEEDS = [
-    ("Secret Flying", "https://www.secretflying.com/posts/feed/"),
-    ("The Flight Deal", "https://theflightdeal.com/feed/"),
-    ("Airfarewatchdog", "https://www.airfarewatchdog.com/blog/feed/"),
-    ("Scott's Cheap Flights", "https://scottscheapflights.com/alerts/feed"),
+    # Flight deal aggregators
+    ("Secret Flying",    "deals", "https://www.secretflying.com/posts/feed/"),
+    ("The Flight Deal",  "deals", "https://theflightdeal.com/feed/"),
+    ("Airfarewatchdog",  "deals", "https://www.airfarewatchdog.com/blog/feed/"),
+    # Editorial / inspiration
+    ("NYT Travel",       "inspire", "https://feeds.nytimes.com/nyt/rss/Travel"),
+    ("Travel + Leisure", "inspire", "https://www.travelandleisure.com/feeds/all.rss"),
+    ("Condé Nast",       "inspire", "https://www.cntraveler.com/feed/rss"),
+    ("Lonely Planet",    "inspire", "https://www.lonelyplanet.com/news/feed"),
+    ("Frommer's",        "inspire", "https://www.frommers.com/rss/articles.rss"),
 ]
+
+_PRICE_RE = re.compile(r'\$\s*(\d[\d,]+)')
 
 @app.route("/api/flight_deals")
 @login_required
 def api_flight_deals():
-    """Fetch flight deal RSS feeds — cached daily."""
+    """Fetch travel RSS feeds — cached every 6 hours."""
     force = request.args.get("force") == "1"
-    cached = cache_get("flight_deals", ttl=CACHE_TTL_DAY, force=force)
+    cached = cache_get("flight_deals", ttl=CACHE_TTL_LONG, force=force)
     if cached:
         return jsonify(cached)
-    items = []
-    for (source, url) in _DEAL_FEEDS:
+    deals, inspire = [], []
+    def _fetch_feed(source, kind, url):
         try:
             feed = feedparser.parse(url)
-            for e in feed.entries[:6]:
-                pub = ""
-                if hasattr(e, "published"):
-                    pub = e.published
-                elif hasattr(e, "updated"):
-                    pub = e.updated
-                items.append({
-                    "source": source,
-                    "title": e.get("title",""),
-                    "url": e.get("link",""),
-                    "summary": re.sub(r"<[^>]+>", "", e.get("summary",""))[:200],
-                    "pub": pub,
+            out = []
+            for e in feed.entries[:5]:
+                pub = getattr(e, "published", None) or getattr(e, "updated", None) or ""
+                raw_summary = e.get("summary", "") or ""
+                summary = re.sub(r"<[^>]+>", " ", raw_summary)
+                summary = re.sub(r"\s{2,}", " ", summary).strip()[:220]
+                title = e.get("title", "")
+                price = None
+                m = _PRICE_RE.search(title) or _PRICE_RE.search(summary)
+                if m:
+                    price = "$" + m.group(1)
+                # Extract thumbnail if available
+                thumb = None
+                if hasattr(e, "media_thumbnail") and e.media_thumbnail:
+                    thumb = e.media_thumbnail[0].get("url")
+                elif hasattr(e, "media_content") and e.media_content:
+                    thumb = e.media_content[0].get("url")
+                out.append({
+                    "source": source, "kind": kind,
+                    "title": title, "url": e.get("link",""),
+                    "summary": summary, "pub": pub,
+                    "price": price, "thumb": thumb,
                 })
+            return out
         except Exception as ex:
-            app.logger.warning("Deal feed %s failed: %s", source, ex)
-    result = {"deals": items, "fetched": datetime.datetime.now().strftime("%H:%M:%S %Z")}
+            app.logger.warning("Travel feed %s failed: %s", source, ex)
+            return []
+
+    with ThreadPoolExecutor(max_workers=6) as ex:
+        futs = {ex.submit(_fetch_feed, src, kind, url): src for src, kind, url in _DEAL_FEEDS}
+        for fut in as_completed(futs):
+            rows = fut.result()
+            for r in rows:
+                (deals if r["kind"] == "deals" else inspire).append(r)
+
+    result = {"deals": deals, "inspire": inspire,
+              "fetched": datetime.datetime.now().strftime("%H:%M:%S %Z")}
     cache_set("flight_deals", result)
     return jsonify(result)
 

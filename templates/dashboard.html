@@ -1083,14 +1083,24 @@
     <div id="tracked-flights-list"><div class="loading">Loading tracked flights...</div></div>
   </div>
 
-  <!-- Flight Deals Feed -->
+  <!-- Travel Deals + Inspiration -->
   <div class="panel">
     <div class="panel-header">
-      <span>🎫 Flight Deals &amp; Travel Offers</span>
+      <span>✈ Flight Deals</span>
       <span id="deals-ts" class="ts"></span>
       <button class="refresh-btn" onclick="loadFlightDeals(true)">⟳ Refresh</button>
     </div>
-    <div id="deals-feed"><div class="loading">Retrieving deals...</div></div>
+    <div id="deals-feed-wrap">
+      <div id="deals-feed"><div class="loading">Retrieving deals...</div></div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:12px">
+    <div class="panel-header">
+      <span>🌍 Travel Inspiration</span>
+      <span style="font-size:9px;color:var(--text-dim);letter-spacing:1px">NYT Travel · T+L · Condé Nast · Lonely Planet · Frommer's</span>
+    </div>
+    <div id="inspire-feed"><div class="loading">Loading travel editorial...</div></div>
   </div>
 </div>
 

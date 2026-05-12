@@ -1456,6 +1456,10 @@ function loadBurnBan(force) {
 function loadGarden(force) {
   const el = document.getElementById('garden-panel');
   if (el) el.innerHTML = '<div class="loading">Running watering model...</div>';
+  const mowEl = document.getElementById('mowing-panel');
+  if (force && mowEl) mowEl.innerHTML = '<div class="loading">Refreshing mowing data...</div>';
+  const fertEl = document.getElementById('fertilizer-panel');
+  if (force && fertEl) fertEl.innerHTML = '<div class="loading">Refreshing...</div>';
 
   Promise.all([
     fetch(force ? '/api/watering?force=1' : '/api/watering').then(r => r.json()).catch(() => ({})),
@@ -4703,28 +4707,93 @@ function untrackFlight(fnum) {
 }
 
 function loadFlightDeals(force) {
-  const el = document.getElementById('deals-feed');
+  const dealsEl = document.getElementById('deals-feed');
+  const inspireEl = document.getElementById('inspire-feed');
   const ts = document.getElementById('deals-ts');
-  if (!el) return;
-  el.innerHTML = '<div class="loading">Fetching travel deals...</div>';
+  if (!dealsEl) return;
+  dealsEl.innerHTML = '<div class="loading">Fetching deals...</div>';
+  if (inspireEl) inspireEl.innerHTML = '<div class="loading">Loading editorial...</div>';
   fetch(force ? '/api/flight_deals?force=1' : '/api/flight_deals')
     .then(r => r.json())
     .then(d => {
       if (ts) ts.textContent = d.fetched || '';
-      const deals = d.deals || [];
-      if (!deals.length) { el.innerHTML = '<div class="no-data">No deals loaded — RSS feeds may be unavailable.</div>'; return; }
-      el.innerHTML = deals.map(item => `
-        <div style="padding:10px 14px;border-bottom:1px solid var(--border2)">
-          <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:4px;flex-wrap:wrap">
-            <span style="font-size:9px;letter-spacing:2px;color:var(--accent);text-transform:uppercase">${item.source}</span>
-            <span style="font-size:10px;color:var(--text-dim)">${item.pub || ''}</span>
-          </div>
-          <a href="${item.url}" target="_blank" rel="noopener"
-             style="color:var(--text);text-decoration:none;font-size:13px;font-weight:600;line-height:1.4;display:block;margin-bottom:4px">${item.title}</a>
-          ${item.summary ? `<div style="font-size:11px;color:var(--text-dim);line-height:1.6">${item.summary}</div>` : ''}
-        </div>`).join('');
+      _renderDealCards(dealsEl, d.deals || [], 'deal');
+      if (inspireEl) _renderDealCards(inspireEl, d.inspire || [], 'inspire');
     })
-    .catch(() => { el.innerHTML = '<div class="no-data">Failed to load deals.</div>'; });
+    .catch(() => {
+      dealsEl.innerHTML = '<div class="no-data">Failed to load deals.</div>';
+    });
+}
+
+function _renderDealCards(el, items, mode) {
+  if (!items.length) {
+    el.innerHTML = `<div class="no-data">No ${mode === 'deal' ? 'deals' : 'articles'} available right now.</div>`;
+    return;
+  }
+  // Sort deals: price-bearing items first
+  if (mode === 'deal') items = [...items].sort((a,b) => (b.price?1:0) - (a.price?1:0));
+
+  const SOURCE_COLORS = {
+    'Secret Flying':    '#e8631c',
+    'The Flight Deal':  '#facc15',
+    'Airfarewatchdog':  '#4ade80',
+    'NYT Travel':       '#60a5fa',
+    'Travel + Leisure': '#c084fc',
+    'Condé Nast':       '#f472b6',
+    'Lonely Planet':    '#34d399',
+    "Frommer's":        '#fb923c',
+  };
+
+  const cards = items.map(item => {
+    const color = SOURCE_COLORS[item.source] || 'var(--accent)';
+    const priceTag = item.price
+      ? `<div style="position:absolute;top:8px;right:8px;background:rgba(232,99,28,0.92);
+              color:#fff;font-family:var(--font-m);font-size:13px;font-weight:700;
+              padding:4px 10px;letter-spacing:1px;border-radius:2px;line-height:1">${item.price}</div>`
+      : '';
+    const thumb = item.thumb
+      ? `<div style="height:110px;background:url('${item.thumb}') center/cover no-repeat;
+                     border-bottom:1px solid var(--border);position:relative;flex-shrink:0">${priceTag}</div>`
+      : `<div style="height:48px;border-bottom:1px solid var(--border);position:relative;
+                     background:linear-gradient(135deg,rgba(${hexToRgb(color)},0.12),transparent);flex-shrink:0">${priceTag}
+           <div style="position:absolute;bottom:6px;left:10px;font-size:9px;letter-spacing:3px;
+                       color:${color};text-transform:uppercase;font-family:var(--font-m)">${item.source}</div>
+         </div>`;
+    const pubStr = item.pub ? _dealFmtDate(item.pub) : '';
+    return `
+      <a href="${item.url}" target="_blank" rel="noopener" style="text-decoration:none;color:inherit">
+        <div style="background:var(--bg2);border:1px solid var(--border);display:flex;flex-direction:column;
+                    height:100%;transition:border-color 0.15s;cursor:pointer"
+             onmouseover="this.style.borderColor='${color}'" onmouseout="this.style.borderColor='var(--border)'">
+          ${thumb}
+          <div style="padding:10px 12px;flex:1;display:flex;flex-direction:column;gap:4px">
+            ${item.thumb ? `<div style="font-size:9px;letter-spacing:2px;color:${color};text-transform:uppercase;font-family:var(--font-m);margin-bottom:2px">${item.source}${pubStr ? ' · ' + pubStr : ''}</div>` : (pubStr ? `<div style="font-size:10px;color:var(--text-dim)">${pubStr}</div>` : '')}
+            <div style="font-size:12px;font-weight:600;line-height:1.4;color:var(--text)">${item.title}</div>
+            ${item.summary ? `<div style="font-size:10px;color:var(--text-dim);line-height:1.6;margin-top:2px;flex:1">${item.summary}</div>` : ''}
+          </div>
+        </div>
+      </a>`;
+  });
+
+  el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;padding:12px">${cards.join('')}</div>`;
+}
+
+function hexToRgb(hex) {
+  // Accepts #rrggbb or css color names — returns "r,g,b" for rgba()
+  const map = {
+    '#e8631c':'232,99,28', '#facc15':'250,204,21', '#4ade80':'74,222,128',
+    '#60a5fa':'96,165,250', '#c084fc':'192,132,252', '#f472b6':'244,114,182',
+    '#34d399':'52,211,153', '#fb923c':'251,146,60',
+  };
+  return map[hex] || '255,255,255';
+}
+
+function _dealFmtDate(str) {
+  try {
+    const d = new Date(str);
+    if (isNaN(d)) return str.slice(0,16);
+    return d.toLocaleDateString('en-US', {month:'short', day:'numeric'});
+  } catch(e) { return ''; }
 }
 
 // ── Health & Fitness News ──
