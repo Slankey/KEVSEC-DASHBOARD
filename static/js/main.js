@@ -137,17 +137,14 @@ function loadTab(tab) {
     setTimeout(() => loadSWPC(), 2*M);
   }
   if (tab === 'weather') {
-    loadWeather(); loadEarthquakes();
-    setTimeout(() => loadAirNow(),       1*M);
-    setTimeout(() => loadGDACS(),        2*M);
-    setTimeout(() => loadLakeMichigan(), 3*M);
-    setTimeout(() => loadWildfires(),    4*M);
-    setTimeout(() => loadSWPC(),         5*M);
-    setTimeout(() => loadMETAR(),        6*M);
-    setTimeout(() => loadWIWarnings(),   7*M);
-    setTimeout(() => loadLNM(),          8*M);
-    setTimeout(() => loadGlerlImages(),  9*M);
-    setTimeout(() => loadBurnBan(),     10*M);
+    // All cached by warm cache — load immediately, stagger only to avoid browser request pile-up
+    loadWeather(); loadEarthquakes(); loadAirNow(); loadMETAR(); loadWIWarnings(); loadBurnBan();
+    setTimeout(() => loadWildfires(),    3000);
+    setTimeout(() => loadGDACS(),        6000);
+    setTimeout(() => loadLakeMichigan(), 9000);
+    setTimeout(() => loadSWPC(),        12000);
+    setTimeout(() => loadLNM(),         15000);
+    setTimeout(() => loadGlerlImages(), 18000);
     initWi511Map();
   }
   if (tab === 'comms') {
@@ -4601,45 +4598,56 @@ function searchFlight() {
   const fnum = (document.getElementById('flight-search-input').value || '').trim().toUpperCase();
   if (!fnum) return;
   const el = document.getElementById('flight-result');
-  el.innerHTML = '<div class="loading">Looking up flight...</div>';
+  el.innerHTML = '<div class="loading">Querying ADS-B...</div>';
   fetch('/api/flight_search?flight=' + encodeURIComponent(fnum))
     .then(r => r.json())
     .then(d => {
       if (!d.ok) {
-        el.innerHTML = `<div style="color:var(--text-dim);padding:8px">No data found for <strong>${fnum}</strong>. Flight may not be active yet, or IATA code not found.</div>`;
+        el.innerHTML = `<div style="color:var(--text-dim);padding:10px;font-size:12px;line-height:1.6">${d.error || 'No data for ' + fnum}<br><span style="font-size:10px;color:var(--text-dim)">ADS-B only shows active flights. Try again once airborne.</span></div>`;
         _lastFlightResult = null;
         return;
       }
       _lastFlightResult = d.flight;
       const f = d.flight;
-      const statusColor = f.status === 'landed' || f.status === 'arrived' ? '#4ade80'
-        : f.status === 'active' || f.status === 'en-route' || f.status === 'airborne' ? '#facc15'
-        : f.status === 'cancelled' ? '#f87171' : 'var(--text-dim)';
-      const depDelay = f.dep_delay ? `<span style="color:#f87171;margin-left:6px">+${f.dep_delay}min delay</span>` : '';
-      const arrDelay = f.arr_delay ? `<span style="color:#f87171;margin-left:6px">+${f.arr_delay}min delay</span>` : '';
+      const live = f.live || {};
+      const statusColor = f.status === 'airborne' ? '#facc15'
+        : f.status === 'on_ground' ? '#60a5fa'
+        : 'var(--text-dim)';
+      const statusIcon = f.status === 'airborne' ? '✈' : f.status === 'on_ground' ? '⊙' : '?';
+      const altStr = live.altitude_ft != null ? `${live.altitude_ft.toLocaleString()} ft` : '—';
+      const spdStr = live.speed_kt != null ? `${Math.round(live.speed_kt)} kt` : '—';
+      const hdgStr = live.heading != null ? `${Math.round(live.heading)}°` : '—';
+      const srcStr = live.source ? `<span style="font-size:9px;color:var(--text-dim);margin-left:8px">via ${live.source}</span>` : '';
+      const regStr = f.registration ? `<span style="font-size:10px;color:var(--text-dim)">${f.registration}</span>` : '';
+      const acStr = f.aircraft_type ? `<span style="font-size:10px;color:var(--text-dim)">${f.aircraft_type}</span>` : '';
       el.innerHTML = `
         <div style="background:var(--bg2);border:1px solid var(--border);padding:14px 16px;border-left:3px solid ${statusColor}">
           <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">
-            <span style="font-family:var(--font-m);font-size:16px;letter-spacing:2px;color:var(--accent)">${f.flight || fnum}</span>
-            ${f.airline ? `<span style="font-size:11px;color:var(--text-dim)">${f.airline}</span>` : ''}
+            <span style="font-family:var(--font-m);font-size:16px;letter-spacing:2px;color:var(--accent)">${statusIcon} ${f.flight || fnum}</span>
+            ${regStr}${acStr}
             <span style="font-size:10px;letter-spacing:2px;color:${statusColor};text-transform:uppercase">${f.status || 'unknown'}</span>
+            ${srcStr}
           </div>
-          <div style="display:grid;grid-template-columns:1fr 40px 1fr;gap:8px;align-items:center">
-            <div>
-              <div style="font-family:var(--font-m);font-size:20px;color:var(--text)">${f.dep_iata || '—'}</div>
-              <div style="font-size:10px;color:var(--text-dim);margin-top:2px">${f.dep_airport || ''}</div>
-              <div style="font-size:10px;color:var(--text);margin-top:4px">${fmtFlightTime(f.dep_scheduled)}</div>
-              ${f.dep_actual && f.dep_actual !== f.dep_scheduled ? `<div style="font-size:10px;color:#facc15">Actual: ${fmtFlightTime(f.dep_actual)}</div>` : ''}
-              ${depDelay}
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+            <div style="text-align:center;background:var(--bg3,var(--bg));padding:8px;border:1px solid var(--border2)">
+              <div style="font-size:9px;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px">ALTITUDE</div>
+              <div style="font-family:var(--font-m);font-size:16px;color:var(--text)">${altStr}</div>
             </div>
-            <div style="text-align:center;color:var(--text-dim);font-size:18px">→</div>
-            <div>
-              <div style="font-family:var(--font-m);font-size:20px;color:var(--text)">${f.arr_iata || '—'}</div>
-              <div style="font-size:10px;color:var(--text-dim);margin-top:2px">${f.arr_airport || ''}</div>
-              <div style="font-size:10px;color:var(--text);margin-top:4px">${fmtFlightTime(f.arr_scheduled)}</div>
-              ${f.arr_actual && f.arr_actual !== f.arr_scheduled ? `<div style="font-size:10px;color:#facc15">Actual: ${fmtFlightTime(f.arr_actual)}</div>` : ''}
-              ${arrDelay}
+            <div style="text-align:center;background:var(--bg3,var(--bg));padding:8px;border:1px solid var(--border2)">
+              <div style="font-size:9px;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px">SPEED</div>
+              <div style="font-family:var(--font-m);font-size:16px;color:var(--text)">${spdStr}</div>
             </div>
+            <div style="text-align:center;background:var(--bg3,var(--bg));padding:8px;border:1px solid var(--border2)">
+              <div style="font-size:9px;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px">HEADING</div>
+              <div style="font-family:var(--font-m);font-size:16px;color:var(--text)">${hdgStr}</div>
+            </div>
+          </div>
+          ${live.squawk ? `<div style="margin-top:8px;font-size:10px;color:var(--text-dim)">SQUAWK: <span style="font-family:var(--font-m);color:var(--text)">${live.squawk}</span></div>` : ''}
+          <div style="margin-top:8px;font-size:10px;color:var(--text-dim)">
+            <a href="https://www.flightaware.com/live/flight/${encodeURIComponent(f.flight||fnum)}" target="_blank" rel="noopener"
+               style="color:var(--accent);text-decoration:none;margin-right:12px">FlightAware ↗</a>
+            <a href="https://www.flightradar24.com/${encodeURIComponent(f.flight||fnum)}" target="_blank" rel="noopener"
+               style="color:var(--accent);text-decoration:none">FlightRadar24 ↗</a>
           </div>
         </div>`;
     })
@@ -4714,6 +4722,7 @@ function loadFlightDeals(force) {
   const dealsEl = document.getElementById('deals-feed');
   const inspireEl = document.getElementById('inspire-feed');
   const ts = document.getElementById('deals-ts');
+  const airportsEl = document.getElementById('home-airports');
   if (!dealsEl) return;
   dealsEl.innerHTML = '<div class="loading">Fetching deals...</div>';
   if (inspireEl) inspireEl.innerHTML = '<div class="loading">Loading editorial...</div>';
@@ -4721,6 +4730,20 @@ function loadFlightDeals(force) {
     .then(r => r.json())
     .then(d => {
       if (ts) ts.textContent = d.fetched || '';
+      // Render home airport quick-search
+      if (airportsEl && d.home_airports) {
+        airportsEl.innerHTML = d.home_airports.map(a =>
+          `<a href="${a.url}" target="_blank" rel="noopener"
+              style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;
+                     background:var(--bg2);border:1px solid var(--border);color:var(--accent);
+                     font-family:var(--font-m);font-size:11px;letter-spacing:2px;text-decoration:none;
+                     text-transform:uppercase;transition:border-color 0.15s"
+              onmouseover="this.style.borderColor='var(--accent)'"
+              onmouseout="this.style.borderColor='var(--border)'">
+            ✈ ${a.code} <span style="font-size:9px;color:var(--text-dim);letter-spacing:0;font-family:inherit">${a.name}</span>
+          </a>`
+        ).join('');
+      }
       _renderDealCards(dealsEl, d.deals || [], 'deal');
       if (inspireEl) _renderDealCards(inspireEl, d.inspire || [], 'inspire');
     })
@@ -4750,6 +4773,11 @@ function _renderDealCards(el, items, mode) {
 
   const cards = items.map(item => {
     const color = SOURCE_COLORS[item.source] || 'var(--accent)';
+    const localBadge = item.local
+      ? `<div style="position:absolute;top:8px;left:8px;background:rgba(96,165,250,0.92);
+              color:#000;font-family:var(--font-m);font-size:9px;font-weight:700;
+              padding:3px 7px;letter-spacing:2px;border-radius:1px;text-transform:uppercase">MKE/CHI</div>`
+      : '';
     const priceTag = item.price
       ? `<div style="position:absolute;top:8px;right:8px;background:rgba(232,99,28,0.92);
               color:#fff;font-family:var(--font-m);font-size:13px;font-weight:700;
@@ -4757,9 +4785,9 @@ function _renderDealCards(el, items, mode) {
       : '';
     const thumb = item.thumb
       ? `<div style="height:110px;background:url('${item.thumb}') center/cover no-repeat;
-                     border-bottom:1px solid var(--border);position:relative;flex-shrink:0">${priceTag}</div>`
+                     border-bottom:1px solid var(--border);position:relative;flex-shrink:0">${localBadge}${priceTag}</div>`
       : `<div style="height:48px;border-bottom:1px solid var(--border);position:relative;
-                     background:linear-gradient(135deg,rgba(${hexToRgb(color)},0.12),transparent);flex-shrink:0">${priceTag}
+                     background:linear-gradient(135deg,rgba(${hexToRgb(color)},0.12),transparent);flex-shrink:0">${localBadge}${priceTag}
            <div style="position:absolute;bottom:6px;left:10px;font-size:9px;letter-spacing:3px;
                        color:${color};text-transform:uppercase;font-family:var(--font-m)">${item.source}</div>
          </div>`;

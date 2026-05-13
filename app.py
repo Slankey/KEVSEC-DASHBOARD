@@ -104,6 +104,7 @@ DISK_CACHE_KEYS = {
     "apod", "wikipedia",            # rate-limited / daily
     "news",                         # 20 RSS feeds — slow to fetch
     "weather", "swpc", "airnow", "wildfires",  # NWS / NOAA — be a good citizen
+    "metar", "wi_warnings",         # aviation weather + WI alerts
     "threat", "cves", "quakes",     # external APIs
     "stocks",                       # Yahoo Finance
     "lnm",                          # USCG daily
@@ -729,85 +730,81 @@ def _save_tracked_flights(flights):
     with open(TRACKED_FLIGHTS_FILE, "w") as f:
         json.dump(flights, f, indent=2)
 
-def _opensky_lookup(flight_num):
-    """Query OpenSky Network for a flight by callsign. Returns dict with state or None."""
+def _adsbfi_lookup(flight_num):
+    """Query adsb.fi (free ADS-B API, no key) by IATA callsign. Returns parsed state dict or None."""
     try:
-        callsign = flight_num.upper().replace(" ", "").ljust(8)[:8]
-        r = requests.get("https://opensky-network.org/api/states/all",
-            params={"time": 0}, timeout=10)
-        if r.status_code != 200:
-            return None
-        data = r.json()
-        states = data.get("states") or []
-        cs_clean = callsign.strip()
-        for s in states:
-            if s[1] and s[1].strip() == cs_clean:
-                return {
-                    "icao24": s[0], "callsign": s[1].strip(),
-                    "origin_country": s[2], "longitude": s[5], "latitude": s[6],
-                    "altitude_m": s[7], "velocity_ms": s[9], "on_ground": s[8],
-                }
+        callsign = flight_num.upper().replace(" ", "")
+        # Try adsb.lol first
+        for base in ("https://api.adsb.lol/v2", "https://opendata.adsb.fi/api/v2"):
+            try:
+                r = requests.get(f"{base}/callsign/{callsign}",
+                    headers={"User-Agent": "kevsec-dashboard/1.0"}, timeout=8)
+                if r.status_code == 200:
+                    ac_list = r.json().get("ac") or []
+                    if ac_list:
+                        ac = ac_list[0]
+                        alt_ft = ac.get("alt_baro") or ac.get("alt_geom")
+                        try: alt_ft = int(alt_ft)
+                        except: alt_ft = None
+                        spd = ac.get("gs")  # ground speed knots
+                        on_ground = (ac.get("alt_baro") == "ground") or (alt_ft is not None and alt_ft < 200)
+                        return {
+                            "icao24": ac.get("hex",""),
+                            "callsign": ac.get("flight","").strip(),
+                            "registration": ac.get("r",""),
+                            "aircraft_type": ac.get("t",""),
+                            "latitude": ac.get("lat"),
+                            "longitude": ac.get("lon"),
+                            "altitude_ft": alt_ft,
+                            "speed_kt": spd,
+                            "heading": ac.get("track"),
+                            "on_ground": on_ground,
+                            "squawk": ac.get("squawk",""),
+                            "seen": ac.get("seen", 0),
+                            "source": base.split("//")[1].split("/")[0],
+                        }
+            except Exception:
+                continue
         return None
     except Exception as e:
-        app.logger.warning("OpenSky lookup failed: %s", e)
+        app.logger.warning("ADS-B lookup failed: %s", e)
         return None
 
 def _aeroapi_flight(flight_num):
-    """Query AviationStack free API (no key needed at basic level) or FlightAware AeroAPI."""
-    try:
-        # AviationStack free — no key required for basic lookups
-        r = requests.get(
-            "http://api.aviationstack.com/v1/flights",
-            params={"access_key": os.environ.get("AVIATIONSTACK_KEY",""), "flight_iata": flight_num.upper()},
-            timeout=8)
-        if r.status_code == 200:
-            data = r.json()
-            flights = (data.get("data") or [])
-            if flights:
-                f = flights[0]
-                dep = f.get("departure", {})
-                arr = f.get("arrival", {})
-                return {
-                    "flight": f.get("flight",{}).get("iata",""),
-                    "airline": f.get("airline",{}).get("name",""),
-                    "status": f.get("flight_status","unknown"),
-                    "dep_airport": dep.get("airport",""),
-                    "dep_iata": dep.get("iata",""),
-                    "dep_scheduled": dep.get("scheduled",""),
-                    "dep_actual": dep.get("actual") or dep.get("estimated",""),
-                    "dep_delay": dep.get("delay"),
-                    "arr_airport": arr.get("airport",""),
-                    "arr_iata": arr.get("iata",""),
-                    "arr_scheduled": arr.get("scheduled",""),
-                    "arr_actual": arr.get("actual") or arr.get("estimated",""),
-                    "arr_delay": arr.get("delay"),
-                }
-    except Exception as e:
-        app.logger.warning("AviationStack lookup failed: %s", e)
+    """Look up flight via ADS-B live data. Falls back gracefully if not airborne."""
+    live = _adsbfi_lookup(flight_num)
+    if live:
+        status = "on_ground" if live["on_ground"] else "airborne"
+        alt = live.get("altitude_ft")
+        spd = live.get("speed_kt")
+        return {
+            "flight": live["callsign"] or flight_num,
+            "airline": "",
+            "status": status,
+            "registration": live.get("registration",""),
+            "aircraft_type": live.get("aircraft_type",""),
+            "dep_airport": "", "dep_iata": "", "dep_scheduled": "", "dep_actual": "", "dep_delay": None,
+            "arr_airport": "", "arr_iata": "", "arr_scheduled": "", "arr_actual": "", "arr_delay": None,
+            "live": {
+                "latitude": live.get("latitude"), "longitude": live.get("longitude"),
+                "altitude_ft": alt, "speed_kt": spd, "heading": live.get("heading"),
+                "on_ground": live["on_ground"], "squawk": live.get("squawk",""),
+                "source": live.get("source","adsb"),
+            },
+        }
     return None
 
 @app.route("/api/flight_search")
 @login_required
 def api_flight_search():
-    """Look up a flight by IATA number — returns dep/arr/delay/status."""
+    """Look up a flight by callsign via ADS-B — returns live position and status."""
     flight_num = request.args.get("flight","").strip().upper()
     if not flight_num:
         return jsonify({"error": "flight parameter required"})
-    # Check AviationStack first
     data = _aeroapi_flight(flight_num)
     if data:
         return jsonify({"ok": True, "flight": data})
-    # Fallback: OpenSky for live position only (no schedule data)
-    live = _opensky_lookup(flight_num)
-    if live:
-        return jsonify({"ok": True, "flight": {
-            "flight": live["callsign"], "airline": live["origin_country"],
-            "status": "airborne" if not live["on_ground"] else "on_ground",
-            "dep_airport": "", "dep_iata": "", "dep_scheduled": "", "dep_actual": "", "dep_delay": None,
-            "arr_airport": "", "arr_iata": "", "arr_scheduled": "", "arr_actual": "", "arr_delay": None,
-            "live": live,
-        }})
-    return jsonify({"ok": False, "error": f"No data found for {flight_num}"})
+    return jsonify({"ok": False, "error": f"No active ADS-B signal for {flight_num}. Flight may not be airborne yet or has landed."})
 
 @app.route("/api/flight_track", methods=["POST"])
 @login_required
@@ -880,7 +877,7 @@ def _fmt_time(iso_str):
         return iso_str
 
 def _monitor_flights():
-    """Background worker — checks tracked flights every 5 min and sends SMS alerts."""
+    """Background worker — checks tracked flights every 5 min and sends SMS alerts via ADS-B."""
     while True:
         time.sleep(300)  # 5 minutes
         try:
@@ -890,39 +887,42 @@ def _monitor_flights():
             for fnum, state in list(flights.items()):
                 try:
                     data = _aeroapi_flight(fnum)
-                    if not data:
-                        continue
-                    status = data.get("status", "")
                     label = state.get("label", fnum)
-                    dep_delay = data.get("dep_delay") or 0
-                    arr_delay = data.get("arr_delay") or 0
+                    prev_status = state.get("last_status")
 
-                    # Departure notification
-                    if not state.get("notified_dep") and status in ("active", "en-route", "airborne"):
-                        dep_t = _fmt_time(data.get("dep_actual") or data.get("dep_scheduled"))
+                    if not data:
+                        # No ADS-B signal — if was airborne, likely landed
+                        if prev_status == "airborne" and not state.get("notified_arr"):
+                            _send_sms(
+                                f"✈ {label} landed",
+                                f"{label} ({fnum}) ADS-B signal lost — flight likely completed."
+                            )
+                            flights[fnum]["notified_arr"] = True
+                            changed = True
+                        flights[fnum]["last_status"] = "no_signal"
+                        changed = True
+                        continue
+
+                    status = data.get("status", "")
+                    live = data.get("live", {})
+                    on_ground = live.get("on_ground", True)
+
+                    # Departure notification: was on ground, now airborne
+                    if not state.get("notified_dep") and status == "airborne":
+                        alt = live.get("altitude_ft","?")
+                        spd = live.get("speed_kt","?")
                         _send_sms(
-                            f"✈ {label} departed",
-                            f"{label} ({fnum}) departed {data.get('dep_iata','')} at {dep_t}"
+                            f"✈ {label} airborne",
+                            f"{label} ({fnum}) is airborne — {alt}ft, {spd}kt"
                         )
                         flights[fnum]["notified_dep"] = True
                         changed = True
 
-                    # Delay notification
-                    if not state.get("notified_delay") and (dep_delay > 15 or arr_delay > 15):
-                        delay_min = max(dep_delay, arr_delay)
-                        _send_sms(
-                            f"⚠ {label} delayed {delay_min}min",
-                            f"{label} ({fnum}) is delayed ~{delay_min} minutes."
-                        )
-                        flights[fnum]["notified_delay"] = True
-                        changed = True
-
-                    # Landing notification
-                    if not state.get("notified_arr") and status in ("landed", "arrived"):
-                        arr_t = _fmt_time(data.get("arr_actual") or data.get("arr_scheduled"))
+                    # Landing: was airborne, now on ground
+                    if not state.get("notified_arr") and prev_status == "airborne" and on_ground:
                         _send_sms(
                             f"✈ {label} landed",
-                            f"{label} ({fnum}) landed at {data.get('arr_iata','')} at {arr_t}"
+                            f"{label} ({fnum}) has landed."
                         )
                         flights[fnum]["notified_arr"] = True
                         changed = True
@@ -1000,7 +1000,22 @@ def api_flight_deals():
             for r in rows:
                 (deals if r["kind"] == "deals" else inspire).append(r)
 
-    result = {"deals": deals, "inspire": inspire,
+    # Tag deals that mention home airports or nearby cities
+    _LOCAL_TERMS = {"MKE", "ATW", "ORD", "MDW", "Milwaukee", "Appleton", "Chicago", "O'Hare", "Midway"}
+    for r in deals:
+        text = (r.get("title","") + " " + r.get("summary","")).upper()
+        if any(term.upper() in text for term in _LOCAL_TERMS):
+            r["local"] = True
+
+    # Quick-search links for home airports (Google Flights explore)
+    home_airports = [
+        {"code": "MKE", "name": "Milwaukee Mitchell", "url": "https://www.google.com/travel/flights?q=flights+from+MKE"},
+        {"code": "ATW", "name": "Appleton Intl", "url": "https://www.google.com/travel/flights?q=flights+from+ATW"},
+        {"code": "ORD", "name": "O'Hare (Chicago)", "url": "https://www.google.com/travel/flights?q=flights+from+ORD"},
+        {"code": "MDW", "name": "Midway (Chicago)", "url": "https://www.google.com/travel/flights?q=flights+from+MDW"},
+    ]
+
+    result = {"deals": deals, "inspire": inspire, "home_airports": home_airports,
               "fetched": datetime.datetime.now().strftime("%H:%M:%S %Z")}
     cache_set("flight_deals", result)
     return jsonify(result)
@@ -4709,7 +4724,7 @@ def _warm_cache_impl(force=False):
     except: pass
 
     # APOD — only fetch if not already cached (rate-limited to 50/day with DEMO_KEY)
-    if force or not cache_get("apod", CACHE_TTL_DAY):
+    if force or (time.time()-(_cache.get("apod",(None,0))[1] or 0)) > CACHE_TTL_DAY:
         try:
             r = requests.get("https://api.nasa.gov/planetary/apod", params={"api_key": NASA_API_KEY}, timeout=12)
             d = r.json()
@@ -4723,7 +4738,7 @@ def _warm_cache_impl(force=False):
         except: pass
 
     # Weather (NWS) — refresh every 1h or on force
-    if force or not cache_get("weather", 3600):
+    if force or (time.time()-(_cache.get("weather",(None,0))[1] or 0)) > 3600:
         try:
             pt = requests.get("https://api.weather.gov/points/43.3875,-87.8756", headers=hdrs, timeout=15).json()
             props = pt.get("properties",{})
@@ -4776,7 +4791,7 @@ def _warm_cache_impl(force=False):
         except: pass
 
     # AirNow — refresh every 6h or on force
-    if force or not cache_get("airnow", CACHE_TTL_LONG):
+    if force or (time.time()-(_cache.get("airnow",(None,0))[1] or 0)) > CACHE_TTL_LONG:
         try:
             r = requests.get("https://air-quality-api.open-meteo.com/v1/air-quality",
                 params={"latitude":43.39,"longitude":-87.88,
@@ -4798,7 +4813,7 @@ def _warm_cache_impl(force=False):
         except: pass
 
     # SWPC space weather — daily only
-    if force or not cache_get("swpc", CACHE_TTL_DAY):
+    if force or (time.time()-(_cache.get("swpc",(None,0))[1] or 0)) > CACHE_TTL_DAY:
         try:
             swpc_result = {"kp":None,"solar_wind":{},"alerts":[],
                            "fetched":datetime.datetime.now().strftime("%H:%M:%S")}
@@ -4888,7 +4903,7 @@ def _warm_cache_impl(force=False):
         app.logger.warning(f"[GLERL] Warm cache error: {e}")
 
     # Earthquakes — daily only
-    if force or not cache_get("quakes", CACHE_TTL_DAY):
+    if force or (time.time()-(_cache.get("quakes",(None,0))[1] or 0)) > CACHE_TTL_DAY:
         try:
             data = requests.get("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/significant_week.geojson",timeout=10).json()
             import zoneinfo as _zi; _ct = _zi.ZoneInfo("America/Chicago")
@@ -4933,7 +4948,7 @@ def _warm_cache_impl(force=False):
         app.logger.warning("[warm_cache] stocks failed: %s", e)
 
     # Wisconsin Burn Ban — 30-min TTL
-    if force or not cache_get("burn_ban", 1800):
+    if force or (time.time()-(_cache.get("burn_ban",(None,0))[1] or 0)) > 1800:
         try:
             r = requests.get("https://apps.dnr.wi.gov/forestryapps/burnrestriction/json/",
                              timeout=10, headers=hdrs)
@@ -4956,7 +4971,7 @@ def _warm_cache_impl(force=False):
             app.logger.warning("[warm_cache] burn_ban: %s", e)
 
     # Presidential Intel — 1hr TTL — White House RSS + Google News
-    if force or not cache_get("president_intel", 3600):
+    if force or (time.time()-(_cache.get("president_intel",(None,0))[1] or 0)) > 3600:
         try:
             import urllib.parse as _ulp2
             _pi_items = []
@@ -5011,7 +5026,7 @@ def _warm_cache_impl(force=False):
             app.logger.warning("[warm_cache] president_intel: %s", e)
 
     # Congress Status — 1-hr TTL
-    if force or not cache_get("congress_status", 3600):
+    if force or (time.time()-(_cache.get("congress_status",(None,0))[1] or 0)) > 3600:
         try:
             import urllib.parse as _up
             bill_queries = [
@@ -5067,7 +5082,7 @@ def _warm_cache_impl(force=False):
             app.logger.warning("[warm_cache] congress_status: %s", e)
 
     # Ozaukee Alerts — 5-min TTL
-    if force or not cache_get("ozaukee_alerts", 300):
+    if force or (time.time()-(_cache.get("ozaukee_alerts",(None,0))[1] or 0)) > 300:
         try:
             r = requests.get("https://api.weather.gov/alerts/active?zone=WIC089",
                              timeout=10, headers={**hdrs, "Accept": "application/geo+json"})
@@ -5083,7 +5098,7 @@ def _warm_cache_impl(force=False):
             app.logger.warning("[warm_cache] ozaukee_alerts: %s", e)
 
     # Polls — 1-hr TTL (use same parallel logic as main endpoint)
-    if force or not cache_get("polls", 3600):
+    if force or (time.time()-(_cache.get("polls",(None,0))[1] or 0)) > 3600:
         try:
             _poll_feeds = [
                 ("Politico","https://rss.politico.com/politics-news.xml"),
@@ -5128,7 +5143,7 @@ def _warm_cache_impl(force=False):
             app.logger.warning("[warm_cache] polls: %s", e)
 
     # F1 — 1-hr TTL
-    if force or not cache_get("f1", 3600):
+    if force or (time.time()-(_cache.get("f1",(None,0))[1] or 0)) > 3600:
         try:
             _f1h = {"User-Agent": "KEVSec/1.0"}
             def _f1get(url):
@@ -5166,7 +5181,7 @@ def _warm_cache_impl(force=False):
             app.logger.warning("[warm_cache] f1: %s", e)
 
     # CVEs — 6hr TTL (recency-weighted sort)
-    if force or not cache_get("cves", CACHE_TTL_LONG):
+    if force or (time.time()-(_cache.get("cves",(None,0))[1] or 0)) > CACHE_TTL_LONG:
         try:
             _now = datetime.datetime.utcnow()
             _ps = (_now - datetime.timedelta(days=21)).strftime("%Y-%m-%dT00:00:00.000")
@@ -5215,7 +5230,7 @@ def _warm_cache_impl(force=False):
             app.logger.warning("[warm_cache] cves: %s", e)
 
     # GDACS Global Disasters — 1hr TTL
-    if force or not cache_get("gdacs", 3600):
+    if force or (time.time()-(_cache.get("gdacs",(None,0))[1] or 0)) > 3600:
         try:
             _gf = feedparser.parse("https://www.gdacs.org/xml/rss.xml")
             _gevents = []
@@ -5237,7 +5252,7 @@ def _warm_cache_impl(force=False):
             app.logger.warning("[warm_cache] gdacs: %s", e)
 
     # Govt Intel (FBI/CENTCOM/DOJ/State/Pentagon/DHS) — 2hr TTL
-    if force or not cache_get("govt_intel", 7200):
+    if force or (time.time()-(_cache.get("govt_intel",(None,0))[1] or 0)) > 7200:
         try:
             _gi_feeds = [
                 ("FBI",       "https://www.fbi.gov/feeds/fbi-in-the-news/rss.xml"),
@@ -5266,6 +5281,190 @@ def _warm_cache_impl(force=False):
             cache_set("govt_intel", {"items": _gid, "fetched": _ts()})
         except Exception as e:
             app.logger.warning("[warm_cache] govt_intel: %s", e)
+
+    # METAR — 10-min TTL, refresh every run since warm cache runs every 2h
+    try:
+        _mr = requests.get(
+            "https://aviationweather.gov/api/data/metar",
+            params={"ids": "KMKE,KETB,KMWC,KSBM", "format": "json"},
+            headers=hdrs, timeout=10)
+        _mstations = []
+        for _mm in _mr.json():
+            _mstations.append({
+                "id":   _mm.get("icaoId",""),
+                "raw":  _mm.get("rawOb",""),
+                "temp": _mm.get("temp"),
+                "dewp": _mm.get("dewp"),
+                "wspd": _mm.get("wspd"),
+                "wdir": _mm.get("wdir"),
+                "wgst": _mm.get("wgst"),
+                "vis":  _mm.get("visib"),
+                "time": _mm.get("reportTime","")[:16],
+                "sky":  _mm.get("sky",""),
+                "wx":   _mm.get("wxString",""),
+            })
+        cache_set("metar", {"stations": _mstations, "fetched": _ts()})
+    except Exception as e:
+        app.logger.warning("[warm_cache] metar: %s", e)
+
+    # Wildfires — 3hr TTL (check actual disk ts, not cache_get which always returns stale)
+    _wf_age = time.time() - (_cache.get("wildfires", (None, 0))[1] or 0)
+    if force or _wf_age > 10800:
+        try:
+            _wfr = requests.get(
+                "https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services"
+                "/WFIGS_Incident_Locations_Current/FeatureServer/0/query",
+                params={"where": "IncidentTypeCategory='WF' AND IncidentSize>100",
+                        "outFields": "IncidentName,IncidentSize,PercentContained,POOState,"
+                                     "POOCounty,FireDiscoveryDateTime,TotalIncidentPersonnel",
+                        "orderByFields": "IncidentSize DESC",
+                        "resultRecordCount": 20, "f": "json"},
+                timeout=15)
+            _wffires = []
+            for _feat in _wfr.json().get("features", []):
+                _a = _feat.get("attributes", {})
+                _ts2 = _a.get("FireDiscoveryDateTime")
+                _disc = ""
+                if _ts2:
+                    try: _disc = datetime.datetime.fromtimestamp(_ts2/1000).strftime("%b %d")
+                    except: pass
+                _cont = _a.get("PercentContained")
+                _wffires.append({"name": _a.get("IncidentName","Unknown"),
+                                  "acres": round(_a.get("IncidentSize",0) or 0),
+                                  "contained": int(_cont) if _cont is not None else None,
+                                  "state": (_a.get("POOState") or "").replace("US-",""),
+                                  "county": _a.get("POOCounty") or "",
+                                  "personnel": _a.get("TotalIncidentPersonnel") or 0,
+                                  "discovered": _disc})
+            cache_set("wildfires", {"fires": _wffires, "fetched": _ts()})
+        except Exception as e:
+            app.logger.warning("[warm_cache] wildfires: %s", e)
+
+    # WI Warnings — 5-min TTL, always refresh
+    try:
+        _wwr = requests.get("https://api.weather.gov/alerts/active?area=WI",
+                             headers={"User-Agent": "kevsec-dashboard/1.0",
+                                      "Accept": "application/geo+json"}, timeout=12)
+        _wwalerts = []
+        _sev_ord = {"Extreme": 0, "Severe": 1, "Moderate": 2, "Minor": 3, "Unknown": 4}
+        for _feat in _wwr.json().get("features", []):
+            _p = _feat.get("properties", {})
+            _wwalerts.append({"event": _p.get("event",""), "severity": _p.get("severity","Unknown"),
+                               "urgency": _p.get("urgency",""), "headline": _p.get("headline",""),
+                               "areas": _p.get("areaDesc",""), "effective": _p.get("effective",""),
+                               "expires": _p.get("expires",""), "url": _p.get("web","")})
+        _wwalerts.sort(key=lambda _a2: _sev_ord.get(_a2["severity"], 4))
+        cache_set("wi_warnings", {"alerts": _wwalerts, "fetched": _ts()})
+    except Exception as e:
+        app.logger.warning("[warm_cache] wi_warnings: %s", e)
+
+    # LNM — daily TTL
+    _lnm_age = time.time() - (_cache.get("lnm", (None, 0))[1] or 0)
+    if force or _lnm_age > 86400:
+        try:
+            _lnm_url = "https://www.navcen.uscg.gov/local-notices-to-mariners?district=9+0&subdistrict=n"
+            _lnmr = requests.get(_lnm_url, headers=hdrs, timeout=15)
+            _lnm_notices = []; _lnm_seen = set()
+            for _lm in re.finditer(r'href="(/sites/default/files/pdf/lnms/([^"]+\.pdf))"', _lnmr.text):
+                _lp, _lf = _lm.group(1), _lm.group(2)
+                if _lf in _lnm_seen: continue
+                _lnm_seen.add(_lf)
+                _lclean = _lf.replace(".pdf","").replace("_"," ")
+                _lwk = re.match(r"lnm09(\d{2})(\d{4})", _lf)
+                if _lwk: _lclean = f"LNM D9 Week {_lwk.group(1).lstrip('0') or '0'} / {_lwk.group(2)}"
+                _lnm_notices.append({"title": _lclean.title(),
+                                      "url": "https://www.navcen.uscg.gov" + _lp, "fname": _lf})
+            cache_set("lnm", {"notices": _lnm_notices[:20], "fetched": _ts(), "source_url": _lnm_url})
+        except Exception as e:
+            app.logger.warning("[warm_cache] lnm: %s", e)
+
+    # AirNow (open-meteo) — 6hr TTL
+    _aq_age = time.time() - (_cache.get("airnow", (None, 0))[1] or 0)
+    if force or _aq_age > CACHE_TTL_LONG:
+        try:
+            _aqr = requests.get("https://air-quality-api.open-meteo.com/v1/air-quality",
+                params={"latitude": 43.39, "longitude": -87.88,
+                        "current": "us_aqi,pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,ozone,dust",
+                        "domains": "cams_global"}, timeout=10)
+            _aqd = _aqr.json().get("current", {})
+            _aqi = _aqd.get("us_aqi", 0)
+            if _aqi <= 50:    _aqcat, _aqcol = "Good", "#4caf50"
+            elif _aqi <= 100: _aqcat, _aqcol = "Moderate", "#ffeb3b"
+            elif _aqi <= 150: _aqcat, _aqcol = "Unhealthy (Sensitive)", "#ff9800"
+            elif _aqi <= 200: _aqcat, _aqcol = "Unhealthy", "#f44336"
+            elif _aqi <= 300: _aqcat, _aqcol = "Very Unhealthy", "#9c27b0"
+            else:             _aqcat, _aqcol = "Hazardous", "#7b0000"
+            cache_set("airnow", {"aqi": _aqi, "category": _aqcat, "color": _aqcol,
+                "pm25": round(_aqd.get("pm2_5",0),1), "pm10": round(_aqd.get("pm10",0),1),
+                "ozone": round(_aqd.get("ozone",0),1), "no2": round(_aqd.get("nitrogen_dioxide",0),1),
+                "co": round(_aqd.get("carbon_monoxide",0),0), "time": _aqd.get("time",""),
+                "fetched": _ts()})
+        except Exception as e:
+            app.logger.warning("[warm_cache] airnow: %s", e)
+
+    # Threat level (DHS NTAS + CISA KEV) — 6hr TTL
+    _thr_age = time.time() - (_cache.get("threat", (None, 0))[1] or 0)
+    if force or _thr_age > CACHE_TTL_LONG:
+        try:
+            _thr_alerts = []
+            try:
+                _tf = feedparser.parse("https://www.dhs.gov/ntas/alerts/rss.xml")
+                for _te in _tf.entries[:3]:
+                    _thr_alerts.append({"title": _te.get("title",""),
+                        "summary": re.sub(r"<[^>]+>","",_te.get("summary",""))[:300],
+                        "link": _te.get("link","#"), "published": _te.get("published","")[:25]})
+            except: pass
+            _tlvl = "ELEVATED"
+            if _thr_alerts and "IMMINENT" in _thr_alerts[0]["title"].upper(): _tlvl = "HIGH"
+            _tkev = []
+            try:
+                _tkr = requests.get("https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
+                                    timeout=15, headers={"User-Agent":"Mozilla/5.0"})
+                for _tv in _tkr.json().get("vulnerabilities",[])[:10]:
+                    _tkev.append({"id":_tv.get("cveID",""),"name":_tv.get("vulnerabilityName","")[:90],
+                                   "product":_tv.get("product",""),"vendor":_tv.get("vendorProject",""),
+                                   "added":_tv.get("dateAdded",""),"due":_tv.get("dueDate",""),
+                                   "action":_tv.get("requiredAction","")[:120]})
+            except: pass
+            cache_set("threat", {"alerts": _thr_alerts, "level": _tlvl, "cisa_kev": _tkev})
+        except Exception as e:
+            app.logger.warning("[warm_cache] threat: %s", e)
+
+    # Lake Michigan buoy (PWAW3) + AFD — 5-min TTL, refresh every run
+    try:
+        from app import ndbc_parse  # reuse existing helper
+    except Exception:
+        pass
+    try:
+        _lk_result = {"pwaw3": {}, "pwaw3_trend": [], "marine_text": "", "marine_sections": [],
+                      "afd_text": "", "afd_issued": "", "fetched": _ts()}
+        _lkr = requests.get("https://www.ndbc.noaa.gov/data/realtime2/PWAW3.txt",
+                             headers=hdrs, timeout=10)
+        _lkrows = ndbc_parse(_lkr.text, n_rows=12)
+        if _lkrows:
+            _lkcur = next((r for r in _lkrows if r.get("WSPD","MM")!="MM" or r.get("ATMP","MM")!="MM"), _lkrows[0])
+            def _lk_n(v, factor=1, decimals=1):
+                try: return round(float(v)*factor, decimals) if v and v!="MM" else None
+                except: return None
+            _lk_result["pwaw3"] = {
+                "wspd_ms": _lk_n(_lkcur.get("WSPD")),
+                "wspd_kt": _lk_n(_lkcur.get("WSPD"), 1.94384, 1),
+                "wdir": _lkcur.get("WDIR",""),
+                "wgst_kt": _lk_n(_lkcur.get("GST"), 1.94384, 1),
+                "atmp_c": _lk_n(_lkcur.get("ATMP")),
+                "atmp_f": _lk_n(_lkcur.get("ATMP"), 9/5) and round(_lk_n(_lkcur.get("ATMP"))*(9/5)+32,1),
+                "wtmp_c": _lk_n(_lkcur.get("WTMP")),
+                "wtmp_f": _lk_n(_lkcur.get("WTMP")) and round(_lk_n(_lkcur.get("WTMP"))*(9/5)+32,1),
+                "wvht_m": _lk_n(_lkcur.get("WVHT")),
+                "wvht_ft": _lk_n(_lkcur.get("WVHT"), 3.28084, 1),
+                "pres_mb": _lk_n(_lkcur.get("PRES")),
+                "time": _lkcur.get("_time",""),
+                "station": "PWAW3 — Port Washington",
+            }
+        cache_set("lake", _lk_result)
+    except Exception as e:
+        app.logger.warning("[warm_cache] lake: %s", e)
+
 
 def _schedule_daily_refresh():
     """Sleep until 06:00 local time then run _warm_cache(force=True) every 24h."""
