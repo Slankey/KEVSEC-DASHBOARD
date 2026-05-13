@@ -1077,7 +1077,7 @@ def api_garden():
     if cached:
         return jsonify(cached)
 
-    LAT, LON = 43.3875, -87.8756
+    LAT, LON = 43.381167, -87.889941
     today = datetime.date.today()
     mm_to_in = 0.0393701
 
@@ -1718,7 +1718,7 @@ def api_weather():
     hdrs = HDRS
     forecast, alerts, obs = [], [], {}
     try:
-        pt = requests.get("https://api.weather.gov/points/43.3875,-87.8756",
+        pt = requests.get("https://api.weather.gov/points/43.381167,-87.889941",
                           headers=hdrs, timeout=15).json()
         props = pt.get("properties", {})
         fc = requests.get(props.get("forecast", ""), headers=hdrs, timeout=15).json()
@@ -1788,7 +1788,7 @@ def api_weather():
     uv_index = None
     try:
         uv_r = requests.get("https://api.open-meteo.com/v1/forecast",
-                            params={"latitude": 43.39, "longitude": -87.88,
+                            params={"latitude": 43.381167, "longitude": -87.889941,
                                     "current": "uv_index", "timezone": "America/Chicago"},
                             timeout=8)
         uv_index = round(uv_r.json().get("current", {}).get("uv_index", 0), 1)
@@ -1813,7 +1813,7 @@ def api_airnow():
         r = requests.get(
             "https://air-quality-api.open-meteo.com/v1/air-quality",
             params={
-                "latitude": 43.39, "longitude": -87.88,
+                "latitude": 43.381167, "longitude": -87.889941,
                 "current": "us_aqi,pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,ozone,dust",
                 "domains": "cams_global"
             }, timeout=10)
@@ -4740,7 +4740,7 @@ def _warm_cache_impl(force=False):
     # Weather (NWS) — refresh every 1h or on force
     if force or (time.time()-(_cache.get("weather",(None,0))[1] or 0)) > 3600:
         try:
-            pt = requests.get("https://api.weather.gov/points/43.3875,-87.8756", headers=hdrs, timeout=15).json()
+            pt = requests.get("https://api.weather.gov/points/43.381167,-87.889941", headers=hdrs, timeout=15).json()
             props = pt.get("properties",{})
             fc = requests.get(props.get("forecast",""), headers=hdrs, timeout=15).json()
             periods = fc.get("properties",{}).get("periods",[])[:8]
@@ -4794,7 +4794,7 @@ def _warm_cache_impl(force=False):
     if force or (time.time()-(_cache.get("airnow",(None,0))[1] or 0)) > CACHE_TTL_LONG:
         try:
             r = requests.get("https://air-quality-api.open-meteo.com/v1/air-quality",
-                params={"latitude":43.39,"longitude":-87.88,
+                params={"latitude":43.381167,"longitude":-87.889941,
                         "current":"us_aqi,pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,ozone,dust",
                         "domains":"cams_global"}, timeout=10)
             d = r.json().get("current",{})
@@ -5383,7 +5383,7 @@ def _warm_cache_impl(force=False):
     if force or _aq_age > CACHE_TTL_LONG:
         try:
             _aqr = requests.get("https://air-quality-api.open-meteo.com/v1/air-quality",
-                params={"latitude": 43.39, "longitude": -87.88,
+                params={"latitude": 43.381167, "longitude": -87.889941,
                         "current": "us_aqi,pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,ozone,dust",
                         "domains": "cams_global"}, timeout=10)
             _aqd = _aqr.json().get("current", {})

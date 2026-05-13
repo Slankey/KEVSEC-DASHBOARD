@@ -1951,7 +1951,7 @@ let _drawing = false;
 let _currentPoly = null;
 let _polyPoints = [];
 
-const LAWN_CENTER = [43.38744, -87.88103];  // 841 W 4th Ave, Port Washington WI
+const LAWN_CENTER = [43.381167, -87.889941];
 const LAWN_ZOOM   = 20;
 
 function initLawnMap() {
