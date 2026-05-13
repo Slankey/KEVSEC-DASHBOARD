@@ -1366,9 +1366,9 @@ function loadCongressStatus(force) {
       const bills = data.bills || [];
       if (!bills.length) { billsEl.innerHTML = '<div class="no-data">No bill data available</div>'; return; }
       billsEl.innerHTML = bills.map(b => `
-        <div style="padding:7px 14px;border-bottom:1px solid var(--border)">
+        <div style="padding:7px 14px;border-bottom:1px solid var(--border);text-align:left">
           <div style="font-size:9px;letter-spacing:1px;color:var(--accent);margin-bottom:2px">${b.source} · ${b.date||''}</div>
-          <a href="${b.link||'#'}" target="_blank" style="font-size:11px;color:var(--text);text-decoration:none;line-height:1.4">${b.title}</a>
+          <a href="${b.link||'#'}" target="_blank" style="font-size:11px;color:var(--text);text-decoration:none;line-height:1.4;display:block">${b.title}</a>
         </div>`).join('');
     }
   });

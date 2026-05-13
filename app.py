@@ -4195,8 +4195,21 @@ def api_congress_status():
             parsed = feedparser.parse(url)
             for e in parsed.entries[:4]:
                 pub = e.get("published", e.get("updated", ""))
+                # Normalize date to "May 7, 2026" regardless of RSS format
+                _date_fmt = ""
+                if pub:
+                    try:
+                        import email.utils as _eu
+                        _dt = datetime.datetime(*_eu.parsedate(pub)[:6])
+                        _date_fmt = _dt.strftime("%b %-d, %Y")
+                    except Exception:
+                        try:
+                            _dt = datetime.datetime.fromisoformat(pub[:19])
+                            _date_fmt = _dt.strftime("%b %-d, %Y")
+                        except Exception:
+                            _date_fmt = pub[:10]
                 items.append({"title": e.get("title","")[:140], "link": e.get("link","#"),
-                               "date": pub[:10] if pub else "", "date_raw": pub, "source": label})
+                               "date": _date_fmt, "date_raw": pub, "source": label})
         except Exception:
             pass
         return items
@@ -5044,8 +5057,17 @@ def _warm_cache_impl(force=False):
                     parsed = feedparser.parse(url)
                     for e in parsed.entries[:4]:
                         pub = e.get("published", e.get("updated",""))
+                        _dfmt = ""
+                        if pub:
+                            try:
+                                import email.utils as _eu2
+                                _dt2 = datetime.datetime(*_eu2.parsedate(pub)[:6])
+                                _dfmt = _dt2.strftime("%b %-d, %Y")
+                            except Exception:
+                                try: _dfmt = datetime.datetime.fromisoformat(pub[:19]).strftime("%b %-d, %Y")
+                                except Exception: _dfmt = pub[:10]
                         bills.append({"title": e.get("title","")[:140], "link": e.get("link","#"),
-                                      "date": pub[:10] if pub else "", "date_raw": pub, "source": label})
+                                      "date": _dfmt, "date_raw": pub, "source": label})
                 except Exception: pass
             seen2 = set(); deduped2 = []
             for b in sorted(bills, key=lambda x: x.get("date_raw",""), reverse=True):
