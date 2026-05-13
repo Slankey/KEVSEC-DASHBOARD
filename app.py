@@ -23,7 +23,7 @@ _sec_log.addHandler(_sec_handler)
 _sec_log.setLevel(logging.WARNING)
 
 def _real_ip():
-    return request.headers.get("X-Forwarded-For", request.remote_addr).split(",")[0].strip()
+    return request.headers.get("X-Real-IP") or request.remote_addr
 app.permanent_session_lifetime = datetime.timedelta(hours=24)
 
 USERNAME      = os.environ.get("KEVSEC_USERNAME", "admin")
@@ -808,6 +808,7 @@ def api_flight_search():
 
 @app.route("/api/flight_track", methods=["POST"])
 @login_required
+@csrf_required
 def api_flight_track():
     """Add a flight to the tracking list."""
     body = request.get_json(force=True, silent=True) or {}
@@ -830,6 +831,7 @@ def api_flight_track():
 
 @app.route("/api/flight_untrack", methods=["POST"])
 @login_required
+@csrf_required
 def api_flight_untrack():
     """Remove a flight from tracking."""
     body = request.get_json(force=True, silent=True) or {}
@@ -3078,6 +3080,7 @@ def api_memos_list():
 
 @app.route("/api/memos", methods=["POST"])
 @login_required
+@csrf_required
 def api_memos_upload():
     f = request.files.get("audio")
     name = re.sub(r"[^a-zA-Z0-9 _\-]", "", request.form.get("name", "memo")).strip() or "memo"
@@ -3103,6 +3106,7 @@ def api_memos_serve(filename):
 
 @app.route("/api/memos/<path:filename>", methods=["DELETE"])
 @login_required
+@csrf_required
 def api_memos_delete(filename):
     filename = os.path.basename(filename)
     path = os.path.join(MEMOS_DIR, filename)
@@ -3112,6 +3116,7 @@ def api_memos_delete(filename):
 
 @app.route("/api/memos/rename", methods=["POST"])
 @login_required
+@csrf_required
 def api_memos_rename():
     data = request.json or {}
     old = os.path.basename(data.get("old", ""))
@@ -3230,6 +3235,7 @@ def api_notes_get(fname):
 
 @app.route("/api/notes", methods=["POST"])
 @login_required
+@csrf_required
 def api_notes_create():
     """Create or update a note."""
     data = request.json or {}
@@ -3250,6 +3256,7 @@ def api_notes_create():
 
 @app.route("/api/notes/<path:fname>", methods=["DELETE"])
 @login_required
+@csrf_required
 def api_notes_delete(fname):
     fname = os.path.basename(fname)
     path = os.path.join(NOTES_DIR, fname)
@@ -3259,6 +3266,7 @@ def api_notes_delete(fname):
 
 @app.route("/api/notes/<path:fname>/rename", methods=["POST"])
 @login_required
+@csrf_required
 def api_notes_rename(fname):
     old_fname = os.path.basename(fname)
     new_title = re.sub(r"[^\w\s\-]", "", (request.json or {}).get("title", "")).strip()[:80]
@@ -3339,6 +3347,7 @@ def api_notepad():
 
 @app.route("/api/reminders", methods=["GET","POST","DELETE"])
 @login_required
+@csrf_required
 def api_reminders():
     try:
         with open(REMINDERS_FILE) as f:
