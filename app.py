@@ -2290,7 +2290,7 @@ def api_server_stats():
         svc_names = ["jellyfin", "librarian-bot",
                      "reminder-bot", "kevsec-dashboard", "presidential-sim",
                      "honeypot", "endlessh", "fail2ban", "sonarr", "radarr", "prowlarr", "nginx",
-                     "dj-atticus", "rtorrent@slankey"]
+                     "rtorrent@slankey"]
         sr = subprocess.run(["systemctl", "is-active"] + svc_names,
                             capture_output=True, text=True)
         statuses = sr.stdout.strip().split("\n")
@@ -5502,134 +5502,6 @@ def _schedule_daily_refresh():
         _warm_cache(force=True)
 
 
-# ── Spotify OAuth for DJ Atticus ─────────────────────────────────────────────
-import base64, urllib.parse
-
-SPOTIFY_CLIENT_ID     = "5a47aaeae39d45c092986e5ea0d419fd"
-SPOTIFY_CLIENT_SECRET = "86e0076e3a1443088971bda52f82d8d2"
-SPOTIFY_REDIRECT_URI  = os.environ.get("SPOTIFY_REDIRECT_URI", "")
-SPOTIFY_TOKEN_FILE    = "/opt/dj-atticus/spotify_token.json"
-SPOTIFY_CONF_FILE     = "/opt/dj-atticus/spotifyd.conf"
-
-def _spotify_update_token(access_token, refresh_token, expires_in):
-    import time
-    token_data = {
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-        "expires_at": time.time() + expires_in - 60
-    }
-    with open(SPOTIFY_TOKEN_FILE, "w") as f:
-        json.dump(token_data, f)
-    # Re-write spotifyd.conf with new token
-    try:
-        with open(SPOTIFY_CONF_FILE, "r") as f:
-            conf = f.read()
-        # Remove old password/token lines only — keep username (required for token auth)
-        lines = []
-        for line in conf.splitlines():
-            stripped = line.strip()
-            if stripped.startswith("password") or stripped.startswith("token"):
-                continue
-            lines.append(line)
-        # Insert token after [global]
-        output = []
-        for line in lines:
-            output.append(line)
-            if line.strip() == "[global]":
-                output.append(f'token = "{access_token}"')
-        with open(SPOTIFY_CONF_FILE, "w") as f:
-            f.write("\n".join(output) + "\n")
-        subprocess.run(["sudo", "systemctl", "restart", "dj-atticus"], check=False)
-        app.logger.info("[SPOTIFY] Token updated, dj-atticus restarted")
-    except Exception as e:
-        app.logger.error(f"[SPOTIFY] Failed to update spotifyd.conf: {e}")
-
-@app.route("/spotify-auth")
-@login_required
-def spotify_auth():
-    state = secrets.token_hex(16)
-    session["spotify_state"] = state
-    params = {
-        "client_id": SPOTIFY_CLIENT_ID,
-        "response_type": "code",
-        "redirect_uri": SPOTIFY_REDIRECT_URI,
-        "state": state,
-        "scope": "streaming user-read-playback-state user-modify-playback-state user-read-private",
-    }
-    return redirect("https://accounts.spotify.com/authorize?" + urllib.parse.urlencode(params))
-
-@app.route("/spotify-callback")
-def spotify_callback():
-    error = request.args.get("error")
-    if error:
-        return f"<h2>Spotify auth denied: {error}</h2>", 400
-    code = request.args.get("code", "")
-    if not code:
-        return "<h2>No code returned from Spotify</h2>", 400
-    try:
-        creds_b64 = base64.b64encode(
-            f"{SPOTIFY_CLIENT_ID}:{SPOTIFY_CLIENT_SECRET}".encode()).decode()
-        resp = requests.post(
-            "https://accounts.spotify.com/api/token",
-            headers={"Authorization": f"Basic {creds_b64}",
-                     "Content-Type": "application/x-www-form-urlencoded"},
-            data={"grant_type": "authorization_code",
-                  "code": code,
-                  "redirect_uri": SPOTIFY_REDIRECT_URI},
-            timeout=10
-        )
-        if not resp.ok:
-            return f"<h2>Token exchange failed: {resp.status_code}<br><pre>{resp.text}</pre></h2>", 500
-        tokens = resp.json()
-        _spotify_update_token(
-            tokens["access_token"], tokens.get("refresh_token", ""), tokens.get("expires_in", 3600))
-        return "<h2>✅ DJ Atticus authorized! Spotify Connect is now active.<br><a href='/'>Return to dashboard</a></h2>"
-    except Exception as e:
-        app.logger.error(f"[SPOTIFY] Callback error: {e}", exc_info=True)
-        return f"<h2>Error: {e}</h2>", 500
-
-@app.route("/api/spotify_refresh", methods=["POST"])
-@login_required
-def api_spotify_refresh():
-    if not os.path.exists(SPOTIFY_TOKEN_FILE):
-        return jsonify({"error": "No token file — authorize first"}), 400
-    with open(SPOTIFY_TOKEN_FILE) as f:
-        data = json.load(f)
-    refresh_token = data.get("refresh_token", "")
-    if not refresh_token:
-        return jsonify({"error": "No refresh token stored"}), 400
-    creds_b64 = base64.b64encode(
-        f"{SPOTIFY_CLIENT_ID}:{SPOTIFY_CLIENT_SECRET}".encode()).decode()
-    resp = requests.post(
-        "https://accounts.spotify.com/api/token",
-        headers={"Authorization": f"Basic {creds_b64}",
-                 "Content-Type": "application/x-www-form-urlencoded"},
-        data={"grant_type": "refresh_token", "refresh_token": refresh_token},
-        timeout=10
-    )
-    if not resp.ok:
-        return jsonify({"error": resp.text}), 500
-    tokens = resp.json()
-    _spotify_update_token(
-        tokens["access_token"],
-        tokens.get("refresh_token", refresh_token),
-        tokens.get("expires_in", 3600))
-    return jsonify({"ok": True, "expires_in": tokens.get("expires_in", 3600)})
-
-@app.route("/api/spotify_status")
-@login_required
-def api_spotify_status():
-    if not os.path.exists(SPOTIFY_TOKEN_FILE):
-        return jsonify({"authorized": False})
-    import time
-    with open(SPOTIFY_TOKEN_FILE) as f:
-        data = json.load(f)
-    expires_at = data.get("expires_at", 0)
-    return jsonify({
-        "authorized": True,
-        "expired": time.time() > expires_at,
-        "expires_in": max(0, int(expires_at - time.time()))
-    })
 
 @app.route("/migration")
 @login_required

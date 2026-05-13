@@ -886,7 +886,6 @@ const SVC_LABELS = {
   'sonarr':            '📺 Sonarr',
   'autobrr':           '⚡ Autobrr',
   'kevsec-dashboard':  '🖥 Dashboard',
-  'dj-atticus':        '🎵 DJ Atticus',
 };
 
 function _svcFeedback(msg, color) {
@@ -4204,43 +4203,6 @@ function _fmtBytes(bytes) {
   return Math.round(bytes / 1024) + ' KB';
 }
 
-// ── DJ Atticus ────────────────────────────────────────────────────────────────
-function loadDjStatus() {
-  fetch('/api/spotify_status').then(r => r.json()).then(data => {
-    const statusEl = document.getElementById('dja-spotify-status');
-    const textEl   = document.getElementById('dja-status-text');
-    const authBtn  = document.getElementById('dja-auth-btn');
-    if (!statusEl) return;
-    if (!data.authorized) {
-      statusEl.textContent = '⚠ Not authorized — click Authorize Spotify';
-      statusEl.style.color = 'var(--warn, #f59e0b)';
-      if (textEl) textEl.textContent = 'After authorizing, DJ Atticus will appear in your Spotify device list.';
-    } else if (data.expired) {
-      statusEl.textContent = '⚠ Token expired — click Refresh Token';
-      statusEl.style.color = 'var(--warn, #f59e0b)';
-    } else {
-      const mins = Math.round(data.expires_in / 60);
-      statusEl.textContent = `✅ Authorized — token valid for ${mins}m`;
-      statusEl.style.color = 'var(--green, #4ade80)';
-      if (authBtn) authBtn.textContent = '🔗 Re-authorize Spotify';
-      if (textEl) textEl.textContent = 'DJ Atticus should appear in your Spotify → Connect devices list. Select it to stream.';
-    }
-    const ts = document.getElementById('dja-ts');
-    if (ts) ts.textContent = new Date().toLocaleTimeString();
-  }).catch(() => {});
-}
-
-function djSpotifyRefresh() {
-  const statusEl = document.getElementById('dja-spotify-status');
-  if (statusEl) { statusEl.textContent = 'Refreshing...'; statusEl.style.color = 'var(--text-dim)'; }
-  _csrfPost('/api/spotify_refresh', {}).then(r => r.json()).then(data => {
-    if (data.ok) {
-      if (statusEl) { statusEl.textContent = `✅ Token refreshed (valid ${Math.round(data.expires_in/60)}m)`; statusEl.style.color = 'var(--green, #4ade80)'; }
-    } else {
-      if (statusEl) { statusEl.textContent = `❌ ${data.error}`; statusEl.style.color = 'var(--danger, #f87171)'; }
-    }
-  }).catch(e => { if (statusEl) statusEl.textContent = '❌ Error: ' + e; });
-}
 
 // ══════════════════════════════════════════════════════ PERSONAL / HEALTH ════
 
