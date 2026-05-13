@@ -4062,72 +4062,91 @@ def api_ozaukee_alerts():
                         "fetched": datetime.datetime.now().strftime("%H:%M:%S")})
 
 
+_WH_FEEDS = [
+    # Official White House RSS feeds
+    ("WH Actions",  "action",  "https://www.whitehouse.gov/presidential-actions/feed/"),
+    ("WH News",     "news",    "https://www.whitehouse.gov/news/feed/"),
+    ("WH Remarks",  "remarks", "https://www.whitehouse.gov/remarks/feed/"),
+]
+
 @app.route("/api/president_intel")
 @login_required
 def api_president_intel():
-    """Presidential schedule scraped daily from Roll Call / Factbase calendar."""
+    """Presidential activity: official White House RSS + Google News schedule."""
     force = request.args.get("force") == "1"
-    cached = cache_get("president_intel", ttl=86400, force=force)  # 24hr — daily scrape
+    cached = cache_get("president_intel", ttl=3600, force=force)  # 1hr
     if cached:
         return jsonify(cached)
 
-    hdrs = {
-        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-                      "(KHTML, like Gecko) Chrome/124.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml",
-        "Accept-Language": "en-US,en;q=0.9",
-    }
-    schedule = []
+    import urllib.parse as _ulp
+    items = []
 
-    try:
-        resp = requests.get(
-            "https://rollcall.com/factbase/trump/calendar/",
-            timeout=20, headers=hdrs)
-        html = resp.text
-
-        today = datetime.date.today()
-        window_end = today + datetime.timedelta(days=14)
-
-        # Find all date positions and event positions
-        date_matches = list(_DATE_PAT.finditer(html))
-        for i, dm in enumerate(date_matches):
-            day_str = dm.group(1).strip().rstrip(',')
-            date_str = dm.group(2).strip()
-            try:
-                date_obj = datetime.datetime.strptime(date_str, "%B %d, %Y").date()
-            except Exception:
-                continue
-            if date_obj < today or date_obj > window_end:
-                continue
-
-            # Get the html slice between this date and the next
-            start = dm.end()
-            end = date_matches[i + 1].start() if i + 1 < len(date_matches) else len(html)
-            chunk = html[start:end]
-
-            for em in _EVENT_PAT.finditer(chunk):
-                ev_type = em.group(1).strip()
-                ev_time = em.group(2).strip()
-                ev_title = _WS_PAT.sub(' ', em.group(3)).strip()
-                if not ev_title or ev_title.lower() == 'tbd':
-                    continue
-                schedule.append({
-                    "date":     date_obj.strftime("%a %b %-d"),
-                    "day":      day_str,
-                    "time":     ev_time,
-                    "title":    ev_title[:160],
-                    "type":     ev_type,
-                    "source":   "Roll Call / Factbase",
+    # 1. Official White House feeds
+    def _fetch_wh(label, kind, url):
+        out = []
+        try:
+            feed = feedparser.parse(url)
+            for e in feed.entries[:8]:
+                pub = getattr(e, "published", None) or getattr(e, "updated", None) or ""
+                summary = re.sub(r"<[^>]+>", " ", e.get("summary", "") or "").strip()
+                summary = re.sub(r"\s{2,}", " ", summary)[:200]
+                out.append({
+                    "title":   e.get("title", "")[:160],
+                    "url":     e.get("link", ""),
+                    "date":    pub[:16] if pub else "",
+                    "summary": summary,
+                    "source":  label,
+                    "kind":    kind,
                 })
+        except Exception as ex:
+            app.logger.warning("WH feed %s failed: %s", label, ex)
+        return out
 
-        schedule.sort(key=lambda x: (x["date"], x["time"]))
-    except Exception as ex:
-        app.logger.warning("president_intel scrape error: %s", ex)
+    # 2. Google News: Trump schedule / activity
+    _gnews_queries = [
+        ("Schedule",   "Trump presidential schedule today 2026"),
+        ("Activity",   "Trump White House meeting signed today 2026"),
+        ("Roll Call",  "site:rollcall.com Trump 2026"),
+    ]
+    def _fetch_gnews(label, q):
+        out = []
+        try:
+            url = f"https://news.google.com/rss/search?q={_ulp.quote(q)}&hl=en-US&gl=US&ceid=US:en"
+            feed = feedparser.parse(url)
+            for e in feed.entries[:5]:
+                pub = getattr(e, "published", None) or ""
+                out.append({
+                    "title":   e.get("title", "")[:160],
+                    "url":     e.get("link", ""),
+                    "date":    pub[:16] if pub else "",
+                    "summary": "",
+                    "source":  label,
+                    "kind":    "news",
+                })
+        except Exception as ex:
+            app.logger.warning("GNews president %s failed: %s", label, ex)
+        return out
+
+    with ThreadPoolExecutor(max_workers=6) as ex:
+        futs = (
+            [ex.submit(_fetch_wh, lbl, kind, url) for lbl, kind, url in _WH_FEEDS] +
+            [ex.submit(_fetch_gnews, lbl, q) for lbl, q in _gnews_queries]
+        )
+        for fut in as_completed(futs):
+            items.extend(fut.result())
+
+    # Deduplicate by title prefix
+    seen = set(); deduped = []
+    for it in sorted(items, key=lambda x: x.get("date",""), reverse=True):
+        key = it["title"][:50].lower().strip()
+        if key not in seen:
+            seen.add(key); deduped.append(it)
 
     result = {
-        "schedule":     schedule[:30],
+        "schedule":     [],   # kept for JS compatibility (empty — feed-based now)
+        "items":        deduped[:30],
         "fetched":      _ts(),
-        "schedule_url": "https://rollcall.com/factbase/trump/calendar/",
+        "schedule_url": "https://www.whitehouse.gov/news/",
     }
     cache_set("president_intel", result)
     return jsonify(result)
@@ -4147,10 +4166,12 @@ def api_congress_status():
     bills = []
     # Google News RSS — legislation/bills news
     bill_queries = [
-        ("House Bill",   "House bill legislation passed 2026"),
-        ("Senate Bill",  "Senate bill legislation passed 2026"),
-        ("Congress",     "Congress legislation vote 2026"),
-        ("Budget/Spending", "federal budget appropriations spending bill 2026"),
+        ("House",        "House bill vote passed 2026"),
+        ("Senate",       "Senate bill vote passed 2026"),
+        ("Congress",     "Congress legislation signed law 2026"),
+        ("Budget",       "federal budget appropriations spending 2026"),
+        ("Roll Call",    "site:rollcall.com congress legislation 2026"),
+        ("Politico",     "site:politico.com congress vote bill 2026"),
     ]
     def _fetch_bill_news(label, query):
         items = []
@@ -4934,51 +4955,57 @@ def _warm_cache_impl(force=False):
         except Exception as e:
             app.logger.warning("[warm_cache] burn_ban: %s", e)
 
-    # Presidential Intel — 24hr TTL
-    if force or not cache_get("president_intel", 86400):
+    # Presidential Intel — 1hr TTL — White House RSS + Google News
+    if force or not cache_get("president_intel", 3600):
         try:
-            _pi_hdrs = {
-                "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-                              "(KHTML, like Gecko) Chrome/124.0 Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml",
-                "Accept-Language": "en-US,en;q=0.9",
-            }
-            _pi_resp = requests.get("https://rollcall.com/factbase/trump/calendar/",
-                                    timeout=20, headers=_pi_hdrs)
-            _pi_html = _pi_resp.text
-            _pi_today = datetime.date.today()
-            _pi_end = _pi_today + datetime.timedelta(days=14)
-            _pi_sched = []
-            _pi_dates = list(_DATE_PAT.finditer(_pi_html))
-            for _pi_i, _pi_dm in enumerate(_pi_dates):
-                _pi_day = _pi_dm.group(1).strip().rstrip(',')
-                _pi_dstr = _pi_dm.group(2).strip()
+            import urllib.parse as _ulp2
+            _pi_items = []
+            _wh_feeds = [
+                ("WH Actions",  "action",  "https://www.whitehouse.gov/presidential-actions/feed/"),
+                ("WH News",     "news",    "https://www.whitehouse.gov/news/feed/"),
+                ("WH Remarks",  "remarks", "https://www.whitehouse.gov/remarks/feed/"),
+            ]
+            _gnews_qs = [
+                ("Schedule",  "Trump presidential schedule today 2026"),
+                ("Activity",  "Trump White House meeting signed today 2026"),
+                ("Roll Call", "site:rollcall.com Trump 2026"),
+            ]
+            def _wh_feed(label, kind, url):
+                out = []
                 try:
-                    _pi_dobj = datetime.datetime.strptime(_pi_dstr, "%B %d, %Y").date()
-                except Exception:
-                    continue
-                if _pi_dobj < _pi_today or _pi_dobj > _pi_end:
-                    continue
-                _pi_start = _pi_dm.end()
-                _pi_chunk_end = _pi_dates[_pi_i + 1].start() if _pi_i + 1 < len(_pi_dates) else len(_pi_html)
-                _pi_chunk = _pi_html[_pi_start:_pi_chunk_end]
-                for _pi_em in _EVENT_PAT.finditer(_pi_chunk):
-                    _pi_title = _WS_PAT.sub(' ', _pi_em.group(3)).strip()
-                    if not _pi_title or _pi_title.lower() == 'tbd':
-                        continue
-                    _pi_sched.append({
-                        "date": _pi_dobj.strftime("%a %b %-d"),
-                        "day": _pi_day,
-                        "time": _pi_em.group(2).strip(),
-                        "title": _pi_title[:160],
-                        "type": _pi_em.group(1).strip(),
-                        "source": "Roll Call / Factbase",
-                    })
-            _pi_sched.sort(key=lambda x: (x["date"], x["time"]))
+                    f = feedparser.parse(url)
+                    for e in f.entries[:8]:
+                        pub = getattr(e,"published",None) or getattr(e,"updated",None) or ""
+                        s = re.sub(r"<[^>]+>"," ", e.get("summary","") or "").strip()[:200]
+                        out.append({"title":e.get("title","")[:160],"url":e.get("link",""),
+                                    "date":pub[:16],"summary":s,"source":label,"kind":kind})
+                except Exception: pass
+                return out
+            def _gnews_pi(label, q):
+                out = []
+                try:
+                    u = f"https://news.google.com/rss/search?q={_ulp2.quote(q)}&hl=en-US&gl=US&ceid=US:en"
+                    f = feedparser.parse(u)
+                    for e in f.entries[:5]:
+                        pub = getattr(e,"published",None) or ""
+                        out.append({"title":e.get("title","")[:160],"url":e.get("link",""),
+                                    "date":pub[:16],"summary":"","source":label,"kind":"news"})
+                except Exception: pass
+                return out
+            with ThreadPoolExecutor(max_workers=6) as _ex:
+                _futs2 = (
+                    [_ex.submit(_wh_feed, lbl, kind, url) for lbl, kind, url in _wh_feeds] +
+                    [_ex.submit(_gnews_pi, lbl, q) for lbl, q in _gnews_qs]
+                )
+                for _f in as_completed(_futs2):
+                    _pi_items.extend(_f.result())
+            _seen_pi = set(); _deduped_pi = []
+            for it in sorted(_pi_items, key=lambda x: x.get("date",""), reverse=True):
+                k = it["title"][:50].lower().strip()
+                if k not in _seen_pi: _seen_pi.add(k); _deduped_pi.append(it)
             cache_set("president_intel", {
-                "schedule": _pi_sched[:30],
-                "fetched": _ts(),
-                "schedule_url": "https://rollcall.com/factbase/trump/calendar/",
+                "schedule": [], "items": _deduped_pi[:30],
+                "fetched": _ts(), "schedule_url": "https://www.whitehouse.gov/news/",
             })
         except Exception as e:
             app.logger.warning("[warm_cache] president_intel: %s", e)
@@ -4988,10 +5015,12 @@ def _warm_cache_impl(force=False):
         try:
             import urllib.parse as _up
             bill_queries = [
-                ("House Bill",      "House bill legislation passed 2026"),
-                ("Senate Bill",     "Senate bill legislation passed 2026"),
-                ("Congress",        "Congress legislation vote 2026"),
-                ("Budget/Spending", "federal budget appropriations spending bill 2026"),
+                ("House",    "House bill vote passed 2026"),
+                ("Senate",   "Senate bill vote passed 2026"),
+                ("Congress", "Congress legislation signed law 2026"),
+                ("Budget",   "federal budget appropriations spending 2026"),
+                ("Roll Call","site:rollcall.com congress legislation 2026"),
+                ("Politico", "site:politico.com congress vote bill 2026"),
             ]
             bills = []
             for label, query in bill_queries:

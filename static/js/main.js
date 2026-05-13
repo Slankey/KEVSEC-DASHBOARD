@@ -1273,22 +1273,26 @@ function loadPresidentIntel(force) {
       }
     }
 
-    // WH press releases grid
+    // WH + news feed grid
     const items = data.items || [];
+    const KIND_COLOR = {action:'#e8631c', news:'#60a5fa', remarks:'#4ade80', news2:'#c084fc'};
     if (!items.length) {
       el.innerHTML = `<div style="padding:12px 16px;font-size:11px;color:var(--text-dim)">
         No recent White House activity.
-        <a href="${data.wh_url||'https://www.whitehouse.gov/news/'}" target="_blank" style="color:var(--accent)">Open WH News ↗</a>
+        <a href="${data.schedule_url||'https://www.whitehouse.gov/news/'}" target="_blank" style="color:var(--accent)">Open WH News ↗</a>
       </div>`;
       return;
     }
     el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1px;background:var(--border)">
-      ${items.map(item => `
-        <div style="background:var(--bg2);padding:10px 14px">
-          <div style="font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:4px">${item.source} · ${item.date||''}</div>
-          <a href="${item.link}" target="_blank" style="color:var(--text-hi);font-size:12px;text-decoration:none;line-height:1.4;display:block;margin-bottom:4px">${item.title}</a>
+      ${items.map(item => {
+        const col = KIND_COLOR[item.kind] || 'var(--accent)';
+        return `
+        <div style="background:var(--bg2);padding:10px 14px;border-left:2px solid ${col}">
+          <div style="font-size:9px;letter-spacing:2px;color:${col};margin-bottom:4px;text-transform:uppercase">${item.source} · ${item.date ? item.date.slice(0,10) : ''}</div>
+          <a href="${item.url||item.link||'#'}" target="_blank" style="color:var(--text-hi);font-size:12px;text-decoration:none;line-height:1.4;display:block;margin-bottom:4px">${item.title}</a>
           ${item.summary ? `<div style="font-size:10px;color:var(--text-dim);line-height:1.5">${item.summary}</div>` : ''}
-        </div>`).join('')}
+        </div>`;
+      }).join('')}
     </div>`;
   });
 }
