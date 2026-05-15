@@ -537,6 +537,9 @@ def api_news():
         ("Wired",          "https://www.wired.com/feed/rss"),
         ("Ars Technica",   "http://feeds.arstechnica.com/arstechnica/index"),
         ("ProPublica",     "https://feeds.propublica.org/propublica/main"),
+        ("Vox",            "https://www.vox.com/rss/index.xml"),
+        ("Epoch Times",    "https://www.theepochtimes.com/feed/"),
+        ("Drudge Report",  "https://feeds.feedburner.com/DrudgeReportFeed"),
         ("The Intercept",  "https://theintercept.com/feed/?rss"),
         ("AllSides",       "https://www.allsides.com/news/rss"),
         ("WPR",            "https://www.wpr.org/feed"),
@@ -555,7 +558,7 @@ def api_news():
         try:
             f = feedparser.parse(url)
             out = []
-            for e in f.entries[:8]:
+            for e in f.entries[:10]:
                 summary = re.sub(r"<[^>]+>", "", e.get("summary", ""))[:220]
                 out.append({"source": source, "title": e.get("title", "")[:120],
                             "link": e.get("link", "#"), "published": e.get("published", "")[:25],
@@ -4722,7 +4725,7 @@ def _warm_cache_impl(force=False):
         for source, url in feeds:
             try:
                 f = feedparser.parse(url)
-                for e in f.entries[:8]:
+                for e in f.entries[:10]:
                     summary = re.sub(r"<[^>]+>", "", e.get("summary", ""))[:220]
                     articles.append({"source": source, "title": e.get("title","")[:120],
                                      "link": e.get("link","#"), "published": e.get("published","")[:25],
