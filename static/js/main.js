@@ -152,18 +152,6 @@ function loadTab(tab) {
     setTimeout(() => loadPolTweets(),              6*M);
     setTimeout(() => loadGovtIntel(),              7*M);
   }
-  if (tab === 'command') {
-    loadServerStats();
-    loadQueue();
-    loadBandwidth();
-    loadStorageboxDisk();
-    loadTarpitStats();
-    setTimeout(() => loadProxmox(),           1*M);
-    setTimeout(() => loadGoals(),             2*M);
-    setTimeout(() => loadDjStatus(),          3*M);
-    setTimeout(() => buildSvcControlGrid(),   4*M + 5000);
-    setTimeout(() => loadExtServices(),       5*M);  // heaviest — runs last
-  }
   if (tab === 'cyber') {
     loadCVEs(); loadFirewallDrops(); loadServerHealth(); loadJailSummary();
     setTimeout(() => loadSWPC(), 2*M);
@@ -191,7 +179,15 @@ function loadTab(tab) {
     loadFlightDeals(false);
   }
   if (tab === 'garden') { loadGarden(); loadWateringLog(); renderInvasives(); setTimeout(initLawnMap, 100); }
-  if (tab === 'settings') { loadSettings(); }
+  if (tab === 'settings') {
+    loadServerStats(); loadQueue(); loadBandwidth(); loadStorageboxDisk(); loadTarpitStats();
+    setTimeout(() => loadProxmox(),         1*M);
+    setTimeout(() => loadGoals(),           2*M);
+    setTimeout(() => loadDjStatus(),        3*M);
+    setTimeout(() => buildSvcControlGrid(), 4*M + 5000);
+    setTimeout(() => loadExtServices(),     4*M);
+    loadSettings();
+  }
 }
 function refreshAllCommand() {
   const btn = document.querySelector('[onclick="refreshAllCommand()"]');
@@ -4885,6 +4881,15 @@ function loadSettings(force) {
     renderSysInfo(status.system || {});
     _settingsLogData = authLog.events || [];
     filterAuthLog('all', document.querySelector('.log-filter-btn.active'));
+    // RSS feed stats
+    const rssStats = document.getElementById('rss-feed-stats');
+    if (rssStats) {
+      const newsCache = status.cache_keys?.find(k => k.key === 'news');
+      const cacheState = (status.warm_cache?.finished)
+        ? 'Last built: ' + new Date(status.warm_cache.finished).toLocaleString()
+        : 'Cache state unknown';
+      rssStats.textContent = cacheState;
+    }
     if (status.warm_cache && status.warm_cache.running) {
       _settingsRefreshTimer = setTimeout(() => loadSettings(true), 4000);
     }
@@ -4989,5 +4994,24 @@ function triggerWarmCache() {
     setTimeout(() => loadSettings(true), 3000);
   }).catch(() => {
     if (btn) { btn.disabled = false; btn.textContent = '▶ TRIGGER WARM CACHE'; }
+  });
+}
+
+function copyRssUrl() {
+  const inp = document.getElementById('rss-url-input');
+  const btn = document.getElementById('rss-copy-btn');
+  const fb  = document.getElementById('rss-copy-feedback');
+  if (!inp) return;
+  navigator.clipboard.writeText(inp.value).then(() => {
+    if (btn) btn.textContent = '✓ COPIED';
+    if (fb)  fb.textContent  = 'URL copied to clipboard';
+    setTimeout(() => {
+      if (btn) btn.textContent = '📋 COPY';
+      if (fb)  fb.textContent  = '';
+    }, 2500);
+  }).catch(() => {
+    inp.select();
+    document.execCommand('copy');
+    if (fb) fb.textContent = 'URL selected — press Ctrl+C';
   });
 }

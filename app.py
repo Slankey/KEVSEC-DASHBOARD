@@ -490,7 +490,7 @@ def reset_pw(token):
 @app.route("/dashboard")
 @login_required
 def dashboard():
-    return render_template("dashboard.html", user=session.get("user"), csrf_token=_csrf_token())
+    return render_template("dashboard.html", user=session.get("user"), csrf_token=_csrf_token(), rss_feed_token=os.environ.get("RSS_FEED_TOKEN",""))
 
 @app.route("/api/csrf")
 @login_required

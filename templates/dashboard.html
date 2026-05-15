@@ -52,13 +52,12 @@
 <!-- ═══ TABS ══════════════════════════════════════════════════════════════ -->
 <nav class="tabs">
   <button class="tab active"  data-tab="intel">   📡 Intel Feed</button>
-  <button class="tab"         data-tab="command">  🖥 Command Center</button>
   <button class="tab"         data-tab="cyber">    🛡 Cyber Ops</button>
   <button class="tab"         data-tab="weather">  🌩 Weather Ops</button>
   <button class="tab"         data-tab="comms">    🩺 Personal</button>
   <button class="tab"         data-tab="travel">  ✈ Travel</button>
   <button class="tab"         data-tab="garden"> 🌱 Garden</button>
-  <button class="tab"         data-tab="settings">⚙ Settings</button>
+  <button class="tab"         data-tab="settings">⚙ Ops</button>
   <button class="tab desktop-mode-btn" id="desktop-mode-btn" onclick="toggleDesktopMode()" title="Switch between mobile and desktop layout">📱 Mobile</button>
 </nav>
 
@@ -561,280 +560,6 @@
 
 </div>
 
-<!-- ══════════════════════════════════════════ COMMAND CENTER ═══ -->
-<div id="tab-command" class="tab-content">
-  <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
-    <button class="refresh-btn" onclick="refreshAllCommand()" style="padding:6px 14px;font-size:11px;letter-spacing:1px">⟳ REFRESH ALL</button>
-  </div>
-  <div class="panel-row">
-
-    <!-- Local Server -->
-    <div class="panel">
-      <div class="panel-header">
-        <span>🖥 Swizzin — Local Server</span>
-        <span id="server-ts" class="ts"></span>
-        <button class="refresh-btn" onclick="loadServerStats(true)">⟳</button>
-      </div>
-      <div id="server-stats" class="stats-grid"></div>
-      <div class="panel-sub-header">Service Status</div>
-      <div id="services-grid" class="services-grid"></div>
-    </div>
-
-    <!-- Proxmox -->
-    <div class="panel">
-      <div class="panel-header">
-        <span>🏗 Proxmox — Hypervisor</span>
-        <span id="pve-ts" class="ts"></span>
-        <button class="refresh-btn" onclick="loadProxmox(true)">⟳</button>
-      </div>
-      <div id="proxmox-nodes" class="pve-grid"></div>
-      <div class="panel-sub-header">Virtual Machines</div>
-      <div id="proxmox-vms" class="pve-vms"></div>
-    </div>
-
-    <!-- Network Bandwidth + StorageBox Disk -->
-    <div class="panel">
-      <div class="panel-header">
-        <span>📡 Network &amp; Storage</span>
-        <span id="bw-ts" class="ts"></span>
-        <button class="refresh-btn" onclick="loadBandwidth()">⟳</button>
-      </div>
-      <!-- Bandwidth -->
-      <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
-        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:10px">LIVE BANDWIDTH</div>
-        <div id="bw-stats" class="stats-grid">
-          <div class="stat-item"><span class="stat-val" id="bw-rx">—</span><span class="stat-label">↓ RX Mbps</span></div>
-          <div class="stat-item"><span class="stat-val" id="bw-tx">—</span><span class="stat-label">↑ TX Mbps</span></div>
-          <div class="stat-item"><span class="stat-val" id="bw-total">—</span><span class="stat-label">TOTAL Mbps</span></div>
-        </div>
-        <div id="bw-bar-wrap" style="margin-top:8px;background:var(--bg3);border-radius:3px;height:6px;overflow:hidden">
-          <div id="bw-bar" style="height:100%;width:0%;background:var(--accent);transition:width 0.4s"></div>
-        </div>
-        <div id="bw-note" style="font-size:9px;color:var(--text-dim);margin-top:4px">1s sample · updates on refresh</div>
-      </div>
-      <!-- StorageBox Disk -->
-      <div style="padding:12px 16px">
-        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:10px">STORAGEBOX DISK</div>
-        <div class="stats-grid">
-          <div class="stat-item"><span class="stat-val" id="sb-used">—</span><span class="stat-label">USED GB</span></div>
-          <div class="stat-item"><span class="stat-val" id="sb-free">—</span><span class="stat-label">FREE GB</span></div>
-          <div class="stat-item"><span class="stat-val" id="sb-pct">—</span><span class="stat-label">% FULL</span></div>
-        </div>
-        <div id="sb-bar-wrap" style="margin-top:8px;background:var(--bg3);border-radius:3px;height:6px;overflow:hidden">
-          <div id="sb-bar" style="height:100%;width:0%;background:var(--accent);transition:width 0.6s"></div>
-        </div>
-        <div id="sb-total" style="font-size:9px;color:var(--text-dim);margin-top:4px">Total: —</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ⚡ Server Control -->
-  <div class="panel">
-    <div class="panel-header">
-      <span>⚡ Server Control</span>
-      <span id="svc-feedback" class="ts" style="color:var(--accent)"></span>
-    </div>
-
-    <!-- Server-level actions -->
-    <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
-      <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:10px">SYSTEM</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-        <button class="svc-btn svc-btn-warn" onclick="serverAction('restart',0)">🔁 Restart Now</button>
-        <button class="svc-btn svc-btn-warn" onclick="serverAction('shutdown',0)">⏹ Shutdown</button>
-        <button class="svc-btn" onclick="serverAction('cancel',0)" style="color:var(--text-dim)">✕ Cancel Scheduled</button>
-        <span style="font-size:10px;color:var(--text-dim);margin-left:8px">Restart in</span>
-        <input id="restart-delay" type="number" min="1" max="1440" value="5"
-               style="width:52px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);
-                      font-family:var(--font-m);font-size:11px;padding:4px 6px;text-align:center">
-        <span style="font-size:10px;color:var(--text-dim)">min</span>
-        <button class="svc-btn svc-btn-warn" onclick="serverAction('restart', parseInt(document.getElementById('restart-delay').value)||5)">🕐 Schedule</button>
-        <button class="svc-btn svc-btn-warn" onclick="serverAction('update-restart',0)" style="margin-left:8px">📦 Update + Restart</button>
-      </div>
-    </div>
-
-    <!-- Maintenance actions -->
-    <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
-      <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:10px">MAINTENANCE</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
-        <button class="svc-btn" onclick="cleanupTmp()">🗑 Clean /tmp</button>
-        <span style="font-size:10px;color:var(--text-dim)">Removes Claude Code sandbox dirs that accumulate and fill root disk</span>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-        <button class="svc-btn" onclick="jellyfinScan()" id="jf-scan-btn">📺 Rescan Jellyfin Library</button>
-        <span style="font-size:10px;color:var(--text-dim)">Run after manually adding or deleting files — forces Jellyfin to re-index all media folders</span>
-        <span id="jf-scan-status" style="font-size:10px;color:var(--accent);margin-left:4px"></span>
-      </div>
-    </div>
-
-    <!-- Service grid -->
-    <div style="padding:12px 16px">
-      <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:10px">SERVICES</div>
-      <div id="svc-control-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px"></div>
-    </div>
-  </div>
-
-  <!-- Tarpit & Honeypot Stats -->
-  <div class="panel">
-    <div class="panel-header">
-      <span>🕳 SSH Tarpit &amp; Honeypot — Active Defense</span>
-      <span id="tarpit-ts" class="ts"></span>
-      <button class="refresh-btn" onclick="loadTarpitStats(true)">⟳ Refresh</button>
-    </div>
-    <div class="panel-row" style="margin:0;gap:0;border-bottom:1px solid var(--border)">
-      <div style="flex:1;padding:12px 16px">
-        <div style="font-size:9px;letter-spacing:3px;color:var(--accent);margin-bottom:10px">🐢 ENDLESSH — SSH TARPIT</div>
-        <div id="tarpit-ssh-stats" class="stats-grid" style="margin-bottom:8px"></div>
-        <div style="font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:6px">RECENT CATCHES</div>
-        <div id="tarpit-recent-ips" style="font-family:var(--font-m);font-size:11px;line-height:1.8"></div>
-      </div>
-      <div style="flex:1;padding:12px 16px;border-left:1px solid var(--border)">
-        <div style="font-size:9px;letter-spacing:3px;color:var(--accent);margin-bottom:10px">🍯 HONEYPOT — WEB TRAPS</div>
-        <div id="tarpit-honeypot-stats" class="stats-grid" style="margin-bottom:8px"></div>
-        <div style="font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:6px">RECENT PROBES</div>
-        <div id="tarpit-honeypot-log"></div>
-      </div>
-    </div>
-    <div id="tarpit-error" style="display:none;padding:10px 16px;color:var(--red2);font-size:11px;font-family:var(--font-m)"></div>
-  </div>
-
-  <div class="panel-row">
-    <!-- Pending Updates -->
-    <div class="panel">
-      <div class="panel-header">
-        <span>📦 Pending System Updates</span>
-        <button class="refresh-btn" onclick="loadUpdates()">⟳ Check Now</button>
-      </div>
-      <div id="updates-list" class="updates-list">
-        <div class="loading">Click "Check Now" to scan for updates</div>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- Local Service Uptime Monitor -->
-  <div class="panel">
-    <div class="panel-header">
-      <span>🚦 Local Service Uptime Monitor</span>
-      <span class="ts" id="local-svc-ts"></span>
-      <button class="refresh-btn" onclick="loadExtServices(true)">⟳</button>
-    </div>
-    <div id="local-services-grid" class="loading">Loading...</div>
-  </div>
-
-  <!-- External Service Status -->
-  <div class="panel">
-    <div class="panel-header">
-      <span>🌐 Internet Service Status</span>
-      <span class="ts" id="ext-svc-ts"></span>
-      <button class="refresh-btn" onclick="loadExtServices(true)">⟳</button>
-    </div>
-    <div id="ext-services-grid" class="loading">Loading service status...</div>
-  </div>
-
-  <!-- Daily Goals -->
-  <div class="panel">
-    <div class="panel-header">
-      <span>🎯 Today's Objectives</span>
-      <span class="ts" id="goals-ts"></span>
-      <button class="refresh-btn" onclick="loadGoals()">⟳ Refresh</button>
-      <button class="refresh-btn" onclick="toggleGoalsEdit()" id="goals-edit-btn">✏ Edit</button>
-    </div>
-    <div id="goals-view" style="padding:12px 16px"></div>
-    <div id="goals-editor" style="display:none;padding:12px 16px">
-      <textarea id="goals-textarea" style="width:100%;min-height:160px;background:var(--bg3);
-        border:1px solid var(--border2);color:var(--text);font-family:var(--font-m);
-        font-size:12px;padding:10px;border-radius:3px;resize:vertical"></textarea>
-      <div style="margin-top:8px;display:flex;gap:8px">
-        <button class="refresh-btn" onclick="saveGoals()">💾 Save</button>
-        <button class="refresh-btn" onclick="toggleGoalsEdit()">✕ Cancel</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- StorageBox Transfer Queue -->
-  <div class="panel" id="queue-panel">
-    <div class="panel-header">
-      <span>📦 StorageBox Transfer Queue</span>
-      <span id="queue-ts" class="ts"></span>
-      <button class="refresh-btn" onclick="loadQueue(true)">⟳</button>
-    </div>
-
-    <!-- Status bar -->
-    <div style="padding:12px 16px;display:flex;gap:24px;flex-wrap:wrap;border-bottom:1px solid var(--border)">
-      <div>
-        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim)">ITEMS</div>
-        <div id="queue-count" style="font-size:20px;font-family:var(--font-m);color:var(--accent)">—</div>
-      </div>
-      <div>
-        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim)">TOTAL SIZE</div>
-        <div id="queue-size" style="font-size:20px;font-family:var(--font-m);color:var(--accent)">—</div>
-      </div>
-      <div>
-        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim)">WORKER</div>
-        <div id="queue-worker" style="font-size:13px;font-family:var(--font-m);padding-top:4px">—</div>
-      </div>
-      <div style="margin-left:auto;display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
-        <button class="svc-btn" id="queue-run-btn" onclick="queueRunNow()">▶ Run Now</button>
-      </div>
-    </div>
-
-    <!-- Queue items list -->
-    <div id="queue-items" style="padding:0;font-family:var(--font-m);font-size:11px;max-height:240px;overflow-y:auto">
-      <div class="loading" style="padding:12px 16px">Loading queue...</div>
-    </div>
-
-    <!-- Schedule control -->
-    <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-      <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim)">DAILY RUN TIME (UTC)</div>
-      <input id="queue-hour"   type="number" min="0" max="23" value="23"
-             style="width:48px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);
-                    font-family:var(--font-m);font-size:12px;padding:4px 6px;text-align:center">
-      <span style="color:var(--text-dim)">:</span>
-      <input id="queue-minute" type="number" min="0" max="59" value="0"
-             style="width:48px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);
-                    font-family:var(--font-m);font-size:12px;padding:4px 6px;text-align:center">
-      <button class="svc-btn" onclick="queueSaveSchedule()">💾 Save Schedule</button>
-      <span id="queue-cron-display" style="font-size:10px;color:var(--text-dim)"></span>
-      <span id="queue-sched-feedback" style="font-size:10px;color:var(--accent)"></span>
-    </div>
-
-    <!-- Log tail -->
-    <div style="padding:0 16px 12px">
-      <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:6px;margin-top:10px;cursor:pointer"
-           onclick="toggleQueueLog()">▶ TRANSFER LOG <span id="queue-log-toggle" style="color:var(--accent)">(show)</span></div>
-      <div id="queue-log" style="display:none;background:var(--bg3);border:1px solid var(--border2);
-           padding:10px;max-height:200px;overflow-y:auto;font-family:var(--font-m);font-size:10px;
-           line-height:1.7;white-space:pre-wrap"></div>
-    </div>
-  </div>
-
-  <!-- NUKE AUTHORITY -->
-  <div class="panel" style="border:2px solid #7a0000;background:linear-gradient(135deg,#0d0000 0%,#1a0000 100%)">
-    <div class="panel-header" style="border-bottom:1px solid #7a0000;background:transparent">
-      <span style="color:#ff2200;letter-spacing:4px;font-size:11px">⚛ NUKE AUTHORITY // TIER-OMEGA PROTOCOL</span>
-      <span style="color:#7a0000;font-size:9px;letter-spacing:2px">KEVSEC STRATEGIC COMMAND</span>
-    </div>
-    <div style="padding:20px 24px;text-align:center">
-      <div style="font-size:9px;letter-spacing:3px;color:#7a0000;margin-bottom:12px">
-        ⚠ AUTHORIZED PERSONNEL ONLY — IRREVERSIBLE — TOTAL SYSTEM DESTRUCTION ⚠
-      </div>
-      <div style="font-size:10px;color:#550000;font-family:var(--font-m);margin-bottom:20px;line-height:1.8">
-        INITIATES SECURE MULTI-PHASE WIPE PROTOCOL · DESTROYS ALL CREDENTIALS, KEYS, APPLICATION DATA, AND MEDIA<br>
-        SYSTEM WILL NOT RECOVER · REQUIRES AUTHENTICATION + CONFIRMATION + 30-SECOND ARMING SEQUENCE
-      </div>
-      <button onclick="openNukeModal()"
-              style="background:linear-gradient(180deg,#3a0000,#1a0000);border:2px solid #cc0000;color:#ff2200;
-                     font-family:var(--font-m);font-size:13px;letter-spacing:6px;padding:16px 40px;
-                     cursor:pointer;text-transform:uppercase;box-shadow:0 0 20px #cc000055;
-                     transition:all 0.3s"
-              onmouseover="this.style.boxShadow='0 0 40px #cc0000aa';this.style.borderColor='#ff2200'"
-              onmouseout="this.style.boxShadow='0 0 20px #cc000055';this.style.borderColor='#cc0000'">
-        ☢ INITIATE NUKE AUTHORITY
-      </button>
-    </div>
-  </div>
-
-</div>
 
 <!-- ════════════════════════════════════════════════ CYBER OPS ═══ -->
 <div id="tab-cyber" class="tab-content">
@@ -1958,8 +1683,241 @@
 
 <!-- ═══════════════════════════════════════════════════ SETTINGS ═══ -->
 <div id="tab-settings" class="tab-content">
+  <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+    <button class="refresh-btn" onclick="refreshAllCommand()" style="padding:6px 14px;font-size:11px;letter-spacing:1px">⟳ REFRESH ALL</button>
+  </div>
+  <div class="panel-row">
+
+    <!-- Local Server -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>🖥 Swizzin — Local Server</span>
+        <span id="server-ts" class="ts"></span>
+        <button class="refresh-btn" onclick="loadServerStats(true)">⟳</button>
+      </div>
+      <div id="server-stats" class="stats-grid"></div>
+      <div class="panel-sub-header">Service Status</div>
+      <div id="services-grid" class="services-grid"></div>
+    </div>
+
+    <!-- Proxmox -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>🏗 Proxmox — Hypervisor</span>
+        <span id="pve-ts" class="ts"></span>
+        <button class="refresh-btn" onclick="loadProxmox(true)">⟳</button>
+      </div>
+      <div id="proxmox-nodes" class="pve-grid"></div>
+      <div class="panel-sub-header">Virtual Machines</div>
+      <div id="proxmox-vms" class="pve-vms"></div>
+    </div>
+
+    <!-- Network Bandwidth + StorageBox Disk -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>📡 Network &amp; Storage</span>
+        <span id="bw-ts" class="ts"></span>
+        <button class="refresh-btn" onclick="loadBandwidth()">⟳</button>
+      </div>
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:10px">LIVE BANDWIDTH</div>
+        <div id="bw-stats" class="stats-grid">
+          <div class="stat-item"><span class="stat-val" id="bw-rx">—</span><span class="stat-label">↓ RX Mbps</span></div>
+          <div class="stat-item"><span class="stat-val" id="bw-tx">—</span><span class="stat-label">↑ TX Mbps</span></div>
+          <div class="stat-item"><span class="stat-val" id="bw-total">—</span><span class="stat-label">TOTAL Mbps</span></div>
+        </div>
+        <div id="bw-bar-wrap" style="margin-top:8px;background:var(--bg3);border-radius:3px;height:6px;overflow:hidden">
+          <div id="bw-bar" style="height:100%;width:0%;background:var(--accent);transition:width 0.4s"></div>
+        </div>
+        <div id="bw-note" style="font-size:9px;color:var(--text-dim);margin-top:4px">1s sample · updates on refresh</div>
+      </div>
+      <div style="padding:12px 16px">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:10px">STORAGEBOX DISK</div>
+        <div class="stats-grid">
+          <div class="stat-item"><span class="stat-val" id="sb-used">—</span><span class="stat-label">USED GB</span></div>
+          <div class="stat-item"><span class="stat-val" id="sb-free">—</span><span class="stat-label">FREE GB</span></div>
+          <div class="stat-item"><span class="stat-val" id="sb-pct">—</span><span class="stat-label">% FULL</span></div>
+        </div>
+        <div id="sb-bar-wrap" style="margin-top:8px;background:var(--bg3);border-radius:3px;height:6px;overflow:hidden">
+          <div id="sb-bar" style="height:100%;width:0%;background:var(--accent);transition:width 0.6s"></div>
+        </div>
+        <div id="sb-total" style="font-size:9px;color:var(--text-dim);margin-top:4px">Total: —</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Server Control -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>⚡ Server Control</span>
+      <span id="svc-feedback" class="ts" style="color:var(--accent)"></span>
+    </div>
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+      <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:10px">SYSTEM</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button class="svc-btn svc-btn-warn" onclick="serverAction('restart',0)">🔁 Restart Now</button>
+        <button class="svc-btn svc-btn-warn" onclick="serverAction('shutdown',0)">⏹ Shutdown</button>
+        <button class="svc-btn" onclick="serverAction('cancel',0)" style="color:var(--text-dim)">✕ Cancel Scheduled</button>
+        <span style="font-size:10px;color:var(--text-dim);margin-left:8px">Restart in</span>
+        <input id="restart-delay" type="number" min="1" max="1440" value="5"
+               style="width:52px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);
+                      font-family:var(--font-m);font-size:11px;padding:4px 6px;text-align:center">
+        <span style="font-size:10px;color:var(--text-dim)">min</span>
+        <button class="svc-btn svc-btn-warn" onclick="serverAction('restart', parseInt(document.getElementById('restart-delay').value)||5)">🕐 Schedule</button>
+        <button class="svc-btn svc-btn-warn" onclick="serverAction('update-restart',0)" style="margin-left:8px">📦 Update + Restart</button>
+      </div>
+    </div>
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+      <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:10px">MAINTENANCE</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+        <button class="svc-btn" onclick="cleanupTmp()">🗑 Clean /tmp</button>
+        <span style="font-size:10px;color:var(--text-dim)">Removes Claude Code sandbox dirs that accumulate and fill root disk</span>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button class="svc-btn" onclick="jellyfinScan()" id="jf-scan-btn">📺 Rescan Jellyfin Library</button>
+        <span style="font-size:10px;color:var(--text-dim)">Run after manually adding or deleting files — forces Jellyfin to re-index all media folders</span>
+        <span id="jf-scan-status" style="font-size:10px;color:var(--accent);margin-left:4px"></span>
+      </div>
+    </div>
+    <div style="padding:12px 16px">
+      <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:10px">SERVICES</div>
+      <div id="svc-control-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px"></div>
+    </div>
+  </div>
+
+  <!-- Tarpit & Honeypot -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>🕳 SSH Tarpit &amp; Honeypot — Active Defense</span>
+      <span id="tarpit-ts" class="ts"></span>
+      <button class="refresh-btn" onclick="loadTarpitStats(true)">⟳ Refresh</button>
+    </div>
+    <div class="panel-row" style="margin:0;gap:0;border-bottom:1px solid var(--border)">
+      <div style="flex:1;padding:12px 16px">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--accent);margin-bottom:10px">🐢 ENDLESSH — SSH TARPIT</div>
+        <div id="tarpit-ssh-stats" class="stats-grid" style="margin-bottom:8px"></div>
+        <div style="font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:6px">RECENT CATCHES</div>
+        <div id="tarpit-recent-ips" style="font-family:var(--font-m);font-size:11px;line-height:1.8"></div>
+      </div>
+      <div style="flex:1;padding:12px 16px;border-left:1px solid var(--border)">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--accent);margin-bottom:10px">🍯 HONEYPOT — WEB TRAPS</div>
+        <div id="tarpit-honeypot-stats" class="stats-grid" style="margin-bottom:8px"></div>
+        <div style="font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:6px">RECENT PROBES</div>
+        <div id="tarpit-honeypot-log"></div>
+      </div>
+    </div>
+    <div id="tarpit-error" style="display:none;padding:10px 16px;color:var(--red2);font-size:11px;font-family:var(--font-m)"></div>
+  </div>
+
+  <div class="panel-row">
+    <!-- Pending Updates -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>📦 Pending System Updates</span>
+        <button class="refresh-btn" onclick="loadUpdates()">⟳ Check Now</button>
+      </div>
+      <div id="updates-list" class="updates-list">
+        <div class="loading">Click "Check Now" to scan for updates</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Local Service Uptime Monitor -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>🚦 Local Service Uptime Monitor</span>
+      <span class="ts" id="local-svc-ts"></span>
+      <button class="refresh-btn" onclick="loadExtServices(true)">⟳</button>
+    </div>
+    <div id="local-services-grid" class="loading">Loading...</div>
+  </div>
+
+  <!-- External Service Status -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>🌐 Internet Service Status</span>
+      <span class="ts" id="ext-svc-ts"></span>
+      <button class="refresh-btn" onclick="loadExtServices(true)">⟳</button>
+    </div>
+    <div id="ext-services-grid" class="loading">Loading service status...</div>
+  </div>
+
+  <!-- Daily Goals -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>🎯 Today's Objectives</span>
+      <span class="ts" id="goals-ts"></span>
+      <button class="refresh-btn" onclick="loadGoals()">⟳ Refresh</button>
+      <button class="refresh-btn" onclick="toggleGoalsEdit()" id="goals-edit-btn">✏ Edit</button>
+    </div>
+    <div id="goals-view" style="padding:12px 16px"></div>
+    <div id="goals-editor" style="display:none;padding:12px 16px">
+      <textarea id="goals-textarea" style="width:100%;min-height:160px;background:var(--bg3);
+        border:1px solid var(--border2);color:var(--text);font-family:var(--font-m);
+        font-size:12px;padding:10px;border-radius:3px;resize:vertical"></textarea>
+      <div style="margin-top:8px;display:flex;gap:8px">
+        <button class="refresh-btn" onclick="saveGoals()">💾 Save</button>
+        <button class="refresh-btn" onclick="toggleGoalsEdit()">✕ Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- StorageBox Transfer Queue -->
+  <div class="panel" id="queue-panel">
+    <div class="panel-header">
+      <span>📦 StorageBox Transfer Queue</span>
+      <span id="queue-ts" class="ts"></span>
+      <button class="refresh-btn" onclick="loadQueue(true)">⟳</button>
+    </div>
+    <div style="padding:12px 16px;display:flex;gap:24px;flex-wrap:wrap;border-bottom:1px solid var(--border)">
+      <div>
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim)">ITEMS</div>
+        <div id="queue-count" style="font-size:20px;font-family:var(--font-m);color:var(--accent)">—</div>
+      </div>
+      <div>
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim)">TOTAL SIZE</div>
+        <div id="queue-size" style="font-size:20px;font-family:var(--font-m);color:var(--accent)">—</div>
+      </div>
+      <div>
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim)">WORKER</div>
+        <div id="queue-worker" style="font-size:13px;font-family:var(--font-m);padding-top:4px">—</div>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+        <button class="svc-btn" id="queue-run-btn" onclick="queueRunNow()">▶ Run Now</button>
+      </div>
+    </div>
+    <div id="queue-items" style="padding:0;font-family:var(--font-m);font-size:11px;max-height:240px;overflow-y:auto">
+      <div class="loading" style="padding:12px 16px">Loading queue...</div>
+    </div>
+    <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim)">DAILY RUN TIME (UTC)</div>
+      <input id="queue-hour"   type="number" min="0" max="23" value="23"
+             style="width:48px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);
+                    font-family:var(--font-m);font-size:12px;padding:4px 6px;text-align:center">
+      <span style="color:var(--text-dim)">:</span>
+      <input id="queue-minute" type="number" min="0" max="59" value="0"
+             style="width:48px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);
+                    font-family:var(--font-m);font-size:12px;padding:4px 6px;text-align:center">
+      <button class="svc-btn" onclick="queueSaveSchedule()">💾 Save Schedule</button>
+      <span id="queue-cron-display" style="font-size:10px;color:var(--text-dim)"></span>
+      <span id="queue-sched-feedback" style="font-size:10px;color:var(--accent)"></span>
+    </div>
+    <div style="padding:0 16px 12px">
+      <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:6px;margin-top:10px;cursor:pointer"
+           onclick="toggleQueueLog()">▶ TRANSFER LOG <span id="queue-log-toggle" style="color:var(--accent)">(show)</span></div>
+      <div id="queue-log" style="display:none;background:var(--bg3);border:1px solid var(--border2);
+           padding:10px;max-height:200px;overflow-y:auto;font-family:var(--font-m);font-size:10px;
+           line-height:1.7;white-space:pre-wrap"></div>
+    </div>
+  </div>
+
+  <!-- ── Settings Section ─────────────────────────────────── -->
+  <div style="margin:20px 0 10px;border-top:1px solid var(--border2);padding-top:16px">
+    <div style="font-family:var(--font-m);font-size:9px;letter-spacing:4px;color:var(--text-dim);margin-bottom:14px">⚙ DASHBOARD SETTINGS &amp; STATUS</div>
+  </div>
+
   <div class="settings-grid">
-    <!-- Panel A: Warm Cache -->
+    <!-- Warm Cache -->
     <div class="settings-panel">
       <div class="settings-panel-title">◈ WARM CACHE</div>
       <div id="settings-cache-status" style="margin-bottom:12px;font-family:var(--font-m);font-size:11px;color:var(--text-dim)">Loading…</div>
@@ -1972,14 +1930,14 @@
         ▶ TRIGGER WARM CACHE
       </button>
     </div>
-    <!-- Panel C: Active Sessions -->
+    <!-- Active Sessions -->
     <div class="settings-panel">
       <div class="settings-panel-title">◈ ACTIVE SESSIONS</div>
       <div id="settings-sessions">Loading…</div>
     </div>
   </div>
 
-  <!-- Panel B: Auth Log -->
+  <!-- Auth Log -->
   <div class="settings-panel" style="margin-top:14px">
     <div class="settings-panel-title">◈ AUTH LOG</div>
     <div>
@@ -2001,11 +1959,61 @@
     </div>
   </div>
 
-  <!-- Panel D: System Info -->
-  <div class="settings-panel" style="margin-top:14px">
-    <div class="settings-panel-title">◈ SYSTEM INFO</div>
-    <div id="settings-sysinfo" class="sysinfo-grid"></div>
+  <!-- System Info + RSS Feed -->
+  <div class="settings-grid" style="margin-top:14px">
+    <div class="settings-panel">
+      <div class="settings-panel-title">◈ SYSTEM INFO</div>
+      <div id="settings-sysinfo" class="sysinfo-grid"></div>
+    </div>
+    <div class="settings-panel">
+      <div class="settings-panel-title">◈ INTEL RSS FEED</div>
+      <div style="font-family:var(--font-m);font-size:10px;color:var(--text-dim);margin-bottom:12px;line-height:1.7">
+        Subscribe to your Intel Feed in any RSS reader.<br>Token-gated — do not share publicly.
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input id="rss-url-input" type="text" readonly
+          value="https://kevsec.com/feed.rss?token={{ rss_feed_token }}"
+          style="flex:1;min-width:0;background:var(--bg3);border:1px solid var(--border2);color:var(--text);
+                 font-family:var(--font-m);font-size:10px;padding:6px 10px;outline:none">
+        <button onclick="copyRssUrl()" id="rss-copy-btn"
+          style="font-family:var(--font-m);font-size:10px;letter-spacing:1px;background:var(--bg4);
+                 border:1px solid var(--accent);color:var(--accent);padding:6px 14px;cursor:pointer;
+                 white-space:nowrap;transition:all .12s">
+          📋 COPY
+        </button>
+      </div>
+      <div id="rss-copy-feedback" style="font-family:var(--font-m);font-size:10px;color:var(--accent);margin-top:8px;min-height:16px"></div>
+      <div style="margin-top:14px;font-family:var(--font-m);font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:6px">FEED STATS</div>
+      <div id="rss-feed-stats" style="font-family:var(--font-m);font-size:11px;color:var(--text-dim)">—</div>
+    </div>
   </div>
+
+  <!-- NUKE AUTHORITY -->
+  <div class="panel" style="margin-top:14px;border:2px solid #7a0000;background:linear-gradient(135deg,#0d0000 0%,#1a0000 100%)">
+    <div class="panel-header" style="border-bottom:1px solid #7a0000;background:transparent">
+      <span style="color:#ff2200;letter-spacing:4px;font-size:11px">⚛ NUKE AUTHORITY // TIER-OMEGA PROTOCOL</span>
+      <span style="color:#7a0000;font-size:9px;letter-spacing:2px">KEVSEC STRATEGIC COMMAND</span>
+    </div>
+    <div style="padding:20px 24px;text-align:center">
+      <div style="font-size:9px;letter-spacing:3px;color:#7a0000;margin-bottom:12px">
+        ⚠ AUTHORIZED PERSONNEL ONLY — IRREVERSIBLE — TOTAL SYSTEM DESTRUCTION ⚠
+      </div>
+      <div style="font-size:10px;color:#550000;font-family:var(--font-m);margin-bottom:20px;line-height:1.8">
+        INITIATES SECURE MULTI-PHASE WIPE PROTOCOL · DESTROYS ALL CREDENTIALS, KEYS, APPLICATION DATA, AND MEDIA<br>
+        SYSTEM WILL NOT RECOVER · REQUIRES AUTHENTICATION + CONFIRMATION + 30-SECOND ARMING SEQUENCE
+      </div>
+      <button onclick="openNukeModal()"
+              style="background:linear-gradient(180deg,#3a0000,#1a0000);border:2px solid #cc0000;color:#ff2200;
+                     font-family:var(--font-m);font-size:13px;letter-spacing:6px;padding:16px 40px;
+                     cursor:pointer;text-transform:uppercase;box-shadow:0 0 20px #cc000055;
+                     transition:all 0.3s"
+              onmouseover="this.style.boxShadow='0 0 40px #cc0000aa';this.style.borderColor='#ff2200'"
+              onmouseout="this.style.boxShadow='0 0 20px #cc000055';this.style.borderColor='#cc0000'">
+        ☢ INITIATE NUKE AUTHORITY
+      </button>
+    </div>
+  </div>
+
 </div>
 
 <!-- ═══ FLOATING THEME FAB ════════════════════════════════════════════════ -->
