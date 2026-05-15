@@ -1221,6 +1221,7 @@ footer {
   font-family: var(--font-m); letter-spacing: 1px; border-radius: 2px;
 }
 .ttl-5min  { background: rgba(204,32,32,.15); color: var(--red2); border: 1px solid rgba(204,32,32,.3); }
+.ttl-3hr   { background: rgba(160,200,80,.10); color: #a0c850; border: 1px solid rgba(160,200,80,.3); }
 .ttl-6hr   { background: rgba(232,99,28,.12); color: var(--accent); border: 1px solid rgba(232,99,28,.3); }
 .ttl-24hr  { background: rgba(58,140,200,.12); color: var(--blue2); border: 1px solid rgba(58,140,200,.3); }
 .evt-badge {

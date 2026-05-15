@@ -513,7 +513,7 @@ def api_internal_warm():
 @login_required
 def api_news():
     force = request.args.get("force") == "1"
-    cached = cache_get("news", ttl=3600, force=force)
+    cached = cache_get("news", ttl=10800, force=force)
     if cached:
         return jsonify(cached)
     feeds = [
@@ -6231,7 +6231,8 @@ def api_queue_log():
 _SETTINGS_TTL_MAP = {}
 for _k in ("apod", "wikipedia", "quakes", "lnm"):
     _SETTINGS_TTL_MAP[_k] = "24hr"
-for _k in ("news", "weather", "swpc", "airnow", "wildfires", "threat", "cves",
+_SETTINGS_TTL_MAP["news"] = "3hr"
+for _k in ("weather", "swpc", "airnow", "wildfires", "threat", "cves",
            "gdacs", "wi_warnings", "burn_ban", "president_intel",
            "congress_status", "midterm_intel", "f1", "polls", "govt_intel"):
     _SETTINGS_TTL_MAP[_k] = "6hr"
@@ -6318,7 +6319,7 @@ def rss_feed():
     if not RSS_FEED_TOKEN or token != RSS_FEED_TOKEN:
         return "Unauthorized", 401
 
-    cached = cache_get("news", ttl=3600)
+    cached = cache_get("news", ttl=10800)
     articles = (cached or {}).get("articles", [])
 
     now_rfc = datetime.datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S +0000")
