@@ -14,40 +14,26 @@ function setTheme(name, el) {
     if (dot) dot.classList.add('active');
   }
   localStorage.setItem('kevsec-theme', name);
-  syncFabActive();
+  syncThemeSelector();
 }
 (function initTheme() {
   const saved = localStorage.getItem('kevsec-theme') || 'presidential';
   const dot = document.querySelector('.t-'+saved);
   setTheme(saved, dot);
 })();
+syncThemeSelector();
 
-// ── Floating Theme FAB ─────────────────────────────────────
-function toggleThemeFab() {
-  const panel = document.getElementById('theme-fab-panel');
-  if (panel) panel.classList.toggle('open');
-}
-function syncFabActive() {
+// ── Theme Selector (in Ops/Settings tab) ──────────────────
+function syncThemeSelector() {
   const current = localStorage.getItem('kevsec-theme') || 'presidential';
-  document.querySelectorAll('.fab-theme-row').forEach(row => {
-    const name = row.querySelector('.fab-theme-name');
-    if (name && name.textContent.trim().toLowerCase() === current.toLowerCase()) {
-      row.classList.add('active');
-    } else {
-      row.classList.remove('active');
-    }
+  document.querySelectorAll('.theme-select-row').forEach(row => {
+    row.classList.toggle('active', row.dataset.theme === current);
   });
-  const panel = document.getElementById('theme-fab-panel');
-  if (panel) panel.classList.remove('open');
+  // Update font size display
+  const fsd = document.getElementById('font-size-display');
+  const body = document.getElementById('body');
+  if (fsd && body) fsd.textContent = body.style.fontSize || '14px';
 }
-document.addEventListener('click', function(e) {
-  const fab = document.getElementById('theme-fab');
-  const panel = document.getElementById('theme-fab-panel');
-  if (panel && panel.classList.contains('open') && !panel.contains(e.target) && e.target !== fab) {
-    panel.classList.remove('open');
-  }
-});
-syncFabActive();
 
 // ── Text size A− / A+ ──────────────────────────────────────
 (function() {
@@ -57,6 +43,8 @@ syncFabActive();
     idx = Math.max(0, Math.min(SIZES.length - 1, i));
     document.getElementById('body').style.fontSize = SIZES[idx] + 'px';
     try { localStorage.setItem('kevsec-fontsize', idx); } catch(e){}
+    const fsd = document.getElementById('font-size-display');
+    if (fsd) fsd.textContent = SIZES[idx] + 'px';
   }
   try {
     const s = parseInt(localStorage.getItem('kevsec-fontsize'));
@@ -109,7 +97,7 @@ setInterval(updateClock, 1000); updateClock();
   function applyMode(desktop) {
     const meta = document.getElementById('viewport-meta');
     if (meta) meta.setAttribute('content', desktop ? DESKTOP_VP : MOBILE_VP);
-    if (btn) btn.textContent = desktop ? '🖥 Desktop' : '📱 Mobile';
+    if (btn) btn.textContent = desktop ? 'DESKTOP' : 'MOBILE';
     isDesktop = desktop;
     localStorage.setItem('viewportMode', desktop ? 'desktop' : 'mobile');
   }

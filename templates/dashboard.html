@@ -22,26 +22,15 @@
   <div class="header-main">
     <div class="header-left">
       <div>
-        <div class="portal-title">🦅 Executive Intelligence Portal</div>
-        <div class="portal-sub">KEVSEC OPERATIONS CENTER</div>
+        <div class="portal-title">EXECUTIVE INTELLIGENCE PORTAL</div>
+        <div class="portal-sub">KEVSEC // OPERATIONS CENTER // SECURE COMPARTMENTED</div>
       </div>
       <div class="clearance-badge">CLEARANCE: TS/SCI</div>
     </div>
     <div class="header-right">
       <div id="clock-bar" class="clock-bar"></div>
-      <div class="theme-switcher">
-        <label>THEME</label>
-        <div class="theme-dot t-presidential active" title="Presidential" onclick="setTheme('presidential',this)"></div>
-        <div class="theme-dot t-phantom" title="Phantom" onclick="setTheme('phantom',this)"></div>
-        <div class="theme-dot t-agency" title="Agency" onclick="setTheme('agency',this)"></div>
-        <div class="theme-dot t-midnight" title="Midnight" onclick="setTheme('midnight',this)"></div>
-        <div class="theme-dot t-kevsec" title="Kevsec" onclick="setTheme('kevsec',this)"></div>
-        <label style="margin-left:10px">TEXT</label>
-        <button onclick="dashSize(-1)" title="Smaller text" style="background:none;border:1px solid var(--border);color:var(--text-dim);font-family:var(--font-m);font-size:11px;padding:2px 7px;cursor:pointer;border-radius:2px;min-height:22px">A−</button>
-        <button onclick="dashSize(1)"  title="Larger text"  style="background:none;border:1px solid var(--border);color:var(--text-dim);font-family:var(--font-m);font-size:14px;padding:2px 7px;cursor:pointer;border-radius:2px;min-height:22px">A+</button>
-      </div>
-      <span class="operative-tag">OPERATIVE: <span>{{ user|upper }}</span></span>
-      <a href="/logout" class="logout-btn">⬡ TERMINATE SESSION</a>
+      <span class="operative-tag">OPERATOR: <span>{{ user|upper }}</span></span>
+      <a href="/logout" class="logout-btn">TERMINATE SESSION</a>
     </div>
   </div>
   <div class="clf-banner bottom">
@@ -51,14 +40,14 @@
 
 <!-- ═══ TABS ══════════════════════════════════════════════════════════════ -->
 <nav class="tabs">
-  <button class="tab active"  data-tab="intel">   📡 Intel Feed</button>
-  <button class="tab"         data-tab="cyber">    🛡 Cyber Ops</button>
-  <button class="tab"         data-tab="weather">  🌩 Weather Ops</button>
-  <button class="tab"         data-tab="comms">    🩺 Personal</button>
-  <button class="tab"         data-tab="travel">  ✈ Travel</button>
-  <button class="tab"         data-tab="garden"> 🌱 Garden</button>
-  <button class="tab"         data-tab="settings">⚙ Ops</button>
-  <button class="tab desktop-mode-btn" id="desktop-mode-btn" onclick="toggleDesktopMode()" title="Switch between mobile and desktop layout">📱 Mobile</button>
+  <button class="tab active"  data-tab="intel">INTEL</button>
+  <button class="tab"         data-tab="cyber">CYBER</button>
+  <button class="tab"         data-tab="weather">WEATHER</button>
+  <button class="tab"         data-tab="comms">PERSONAL</button>
+  <button class="tab"         data-tab="travel">TRAVEL</button>
+  <button class="tab"         data-tab="garden">GARDEN</button>
+  <button class="tab"         data-tab="settings">OPS</button>
+  <button class="tab desktop-mode-btn" id="desktop-mode-btn" onclick="toggleDesktopMode()" title="Switch between mobile and desktop layout">MOBILE</button>
 </nav>
 
 <!-- ═══════════════════════════════════════════════════ INTEL FEED ═══ -->
@@ -1995,6 +1984,55 @@
     <div style="font-family:var(--font-m);font-size:9px;letter-spacing:4px;color:var(--text-dim);margin-bottom:14px">⚙ DASHBOARD SETTINGS &amp; STATUS</div>
   </div>
 
+  <!-- Display Settings -->
+  <div class="settings-panel" style="margin-bottom:14px">
+    <div class="settings-panel-title">◈ DISPLAY SETTINGS</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;flex-wrap:wrap">
+      <!-- Theme selector -->
+      <div>
+        <div style="font-family:var(--font-m);font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:10px">COLOR THEME</div>
+        <div style="display:flex;flex-direction:column;gap:6px" id="theme-selector">
+          <div class="theme-select-row" onclick="setTheme('presidential',null)" data-theme="presidential">
+            <span class="theme-select-swatch" style="background:#0a1628;border-color:#c9a84c"></span>
+            <span class="theme-select-name">PRESIDENTIAL</span>
+            <span class="theme-select-desc">Navy · Gold — default</span>
+          </div>
+          <div class="theme-select-row" onclick="setTheme('phantom',null)" data-theme="phantom">
+            <span class="theme-select-swatch" style="background:#0f0f0f;border-color:#cc2020"></span>
+            <span class="theme-select-name">PHANTOM</span>
+            <span class="theme-select-desc">Black · Red — high contrast</span>
+          </div>
+          <div class="theme-select-row" onclick="setTheme('agency',null)" data-theme="agency">
+            <span class="theme-select-swatch" style="background:#050805;border-color:#39ff14"></span>
+            <span class="theme-select-name">AGENCY</span>
+            <span class="theme-select-desc">Black · Green — terminal</span>
+          </div>
+          <div class="theme-select-row" onclick="setTheme('midnight',null)" data-theme="midnight">
+            <span class="theme-select-swatch" style="background:#0c0818;border-color:#a08cff"></span>
+            <span class="theme-select-name">MIDNIGHT</span>
+            <span class="theme-select-desc">Dark purple · Violet</span>
+          </div>
+          <div class="theme-select-row" onclick="setTheme('kevsec',null)" data-theme="kevsec">
+            <span class="theme-select-swatch" style="background:#04080e;border-color:#e8631c"></span>
+            <span class="theme-select-name">KEVSEC</span>
+            <span class="theme-select-desc">Navy · Orange — brand</span>
+          </div>
+        </div>
+      </div>
+      <!-- Font size -->
+      <div>
+        <div style="font-family:var(--font-m);font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:10px">FONT SIZE</div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px">
+          <button onclick="dashSize(-1)" class="log-filter-btn" style="min-width:44px;min-height:44px;font-size:16px;padding:0">A−</button>
+          <span id="font-size-display" style="font-family:var(--font-m);font-size:11px;color:var(--text);min-width:30px;text-align:center">—</span>
+          <button onclick="dashSize(1)"  class="log-filter-btn" style="min-width:44px;min-height:44px;font-size:16px;padding:0">A+</button>
+        </div>
+        <div style="font-family:var(--font-m);font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:10px">LAYOUT MODE</div>
+        <button class="tab desktop-mode-btn" id="desktop-mode-btn-settings" onclick="toggleDesktopMode()" style="font-family:var(--font-m);font-size:10px;letter-spacing:2px;background:var(--bg4);border:1px solid var(--border2);color:var(--text-dim);padding:8px 16px;cursor:pointer;min-height:44px">TOGGLE MOBILE/DESKTOP</button>
+      </div>
+    </div>
+  </div>
+
   <div class="settings-grid">
     <!-- Warm Cache -->
     <div class="settings-panel">
@@ -2095,31 +2133,6 @@
 
 </div>
 
-<!-- ═══ FLOATING THEME FAB ════════════════════════════════════════════════ -->
-<div id="theme-fab" title="Switch theme" onclick="toggleThemeFab()">🎨</div>
-<div id="theme-fab-panel">
-  <div class="fab-title">THEME</div>
-  <div class="fab-theme-row" onclick="setTheme('presidential',null);syncFabActive()">
-    <span class="fab-swatch" style="background:#0a1628;border-color:#c9a84c"></span>
-    <span class="fab-theme-name">PRESIDENTIAL</span>
-  </div>
-  <div class="fab-theme-row" onclick="setTheme('phantom',null);syncFabActive()">
-    <span class="fab-swatch" style="background:#0f0f0f;border-color:#cc2020"></span>
-    <span class="fab-theme-name">PHANTOM</span>
-  </div>
-  <div class="fab-theme-row" onclick="setTheme('agency',null);syncFabActive()">
-    <span class="fab-swatch" style="background:#050805;border-color:#39ff14"></span>
-    <span class="fab-theme-name">AGENCY</span>
-  </div>
-  <div class="fab-theme-row" onclick="setTheme('midnight',null);syncFabActive()">
-    <span class="fab-swatch" style="background:#0c0818;border-color:#a08cff"></span>
-    <span class="fab-theme-name">MIDNIGHT</span>
-  </div>
-  <div class="fab-theme-row" onclick="setTheme('kevsec',null);syncFabActive()">
-    <span class="fab-swatch" style="background:#04080e;border-color:#e8631c"></span>
-    <span class="fab-theme-name">KEVSEC</span>
-  </div>
-</div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <script src="/static/js/main.js"></script>
