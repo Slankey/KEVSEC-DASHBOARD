@@ -911,6 +911,10 @@ footer {
 
   /* Ext services — 2 cols */
   .ext-svc-grid { grid-template-columns: repeat(2, 1fr) !important; }
+
+  /* New element tap targets */
+  .log-filter-btn, #btn-warm-cache, #rss-copy-btn { min-height: 44px; }
+  .fab-theme-row { min-height: 44px; }
 }
 
 /* ── iPad / tablet (431px – 1100px) ─────────────────────── */
@@ -942,6 +946,10 @@ footer {
 
   /* Tables — allow horizontal scroll */
   .fw-table-wrap, table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
+
+  /* New element tap targets */
+  .log-filter-btn, #btn-warm-cache, #rss-copy-btn { min-height: 44px; }
+  .fab-theme-row { min-height: 44px; }
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -1142,7 +1150,7 @@ footer {
    FLOATING THEME FAB
    ══════════════════════════════════════════════════════════ */
 #theme-fab {
-  position: fixed; bottom: 24px; right: 24px; z-index: 2000;
+  position: fixed; bottom: calc(24px + env(safe-area-inset-bottom)); right: 24px; z-index: 2000;
   width: 42px; height: 42px; background: var(--bg3);
   border: 1px solid var(--border2); border-radius: 50%;
   cursor: pointer; display: flex; align-items: center;
@@ -1151,7 +1159,7 @@ footer {
 }
 #theme-fab:hover { transform: scale(1.1); }
 #theme-fab-panel {
-  position: fixed; bottom: 76px; right: 24px; z-index: 2000;
+  position: fixed; bottom: calc(76px + env(safe-area-inset-bottom)); right: 24px; z-index: 2000;
   background: var(--bg2); border: 1px solid var(--border2);
   box-shadow: 0 8px 32px rgba(0,0,0,.8); padding: 14px 16px;
   min-width: 180px; display: none;
