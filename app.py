@@ -27,6 +27,7 @@ def _real_ip():
 app.permanent_session_lifetime = datetime.timedelta(hours=24)
 
 USERNAME      = os.environ.get("KEVSEC_USERNAME", "admin")
+RSS_FEED_TOKEN = os.environ.get("RSS_FEED_TOKEN", "")
 PASSWORD_HASH = os.environ.get("KEVSEC_PASSWORD_HASH",
                                hashlib.sha256(b"changeme").hexdigest())
 DATA_DIR      = "/opt/kevsec-dashboard/data"
@@ -6159,6 +6160,70 @@ def api_settings_auth_log():
     except Exception as e:
         return jsonify({"events": [], "error": str(e)})
     return jsonify({"events": events})
+
+
+# ══════════════════════════════════════════════════════════
+#  RSS INTEL FEED — public but token-gated
+# ══════════════════════════════════════════════════════════
+
+@app.route("/feed.rss")
+def rss_feed():
+    token = request.args.get("token", "")
+    if not RSS_FEED_TOKEN or token != RSS_FEED_TOKEN:
+        return "Unauthorized", 401
+
+    cached = cache_get("news", ttl=3600)
+    articles = (cached or {}).get("articles", [])
+
+    now_rfc = datetime.datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S +0000")
+
+    def _esc(s):
+        return (s or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+
+    items = []
+    for a in articles[:200]:
+        pub = a.get("published", "")
+        try:
+            # Try to parse and reformat as RFC 2822
+            import email.utils as _eu
+            dt = None
+            for fmt in ("%a, %d %b %Y %H:%M:%S %z", "%a, %d %b %Y %H:%M:%S %Z",
+                        "%Y-%m-%dT%H:%M:%S%z", "%Y-%m-%d %H:%M:%S"):
+                try:
+                    dt = datetime.datetime.strptime(pub[:len(fmt)+5].strip(), fmt)
+                    break
+                except ValueError:
+                    pass
+            pub_rfc = _eu.format_datetime(dt) if dt else pub
+        except Exception:
+            pub_rfc = pub
+
+        items.append(
+            f"    <item>\n"
+            f"      <title>{_esc(a.get('title',''))}</title>\n"
+            f"      <link>{_esc(a.get('link',''))}</link>\n"
+            f"      <description>{_esc(a.get('summary',''))}</description>\n"
+            f"      <category>{_esc(a.get('source',''))}</category>\n"
+            f"      <pubDate>{_esc(pub_rfc)}</pubDate>\n"
+            f"      <guid isPermaLink=\"true\">{_esc(a.get('link',''))}</guid>\n"
+            f"    </item>"
+        )
+
+    xml = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">\n'
+        '  <channel>\n'
+        '    <title>KEVSEC Intel Feed</title>\n'
+        '    <link>https://kevsec.com</link>\n'
+        '    <description>Aggregated intelligence feed from KEVSEC Executive Portal</description>\n'
+        '    <language>en-us</language>\n'
+        f'   <lastBuildDate>{now_rfc}</lastBuildDate>\n'
+        f'   <atom:link href="https://kevsec.com/feed.rss?token={RSS_FEED_TOKEN}" rel="self" type="application/rss+xml"/>\n'
+        + "\n".join(items) + "\n"
+        '  </channel>\n'
+        '</rss>\n'
+    )
+    return app.response_class(xml, mimetype="application/rss+xml")
 
 
 if __name__ == "__main__":
