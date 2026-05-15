@@ -93,6 +93,15 @@ _WS_PAT = re.compile(r'\s+')
 _cache = {}
 _warm_cache_lock = threading.Lock()
 _warm_cache_status = {"running": False, "started": None, "finished": None}
+_active_sessions = {}   # sid (hex) → {username, ip, ua, login_time}
+_active_sessions_lock = threading.Lock()
+
+_AUTH_LOG_PAT = re.compile(
+    r'^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}),\d+\s+'
+    r'(LOGIN_SUCCESS|LOGIN_FAILED|HONEYPOT_HIT|HONEYPOT\sTRAP_HIT)'
+    r'(?:\s+user=(\S+))?(?:\s+ip=(\S+))?(?:\s+path=(\S+))?(?:\s+ua=(.+))?$'
+)
+
 BANCTL = "/usr/local/bin/kevsec-banctl"
 CACHE_TTL        = 300    # 5 min — live/frequent data (stocks, METAR, buoy, server stats)
 TARPIT_RESET_FILE = os.path.join(DATA_DIR, "tarpit_reset.json")
@@ -282,6 +291,15 @@ def login():
         if u == USERNAME and hashlib.sha256(p.encode()).hexdigest() == PASSWORD_HASH:
             session["user"] = u
             session.permanent = True
+            _sec_log.warning("LOGIN_SUCCESS user=%s ip=%s", u, _real_ip())
+            sid = secrets.token_hex(16)
+            session["_sid"] = sid
+            with _active_sessions_lock:
+                _active_sessions[sid] = {
+                    "username": u, "ip": _real_ip(),
+                    "ua": request.headers.get("User-Agent", ""),
+                    "login_time": datetime.datetime.now().isoformat(),
+                }
             return redirect(url_for("dashboard"))
         error = "AUTHENTICATION FAILED — CREDENTIALS REJECTED"
         _sec_log.warning("LOGIN_FAILED user=%s ip=%s", u, _real_ip())
@@ -420,6 +438,10 @@ def honeypot():
 
 @app.route("/logout")
 def logout():
+    sid = session.get("_sid")
+    if sid:
+        with _active_sessions_lock:
+            _active_sessions.pop(sid, None)
     session.clear()
     return redirect(url_for("login"))
 
@@ -6053,6 +6075,90 @@ def api_queue_log():
         return jsonify({"lines": [l.rstrip() for l in lines]})
     except:
         return jsonify({"lines": []})
+
+
+# ══════════════════════════════════════════════════════════
+#  SETTINGS — cache status, sessions, auth log, system info
+# ══════════════════════════════════════════════════════════
+
+_SETTINGS_TTL_MAP = {}
+for _k in ("apod", "wikipedia", "quakes", "lnm"):
+    _SETTINGS_TTL_MAP[_k] = "24hr"
+for _k in ("news", "weather", "swpc", "airnow", "wildfires", "threat", "cves",
+           "gdacs", "wi_warnings", "burn_ban", "president_intel",
+           "congress_status", "midterm_intel", "f1", "polls", "govt_intel"):
+    _SETTINGS_TTL_MAP[_k] = "6hr"
+
+
+@app.route("/api/settings/status")
+@login_required
+def api_settings_status():
+    with _warm_cache_lock:
+        wcs = dict(_warm_cache_status)
+    with _active_sessions_lock:
+        sessions_list = list(_active_sessions.values())
+    cache_keys = []
+    for k in sorted(DISK_CACHE_KEYS):
+        cache_keys.append({"key": k, "ttl": _SETTINGS_TTL_MAP.get(k, "5min")})
+    import flask
+    sys_info = {
+        "flask_version": flask.__version__,
+        "session_lifetime_hours": int(app.permanent_session_lifetime.total_seconds() // 3600),
+        "username": USERNAME,
+        "cache_key_count": len(DISK_CACHE_KEYS),
+        "log_files": [
+            "/mnt/hdd/logs/kevsec-auth.log",
+            "/mnt/hdd/logs/kevsec-dashboard.log",
+        ],
+    }
+    return jsonify({
+        "warm_cache": wcs,
+        "cache_keys": cache_keys,
+        "active_sessions": sessions_list,
+        "system": sys_info,
+    })
+
+
+@app.route("/api/settings/warm", methods=["POST"])
+@login_required
+@csrf_required
+def api_settings_warm():
+    with _warm_cache_lock:
+        if _warm_cache_status["running"]:
+            return jsonify({"status": "already_warming"})
+    _sec_log.warning("WARM_CACHE_TRIGGERED by=%s from=%s", session.get("user"), _real_ip())
+    threading.Thread(target=_warm_cache, kwargs={"force": True}, daemon=True).start()
+    return jsonify({"status": "warming"})
+
+
+@app.route("/api/settings/auth-log")
+@login_required
+def api_settings_auth_log():
+    log_path = "/mnt/hdd/logs/kevsec-auth.log"
+    events = []
+    try:
+        with open(log_path, "r", errors="replace") as f:
+            lines = f.readlines()
+        for line in reversed(lines):
+            line = line.rstrip()
+            if not line:
+                continue
+            m = _AUTH_LOG_PAT.match(line)
+            if m:
+                events.append({
+                    "ts":    m.group(1),
+                    "event": m.group(2),
+                    "user":  m.group(3) or "",
+                    "ip":    m.group(4) or "",
+                    "path":  m.group(5) or "",
+                    "ua":    m.group(6) or "",
+                    "raw":   line,
+                })
+            if len(events) >= 100:
+                break
+    except Exception as e:
+        return jsonify({"events": [], "error": str(e)})
+    return jsonify({"events": events})
 
 
 if __name__ == "__main__":

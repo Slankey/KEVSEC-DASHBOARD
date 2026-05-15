@@ -3,8 +3,52 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KEVSEC // Kevin Maslanka</title>
-<meta name="description" content="Cybersecurity professional specializing in threat intelligence, OSINT research, and active defense. Operator of the KEVSEC security platform.">
+<title>Kevin Maslanka — Cybersecurity Professional | KEVSEC</title>
+<meta name="description" content="Kevin Maslanka is a cybersecurity professional specializing in threat intelligence, OSINT research, malware analysis, and active defense. Operator of the KEVSEC security platform.">
+<meta name="keywords" content="Kevin Maslanka, cybersecurity, OSINT, threat intelligence, malware analysis, KEVSEC, security researcher, active defense, Port Washington Wisconsin">
+<meta name="author" content="Kevin Maslanka">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://kevsec.com/">
+
+<!-- Favicon -->
+<link rel="icon" type="image/svg+xml" href="/static/img/logopack/kevsec-icon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="/static/img/logopack/kevsec-icon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/static/img/logopack/kevsec-icon-16x16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/static/img/logopack/kevsec-icon-180x180.png">
+
+<!-- Open Graph -->
+<meta property="og:type" content="profile">
+<meta property="og:title" content="Kevin Maslanka — Cybersecurity Professional">
+<meta property="og:description" content="Cybersecurity professional specializing in threat intelligence, OSINT research, malware analysis, and active defense. Operator of the KEVSEC security platform.">
+<meta property="og:url" content="https://kevsec.com/">
+<meta property="og:image" content="/static/img/logopack/kevsec-icon-512x512.png">
+<meta property="og:site_name" content="KEVSEC">
+<meta property="profile:first_name" content="Kevin">
+<meta property="profile:last_name" content="Maslanka">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Kevin Maslanka — Cybersecurity Professional">
+<meta name="twitter:description" content="Threat intelligence, OSINT research, malware analysis, and active defense. Operator of the KEVSEC security platform.">
+<meta name="twitter:image" content="/static/img/logopack/kevsec-icon-512x512.png">
+
+<!-- Structured Data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "Kevin Maslanka",
+  "url": "https://kevsec.com",
+  "sameAs": [
+    "https://www.linkedin.com/in/kevin-earl-maslanka-625001b2/",
+    "https://github.com/Slankey"
+  ],
+  "jobTitle": "Cybersecurity Professional",
+  "description": "Cybersecurity professional specializing in threat intelligence, OSINT research, malware analysis, and active defense.",
+  "knowsAbout": ["Threat Intelligence", "OSINT", "Malware Analysis", "Digital Forensics", "Active Defense", "Infrastructure Engineering"],
+  "email": "ops@kevsec.com"
+}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500;700&family=Exo+2:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -1933,6 +1977,21 @@ document.addEventListener('keydown', e => {
   _timer = setTimeout(() => { _seq = ''; }, 2000);
   if (_seq === 'kev') { _seq = ''; openLogin(); }
 });
+
+// ── Mobile: triple-tap nav logo ──────────────────────────────
+(function() {
+  const logo = document.querySelector('.nav-logo');
+  if (!logo) return;
+  logo.style.cursor = 'pointer';
+  logo.style.webkitTapHighlightColor = 'transparent';
+  let _taps = 0, _tapTimer = null;
+  logo.addEventListener('click', () => {
+    _taps++;
+    clearTimeout(_tapTimer);
+    _tapTimer = setTimeout(() => { _taps = 0; }, 800);
+    if (_taps >= 3) { _taps = 0; openLogin(); }
+  });
+})();
 
 // ── Submit loading state ─────────────────────────────────────
 const submitBtn = document.getElementById('login-submit-btn');

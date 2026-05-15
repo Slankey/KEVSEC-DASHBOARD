@@ -8,6 +8,7 @@
 <link rel="icon" type="image/svg+xml" href="/static/img/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500;700&family=Exo+2:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/css/style.css">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
 </head>
@@ -34,6 +35,7 @@
         <div class="theme-dot t-phantom" title="Phantom" onclick="setTheme('phantom',this)"></div>
         <div class="theme-dot t-agency" title="Agency" onclick="setTheme('agency',this)"></div>
         <div class="theme-dot t-midnight" title="Midnight" onclick="setTheme('midnight',this)"></div>
+        <div class="theme-dot t-kevsec" title="Kevsec" onclick="setTheme('kevsec',this)"></div>
         <label style="margin-left:10px">TEXT</label>
         <button onclick="dashSize(-1)" title="Smaller text" style="background:none;border:1px solid var(--border);color:var(--text-dim);font-family:var(--font-m);font-size:11px;padding:2px 7px;cursor:pointer;border-radius:2px;min-height:22px">A−</button>
         <button onclick="dashSize(1)"  title="Larger text"  style="background:none;border:1px solid var(--border);color:var(--text-dim);font-family:var(--font-m);font-size:14px;padding:2px 7px;cursor:pointer;border-radius:2px;min-height:22px">A+</button>
@@ -56,6 +58,7 @@
   <button class="tab"         data-tab="comms">    🩺 Personal</button>
   <button class="tab"         data-tab="travel">  ✈ Travel</button>
   <button class="tab"         data-tab="garden"> 🌱 Garden</button>
+  <button class="tab"         data-tab="settings">⚙ Settings</button>
   <button class="tab desktop-mode-btn" id="desktop-mode-btn" onclick="toggleDesktopMode()" title="Switch between mobile and desktop layout">📱 Mobile</button>
 </nav>
 
@@ -1313,9 +1316,7 @@
     <div class="panel">
       <div class="panel-header">📈 NWS Graphical Weather Outlook</div>
       <div style="text-align:center;padding:12px">
-        <img src="https://forecast.weather.gov/meteograms/Plotter.php?lat=43.39&lon=-87.88&wfo=MKX&zcode=WIZ044&gset=18&gdiff=3&unit=0&tinfo=EY0&ahour=0&pcmd=11011111111110000000000000000000000000000000000000000000000&lg=en&indu=1!1!1!&dd=&bw=&hrspan=48&pqpfhr=6&psnwhr=6"
-             style="max-width:100%;border:1px solid var(--border)"
-             alt="NWS Meteogram Port Washington WI">
+        <img id="nws-meteogram" style="max-width:100%;border:1px solid var(--border)" alt="NWS Meteogram Port Washington WI">
         <div class="dim" style="font-size:10px;padding:6px;letter-spacing:2px">
           NWS METEOGRAM — 48HR TEMP/PRECIP/WIND/HUMIDITY FORECAST
         </div>
@@ -1328,9 +1329,7 @@
     <div class="panel">
       <div class="panel-header">🗺 Weather Prediction Center — US Outlook</div>
       <div style="text-align:center;padding:12px">
-        <img src="https://www.wpc.ncep.noaa.gov/noaa/noaad1.gif"
-             style="max-width:100%;border:1px solid var(--border)"
-             alt="WPC Day 1 Outlook">
+        <img id="wpc-d1" style="max-width:100%;border:1px solid var(--border)" alt="WPC Day 1 Outlook">
         <div class="dim" style="font-size:10px;padding:6px;letter-spacing:2px">
           WPC DAY 1 — NATIONAL FORECAST // <a href="https://www.wpc.ncep.noaa.gov" target="_blank" style="color:var(--accent)">wpc.ncep.noaa.gov</a>
         </div>
@@ -1341,21 +1340,20 @@
     <div class="panel">
       <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center">
         <span>🌀 National Hurricane Center — Tropical Outlook</span>
-        <a href="https://www.nhc.noaa.gov" target="_blank" style="color:var(--accent);font-size:10px;text-decoration:none;letter-spacing:2px;border:1px solid var(--accent);padding:2px 8px">nhc.noaa.gov ↗</a>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="refresh-btn" onclick="refreshNHC()" title="Force refresh images">⟳</button>
+          <a href="https://www.nhc.noaa.gov" target="_blank" style="color:var(--accent);font-size:10px;text-decoration:none;letter-spacing:2px;border:1px solid var(--accent);padding:2px 8px">nhc.noaa.gov ↗</a>
+        </div>
       </div>
       <div style="padding:10px 12px">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
           <div style="text-align:center">
             <div style="font-size:9px;letter-spacing:3px;color:var(--accent);margin-bottom:6px">ATLANTIC — 2-DAY</div>
-            <img src="https://www.nhc.noaa.gov/xgtwo/two_atl_2d0.png"
-                 style="width:100%;border:1px solid var(--border)"
-                 alt="NHC Atlantic 2-Day Outlook">
+            <img id="nhc-2d" style="width:100%;border:1px solid var(--border)" alt="NHC Atlantic 2-Day Outlook">
           </div>
           <div style="text-align:center">
             <div style="font-size:9px;letter-spacing:3px;color:var(--accent);margin-bottom:6px">ATLANTIC — 5-DAY</div>
-            <img src="https://www.nhc.noaa.gov/xgtwo/two_atl_5d0.png"
-                 style="width:100%;border:1px solid var(--border)"
-                 alt="NHC Atlantic 5-Day Outlook">
+            <img id="nhc-5d" style="width:100%;border:1px solid var(--border)" alt="NHC Atlantic 5-Day Outlook">
           </div>
         </div>
         <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
@@ -1955,6 +1953,84 @@
       <div style="font-size:14px;letter-spacing:6px;color:#ff2200;margin-bottom:12px">DETONATION SEQUENCE INITIATED</div>
       <div style="font-size:10px;color:#7a0000;letter-spacing:2px;line-height:2" id="nuke-status-log"></div>
     </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ SETTINGS ═══ -->
+<div id="tab-settings" class="tab-content">
+  <div class="settings-grid">
+    <!-- Panel A: Warm Cache -->
+    <div class="settings-panel">
+      <div class="settings-panel-title">◈ WARM CACHE</div>
+      <div id="settings-cache-status" style="margin-bottom:12px;font-family:var(--font-m);font-size:11px;color:var(--text-dim)">Loading…</div>
+      <div style="margin-bottom:12px">
+        <div style="font-family:var(--font-m);font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:8px">CACHE KEYS</div>
+        <div id="settings-cache-keys" class="cache-key-pills"></div>
+      </div>
+      <button id="btn-warm-cache" onclick="triggerWarmCache()"
+        style="font-family:var(--font-m);font-size:10px;letter-spacing:2px;background:var(--bg4);border:1px solid var(--accent);color:var(--accent);padding:6px 16px;cursor:pointer;transition:all .12s">
+        ▶ TRIGGER WARM CACHE
+      </button>
+    </div>
+    <!-- Panel C: Active Sessions -->
+    <div class="settings-panel">
+      <div class="settings-panel-title">◈ ACTIVE SESSIONS</div>
+      <div id="settings-sessions">Loading…</div>
+    </div>
+  </div>
+
+  <!-- Panel B: Auth Log -->
+  <div class="settings-panel" style="margin-top:14px">
+    <div class="settings-panel-title">◈ AUTH LOG</div>
+    <div>
+      <button class="log-filter-btn active" onclick="filterAuthLog('all',this)">ALL</button>
+      <button class="log-filter-btn" onclick="filterAuthLog('LOGIN_SUCCESS',this)">SUCCESS</button>
+      <button class="log-filter-btn" onclick="filterAuthLog('LOGIN_FAILED',this)">FAILED</button>
+      <button class="log-filter-btn" onclick="filterAuthLog('HONEYPOT_HIT',this)">HONEYPOT</button>
+      <button class="log-filter-btn" onclick="filterAuthLog('HONEYPOT TRAP_HIT',this)">TRAP</button>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="settings-table">
+        <thead><tr>
+          <th>TIMESTAMP</th><th>EVENT</th><th>USER</th><th>IP</th><th>PATH / UA</th>
+        </tr></thead>
+        <tbody id="settings-log-tbody">
+          <tr><td colspan="5" style="color:var(--text-dim);text-align:center;padding:12px">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Panel D: System Info -->
+  <div class="settings-panel" style="margin-top:14px">
+    <div class="settings-panel-title">◈ SYSTEM INFO</div>
+    <div id="settings-sysinfo" class="sysinfo-grid"></div>
+  </div>
+</div>
+
+<!-- ═══ FLOATING THEME FAB ════════════════════════════════════════════════ -->
+<div id="theme-fab" title="Switch theme" onclick="toggleThemeFab()">🎨</div>
+<div id="theme-fab-panel">
+  <div class="fab-title">THEME</div>
+  <div class="fab-theme-row" onclick="setTheme('presidential',null);syncFabActive()">
+    <span class="fab-swatch" style="background:#0a1628;border-color:#c9a84c"></span>
+    <span class="fab-theme-name">PRESIDENTIAL</span>
+  </div>
+  <div class="fab-theme-row" onclick="setTheme('phantom',null);syncFabActive()">
+    <span class="fab-swatch" style="background:#0f0f0f;border-color:#cc2020"></span>
+    <span class="fab-theme-name">PHANTOM</span>
+  </div>
+  <div class="fab-theme-row" onclick="setTheme('agency',null);syncFabActive()">
+    <span class="fab-swatch" style="background:#050805;border-color:#39ff14"></span>
+    <span class="fab-theme-name">AGENCY</span>
+  </div>
+  <div class="fab-theme-row" onclick="setTheme('midnight',null);syncFabActive()">
+    <span class="fab-swatch" style="background:#0c0818;border-color:#a08cff"></span>
+    <span class="fab-theme-name">MIDNIGHT</span>
+  </div>
+  <div class="fab-theme-row" onclick="setTheme('kevsec',null);syncFabActive()">
+    <span class="fab-swatch" style="background:#04080e;border-color:#e8631c"></span>
+    <span class="fab-theme-name">KEVSEC</span>
   </div>
 </div>
 

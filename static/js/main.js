@@ -3,19 +3,51 @@
 // ══════════════════════════════════════════════════════════
 
 // ── Theme ──────────────────────────────────────────────────
-const THEMES = ['presidential','phantom','agency','midnight'];
+const THEMES = ['presidential','phantom','agency','midnight','kevsec'];
 function setTheme(name, el) {
   THEMES.forEach(t => document.getElementById('body').classList.remove('theme-'+t));
   document.getElementById('body').classList.add('theme-'+name);
   document.querySelectorAll('.theme-dot').forEach(d => d.classList.remove('active'));
   if (el) el.classList.add('active');
+  else {
+    const dot = document.querySelector('.t-'+name);
+    if (dot) dot.classList.add('active');
+  }
   localStorage.setItem('kevsec-theme', name);
+  syncFabActive();
 }
 (function initTheme() {
   const saved = localStorage.getItem('kevsec-theme') || 'presidential';
   const dot = document.querySelector('.t-'+saved);
   setTheme(saved, dot);
 })();
+
+// ── Floating Theme FAB ─────────────────────────────────────
+function toggleThemeFab() {
+  const panel = document.getElementById('theme-fab-panel');
+  if (panel) panel.classList.toggle('open');
+}
+function syncFabActive() {
+  const current = localStorage.getItem('kevsec-theme') || 'presidential';
+  document.querySelectorAll('.fab-theme-row').forEach(row => {
+    const name = row.querySelector('.fab-theme-name');
+    if (name && name.textContent.trim().toLowerCase() === current.toLowerCase()) {
+      row.classList.add('active');
+    } else {
+      row.classList.remove('active');
+    }
+  });
+  const panel = document.getElementById('theme-fab-panel');
+  if (panel) panel.classList.remove('open');
+}
+document.addEventListener('click', function(e) {
+  const fab = document.getElementById('theme-fab');
+  const panel = document.getElementById('theme-fab-panel');
+  if (panel && panel.classList.contains('open') && !panel.contains(e.target) && e.target !== fab) {
+    panel.classList.remove('open');
+  }
+});
+syncFabActive();
 
 // ── Text size A− / A+ ──────────────────────────────────────
 (function() {
@@ -159,6 +191,7 @@ function loadTab(tab) {
     loadFlightDeals(false);
   }
   if (tab === 'garden') { loadGarden(); loadWateringLog(); renderInvasives(); setTimeout(initLawnMap, 100); }
+  if (tab === 'settings') { loadSettings(); }
 }
 function refreshAllCommand() {
   const btn = document.querySelector('[onclick="refreshAllCommand()"]');
@@ -4790,6 +4823,28 @@ function _dealFmtDate(str) {
   } catch(e) { return ''; }
 }
 
+// ── NOAA/NWS static image cache-busting ─────────────────────
+// NHC updates every ~6h, meteogram every ~6h, WPC every ~3h.
+// Round timestamps to the update window so we re-fetch when new
+// data is actually available, not on every page load.
+function refreshNHC() {
+  const t = Math.floor(Date.now() / (6 * 3600 * 1000));
+  const img2d = document.getElementById('nhc-2d');
+  const img5d = document.getElementById('nhc-5d');
+  if (img2d) img2d.src = 'https://www.nhc.noaa.gov/xgtwo/two_atl_2d0.png?_t=' + t;
+  if (img5d) img5d.src = 'https://www.nhc.noaa.gov/xgtwo/two_atl_5d0.png?_t=' + t;
+}
+function refreshNWSImages() {
+  const t6 = Math.floor(Date.now() / (6 * 3600 * 1000));  // 6h window
+  const t3 = Math.floor(Date.now() / (3 * 3600 * 1000));  // 3h window
+  const metro = document.getElementById('nws-meteogram');
+  const wpc   = document.getElementById('wpc-d1');
+  if (metro) metro.src = 'https://forecast.weather.gov/meteograms/Plotter.php?lat=43.39&lon=-87.88&wfo=MKX&zcode=WIZ044&gset=18&gdiff=3&unit=0&tinfo=EY0&ahour=0&pcmd=11011111111110000000000000000000000000000000000000000000000&lg=en&indu=1!1!1!&dd=&bw=&hrspan=48&pqpfhr=6&psnwhr=6&_t=' + t6;
+  if (wpc)   wpc.src   = 'https://www.wpc.ncep.noaa.gov/noaa/noaad1.gif?_t=' + t3;
+}
+refreshNHC();
+refreshNWSImages();
+
 // ── Health & Fitness News ──
 function loadPersonalNews(force) {
   const el = document.getElementById('personal-news-feed');
@@ -4809,4 +4864,130 @@ function loadPersonalNews(force) {
         <div style="font-size:11px;color:var(--text-dim);line-height:1.6">${a.summary}</div>
       </div>`).join('');
   }).catch(() => { el.innerHTML='<div style="color:var(--text-dim);padding:12px">Failed to load news.</div>'; });
+}
+
+// ══════════════════════════════════════════════════════════
+//  SETTINGS TAB
+// ══════════════════════════════════════════════════════════
+let _settingsLogData = [];
+let _settingsRefreshTimer = null;
+
+function loadSettings(force) {
+  clearTimeout(_settingsRefreshTimer);
+  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+  Promise.all([
+    fetch('/api/settings/status').then(r => r.json()),
+    fetch('/api/settings/auth-log').then(r => r.json()),
+  ]).then(([status, authLog]) => {
+    renderCacheStatus(status.warm_cache);
+    renderCacheKeys(status.cache_keys || []);
+    renderSessions(status.active_sessions || []);
+    renderSysInfo(status.system || {});
+    _settingsLogData = authLog.events || [];
+    filterAuthLog('all', document.querySelector('.log-filter-btn.active'));
+    if (status.warm_cache && status.warm_cache.running) {
+      _settingsRefreshTimer = setTimeout(() => loadSettings(true), 4000);
+    }
+  }).catch(e => console.error('Settings load failed:', e));
+}
+
+function renderCacheStatus(ws) {
+  const el = document.getElementById('settings-cache-status');
+  if (!el) return;
+  const running = ws && ws.running;
+  const dot = running ? '<span class="cache-running-dot"></span> ' : '';
+  const status = running ? 'RUNNING' : 'IDLE';
+  const started = ws?.started ? new Date(ws.started).toLocaleString() : '—';
+  const finished = ws?.finished ? new Date(ws.finished).toLocaleString() : '—';
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:80px 1fr;gap:6px 12px;align-items:center">
+      <span style="color:var(--text-dim);font-size:9px;letter-spacing:2px">STATUS</span>
+      <span>${dot}<span style="color:${running ? '#39ff14' : 'var(--text)'}">${status}</span></span>
+      <span style="color:var(--text-dim);font-size:9px;letter-spacing:2px">STARTED</span>
+      <span>${started}</span>
+      <span style="color:var(--text-dim);font-size:9px;letter-spacing:2px">FINISHED</span>
+      <span>${finished}</span>
+    </div>`;
+}
+
+function renderCacheKeys(keys) {
+  const el = document.getElementById('settings-cache-keys');
+  if (!el) return;
+  el.innerHTML = keys.map(k =>
+    `<span class="cache-key-pill">${k.key}<span class="ttl-badge ttl-${k.ttl.replace('hr','hr').replace('min','min')}">${k.ttl}</span></span>`
+  ).join('');
+}
+
+function renderSessions(sessions) {
+  const el = document.getElementById('settings-sessions');
+  if (!el) return;
+  if (!sessions.length) {
+    el.innerHTML = '<div style="color:var(--text-dim);font-size:11px;font-family:var(--font-m)">No active sessions.</div>';
+    return;
+  }
+  el.innerHTML = sessions.map(s => `
+    <div class="session-row">
+      <div class="session-row-user">${s.username || '?'}</div>
+      <div class="session-row-meta">${s.ip || '—'} &nbsp;·&nbsp; ${s.login_time ? new Date(s.login_time).toLocaleString() : '—'}</div>
+      <div class="session-row-meta" style="margin-top:3px;word-break:break-all">${(s.ua || '').substring(0,80)}</div>
+    </div>`).join('');
+}
+
+function renderSysInfo(sys) {
+  const el = document.getElementById('settings-sysinfo');
+  if (!el) return;
+  const items = [
+    ['FLASK', sys.flask_version || '—'],
+    ['SESSION TTL', (sys.session_lifetime_hours || '?') + 'h'],
+    ['USER', sys.username || '—'],
+    ['CACHE KEYS', sys.cache_key_count || '—'],
+  ];
+  if (sys.log_files) {
+    sys.log_files.forEach((lf, i) => items.push(['LOG ' + (i+1), lf.split('/').pop()]));
+  }
+  el.innerHTML = items.map(([label, val]) => `
+    <div class="sysinfo-card">
+      <div class="sysinfo-label">${label}</div>
+      <div class="sysinfo-val">${val}</div>
+    </div>`).join('');
+}
+
+function filterAuthLog(filter, btn) {
+  document.querySelectorAll('.log-filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  const tbody = document.getElementById('settings-log-tbody');
+  if (!tbody) return;
+  const data = filter === 'all'
+    ? _settingsLogData
+    : _settingsLogData.filter(e => e.event === filter || e.event === filter.replace(' ','_'));
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-dim);text-align:center;padding:12px">No events.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = data.map(e => {
+    const evtClass = 'evt-' + e.event.replace(/\s/g, '_');
+    const detail = e.path || (e.ua ? e.ua.substring(0, 60) : '—');
+    return `<tr>
+      <td style="white-space:nowrap">${e.ts}</td>
+      <td><span class="evt-badge ${evtClass}">${e.event}</span></td>
+      <td>${e.user || '—'}</td>
+      <td>${e.ip || '—'}</td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${detail}">${detail}</td>
+    </tr>`;
+  }).join('');
+}
+
+function triggerWarmCache() {
+  const btn = document.getElementById('btn-warm-cache');
+  if (btn) { btn.disabled = true; btn.textContent = '⟳ WARMING…'; }
+  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+  fetch('/api/settings/warm', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken},
+  }).then(r => r.json()).then(d => {
+    if (btn) { btn.disabled = false; btn.textContent = '▶ TRIGGER WARM CACHE'; }
+    setTimeout(() => loadSettings(true), 3000);
+  }).catch(() => {
+    if (btn) { btn.disabled = false; btn.textContent = '▶ TRIGGER WARM CACHE'; }
+  });
 }
