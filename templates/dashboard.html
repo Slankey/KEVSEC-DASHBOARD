@@ -1864,6 +1864,81 @@
     </div>
   </div>
 
+  <!-- rtorrent Stats -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>⬇ rtorrent — Live Torrent Stats</span>
+      <span id="rt-ts" class="ts"></span>
+      <button class="refresh-btn" onclick="loadRtorrent(true)">⟳</button>
+    </div>
+    <!-- Global stats bar -->
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;gap:24px;flex-wrap:wrap">
+      <div class="stat-item"><span class="stat-val" id="rt-dl-rate">—</span><span class="stat-label">↓ DL KB/s</span></div>
+      <div class="stat-item"><span class="stat-val" id="rt-ul-rate">—</span><span class="stat-label">↑ UL KB/s</span></div>
+      <div class="stat-item"><span class="stat-val" id="rt-seeding">—</span><span class="stat-label">SEEDING</span></div>
+      <div class="stat-item"><span class="stat-val" id="rt-leeching">—</span><span class="stat-label">LEECHING</span></div>
+      <div class="stat-item"><span class="stat-val" id="rt-paused">—</span><span class="stat-label">PAUSED</span></div>
+      <div class="stat-item"><span class="stat-val" id="rt-total">—</span><span class="stat-label">TOTAL</span></div>
+      <div class="stat-item"><span class="stat-val" id="rt-total-ul">—</span><span class="stat-label">TOTAL UL GB</span></div>
+      <div class="stat-item"><span class="stat-val" id="rt-total-dl">—</span><span class="stat-label">TOTAL DL GB</span></div>
+    </div>
+    <!-- Torrent table -->
+    <div style="overflow-x:auto;max-height:300px;overflow-y:auto">
+      <table class="settings-table" style="min-width:600px">
+        <thead><tr>
+          <th>NAME</th><th>LABEL</th><th>SIZE</th><th>RATIO</th><th>↑ RATE</th><th>↓ RATE</th><th>STATUS</th>
+        </tr></thead>
+        <tbody id="rt-tbody">
+          <tr><td colspan="7" style="text-align:center;color:var(--text-dim);padding:12px">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- StorageBox Library + Run History -->
+  <div class="panel-row">
+    <!-- Library Stats -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>📚 StorageBox Library</span>
+        <span id="sb-lib-ts" class="ts"></span>
+        <button class="refresh-btn" onclick="loadSbLibrary(true)">⟳</button>
+      </div>
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+        <div id="sb-lib-mount" style="font-family:var(--font-m);font-size:10px;letter-spacing:2px;margin-bottom:12px"></div>
+        <div class="stats-grid">
+          <div class="stat-item"><span class="stat-val" id="sb-lib-movies">—</span><span class="stat-label">MOVIES</span></div>
+          <div class="stat-item"><span class="stat-val" id="sb-lib-shows">—</span><span class="stat-label">TV SHOWS</span></div>
+          <div class="stat-item"><span class="stat-val" id="sb-lib-seasons">—</span><span class="stat-label">SEASONS</span></div>
+        </div>
+      </div>
+      <div style="padding:12px 16px">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:10px">DISK USAGE</div>
+        <div class="stats-grid">
+          <div class="stat-item"><span class="stat-val" id="sb-lib-used">—</span><span class="stat-label">USED GB</span></div>
+          <div class="stat-item"><span class="stat-val" id="sb-lib-free">—</span><span class="stat-label">FREE GB</span></div>
+          <div class="stat-item"><span class="stat-val" id="sb-lib-pct">—</span><span class="stat-label">% FULL</span></div>
+        </div>
+        <div id="sb-lib-bar-wrap" style="margin-top:8px;background:var(--bg3);border-radius:3px;height:6px;overflow:hidden">
+          <div id="sb-lib-bar" style="height:100%;width:0%;background:var(--accent);transition:width 0.6s"></div>
+        </div>
+        <div id="sb-lib-total" style="font-size:9px;color:var(--text-dim);margin-top:4px">Total: —</div>
+      </div>
+    </div>
+
+    <!-- Run History -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>📋 StorageBox Run History</span>
+        <span id="sb-runs-ts" class="ts"></span>
+        <button class="refresh-btn" onclick="loadSbRuns(true)">⟳</button>
+      </div>
+      <div id="sb-runs-list" style="font-family:var(--font-m);font-size:11px;max-height:340px;overflow-y:auto">
+        <div class="loading" style="padding:12px 16px">Loading…</div>
+      </div>
+    </div>
+  </div>
+
   <!-- StorageBox Transfer Queue -->
   <div class="panel" id="queue-panel">
     <div class="panel-header">

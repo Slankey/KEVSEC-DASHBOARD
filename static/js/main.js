@@ -181,6 +181,7 @@ function loadTab(tab) {
   if (tab === 'garden') { loadGarden(); loadWateringLog(); renderInvasives(); setTimeout(initLawnMap, 100); }
   if (tab === 'settings') {
     loadServerStats(); loadQueue(); loadBandwidth(); loadStorageboxDisk(); loadTarpitStats();
+    loadRtorrent(); loadSbLibrary(); loadSbRuns();
     setTimeout(() => loadProxmox(),         1*M);
     setTimeout(() => loadGoals(),           2*M);
     setTimeout(() => loadDjStatus(),        3*M);
@@ -5013,5 +5014,137 @@ function copyRssUrl() {
     inp.select();
     document.execCommand('copy');
     if (fb) fb.textContent = 'URL selected — press Ctrl+C';
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+//  RTORRENT STATS
+// ══════════════════════════════════════════════════════════
+function loadRtorrent(force) {
+  fetch('/api/rtorrent').then(r => r.json()).then(d => {
+    if (d.error) {
+      document.getElementById('rt-tbody').innerHTML =
+        `<tr><td colspan="7" style="color:var(--red2);padding:12px">${d.error}</td></tr>`;
+      return;
+    }
+    const fmt = v => v >= 1024 ? (v/1024).toFixed(1) + 'M' : v + 'K';
+    const fmtGB = b => (b / 1073741824).toFixed(1);
+    document.getElementById('rt-dl-rate').textContent  = fmt(Math.round(d.dl_rate / 1024));
+    document.getElementById('rt-ul-rate').textContent  = fmt(Math.round(d.ul_rate / 1024));
+    document.getElementById('rt-seeding').textContent  = d.seeding;
+    document.getElementById('rt-leeching').textContent = d.leeching;
+    document.getElementById('rt-paused').textContent   = d.paused;
+    document.getElementById('rt-total').textContent    = d.count;
+    document.getElementById('rt-total-ul').textContent = fmtGB(d.total_ul);
+    document.getElementById('rt-total-dl').textContent = fmtGB(d.total_dl);
+    const ts = document.getElementById('rt-ts');
+    if (ts) ts.textContent = new Date().toLocaleTimeString();
+
+    const LABEL_COLORS = {
+      'TV': 'var(--blue)', 'KEEP': 'var(--accent)', 'MOVIE': '#a855f7',
+      'MOVIES': '#a855f7', 'SEED': 'var(--text-dim)', 'PORN': '#ff69b4',
+    };
+    const tbody = document.getElementById('rt-tbody');
+    if (!d.torrents || !d.torrents.length) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-dim);padding:12px">No torrents</td></tr>';
+      return;
+    }
+    tbody.innerHTML = d.torrents.map(t => {
+      const lc = LABEL_COLORS[t.label.toUpperCase()] || 'var(--text-dim)';
+      const status = !t.active ? '<span style="color:var(--text-dim)">PAUSED</span>'
+        : t.done ? '<span style="color:#39ff14">SEED</span>'
+        : '<span style="color:var(--accent)">DL</span>';
+      const ulRate = t.ul_rate > 0 ? `<span style="color:var(--accent)">${Math.round(t.ul_rate/1024)}K</span>` : '—';
+      const dlRate = t.dl_rate > 0 ? `<span style="color:var(--blue)">${Math.round(t.dl_rate/1024)}K</span>` : '—';
+      const sizeMB = t.size > 1073741824 ? (t.size/1073741824).toFixed(1)+'G' : (t.size/1048576).toFixed(0)+'M';
+      const name = t.name.length > 52 ? t.name.substring(0, 52) + '…' : t.name;
+      return `<tr>
+        <td title="${t.name}">${name}</td>
+        <td><span style="color:${lc};font-size:9px;letter-spacing:1px">${t.label||'—'}</span></td>
+        <td style="white-space:nowrap">${sizeMB}</td>
+        <td style="white-space:nowrap">${t.ratio.toFixed(2)}</td>
+        <td>${ulRate}</td>
+        <td>${dlRate}</td>
+        <td>${status}</td>
+      </tr>`;
+    }).join('');
+  }).catch(e => {
+    const tb = document.getElementById('rt-tbody');
+    if (tb) tb.innerHTML = `<tr><td colspan="7" style="color:var(--red2);padding:12px">Failed: ${e}</td></tr>`;
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+//  STORAGEBOX LIBRARY + RUN HISTORY
+// ══════════════════════════════════════════════════════════
+function loadSbLibrary(force) {
+  Promise.all([
+    fetch('/api/storagebox/library').then(r => r.json()),
+    fetch('/api/storagebox_disk').then(r => r.json()),
+  ]).then(([lib, disk]) => {
+    const ts = document.getElementById('sb-lib-ts');
+    if (ts) ts.textContent = new Date().toLocaleTimeString();
+
+    const mountEl = document.getElementById('sb-lib-mount');
+    if (mountEl) {
+      mountEl.innerHTML = lib.mounted
+        ? '<span style="color:#39ff14">● MOUNTED</span>'
+        : '<span style="color:var(--red2)">✕ NOT MOUNTED</span>';
+    }
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    set('sb-lib-movies',  lib.movies   ?? '—');
+    set('sb-lib-shows',   lib.tv_shows ?? '—');
+    set('sb-lib-seasons', lib.tv_seasons ?? '—');
+
+    // Disk from existing storagebox_disk endpoint
+    if (disk && disk.total_gb) {
+      set('sb-lib-used',  disk.used_gb  ?? '—');
+      set('sb-lib-free',  disk.free_gb  ?? '—');
+      set('sb-lib-pct',   disk.pct      ?? '—');
+      set('sb-lib-total', 'Total: ' + (disk.total_gb ?? '—') + ' GB');
+      const bar = document.getElementById('sb-lib-bar');
+      if (bar) bar.style.width = Math.min(parseFloat(disk.pct) || 0, 100) + '%';
+    }
+  }).catch(console.error);
+}
+
+function loadSbRuns(force) {
+  fetch('/api/storagebox/runs').then(r => r.json()).then(d => {
+    const ts = document.getElementById('sb-runs-ts');
+    if (ts) ts.textContent = new Date().toLocaleTimeString();
+    const el = document.getElementById('sb-runs-list');
+    if (!el) return;
+    if (!d.runs || !d.runs.length) {
+      el.innerHTML = '<div style="padding:12px 16px;color:var(--text-dim)">No run history found.</div>';
+      return;
+    }
+    el.innerHTML = d.runs.map((run, i) => {
+      const dur = run.duration >= 3600
+        ? Math.floor(run.duration/3600) + 'h ' + Math.floor((run.duration%3600)/60) + 'm'
+        : Math.floor(run.duration/60) + 'm ' + (run.duration%60) + 's';
+      const okColor   = run.ok > 0   ? '#39ff14' : 'var(--text-dim)';
+      const failColor = run.failed > 0 ? 'var(--red2)' : 'var(--text-dim)';
+      const itemsHtml = run.items.length ? run.items.map(it =>
+        `<div style="padding:3px 0;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:baseline;flex-wrap:wrap">
+          <span style="color:${it.label==='TV'?'var(--blue)':'#a855f7'};font-size:9px;letter-spacing:1px;flex-shrink:0">[${it.label}]</span>
+          <span style="color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${it.name}">${it.name}</span>
+          <span style="color:var(--text-dim);white-space:nowrap;font-size:10px">${it.size} @ ${it.mbps} MB/s</span>
+        </div>`).join('') : '';
+      const failsHtml = run.fails.length ? run.fails.map(f =>
+        `<div style="color:var(--red2);padding:2px 0">✕ ${f}</div>`).join('') : '';
+      return `<div style="border-bottom:1px solid var(--border2);padding:10px 14px">
+        <div style="display:flex;gap:12px;align-items:baseline;flex-wrap:wrap;margin-bottom:6px">
+          <span style="color:var(--accent);font-size:11px;letter-spacing:1px">${run.ts}</span>
+          <span style="color:var(--text-dim);font-size:10px">${dur} · ${run.gb} GB</span>
+          <span style="color:${okColor};font-size:10px">✓ ${run.ok}</span>
+          ${run.failed > 0 ? `<span style="color:${failColor};font-size:10px">✕ ${run.failed}</span>` : ''}
+          ${run.skipped > 0 ? `<span style="color:var(--text-dim);font-size:10px">⊘ ${run.skipped}</span>` : ''}
+        </div>
+        ${itemsHtml}${failsHtml}
+      </div>`;
+    }).join('');
+  }).catch(e => {
+    const el = document.getElementById('sb-runs-list');
+    if (el) el.innerHTML = `<div style="padding:12px;color:var(--red2)">Failed: ${e}</div>`;
   });
 }

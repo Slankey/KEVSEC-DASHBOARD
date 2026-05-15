@@ -1,4 +1,5 @@
 import os, json, time, hashlib, secrets, datetime, subprocess, re, threading, random, logging, sqlite3
+import xmlrpc.client
 import urllib.request as _urllib_req
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import wraps
@@ -5977,6 +5978,151 @@ def api_storagebox_disk():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
+RTORRENT_SOCK = "/var/run/slankey/.rtorrent.sock"
+
+class _SCGITransport(xmlrpc.client.Transport):
+    def __init__(self, path):
+        super().__init__()
+        self._path = path
+    def request(self, host, handler, body, verbose=False):
+        import socket as _sock
+        s = _sock.socket(_sock.AF_UNIX, _sock.SOCK_STREAM)
+        s.connect(self._path)
+        b = body if isinstance(body, bytes) else body.encode()
+        h = f"CONTENT_LENGTH\x00{len(b)}\x00SCGI\x001\x00".encode()
+        s.sendall(f"{len(h)}:".encode() + h + b"," + b)
+        r = b""
+        while True:
+            c = s.recv(65536)
+            if not c: break
+            r += c
+        s.close()
+        if b"\r\n\r\n" in r: r = r.split(b"\r\n\r\n", 1)[1]
+        p, u = self.getparser(); p.feed(r); p.close(); return u.close()
+
+@app.route("/api/rtorrent")
+@login_required
+def api_rtorrent():
+    import xmlrpc.client as _xc
+    try:
+        srv = _xc.ServerProxy("http://localhost/RPC2", transport=_SCGITransport(RTORRENT_SOCK))
+        dl_rate  = srv.throttle.global_down.rate()
+        ul_rate  = srv.throttle.global_up.rate()
+        total_ul = srv.throttle.global_up.total()
+        total_dl = srv.throttle.global_down.total()
+        rows = srv.d.multicall2("", "main",
+            "d.name=", "d.size_bytes=", "d.up.total=", "d.down.total=",
+            "d.ratio=", "d.custom1=", "d.complete=", "d.state=",
+            "d.up.rate=", "d.down.rate=", "d.peers_connected=")
+        torrents = []
+        for r in rows:
+            torrents.append({
+                "name":    r[0],
+                "size":    r[1],
+                "up":      r[2],
+                "down":    r[3],
+                "ratio":   round(r[4] / 1000, 3),
+                "label":   r[5] or "",
+                "done":    bool(r[6]),
+                "active":  bool(r[7]),
+                "ul_rate": r[8],
+                "dl_rate": r[9],
+                "peers":   r[10],
+            })
+        torrents.sort(key=lambda t: (t["done"] and not t["ul_rate"] > 0, t["name"].lower()))
+        seeding    = sum(1 for t in torrents if t["done"] and t["active"])
+        leeching   = sum(1 for t in torrents if not t["done"] and t["active"])
+        paused     = sum(1 for t in torrents if not t["active"])
+        return jsonify({
+            "dl_rate":  dl_rate,
+            "ul_rate":  ul_rate,
+            "total_ul": total_ul,
+            "total_dl": total_dl,
+            "count":    len(torrents),
+            "seeding":  seeding,
+            "leeching": leeching,
+            "paused":   paused,
+            "torrents": torrents,
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+SB_RUNS_DIR = "/mnt/hdd/logs/storagebox-runs"
+
+@app.route("/api/storagebox/runs")
+@login_required
+def api_storagebox_runs():
+    import glob as _glob
+    _RUN_HDR  = re.compile(r"StorageBox Queue Run — (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})")
+    _RUN_DUR  = re.compile(r"Duration:\s*(\d+)s\s*\|\s*Transferred:\s*([\d.]+)\s*GB")
+    _RUN_STAT = re.compile(r"OK:\s*(\d+)\s*\|\s*Failed:\s*(\d+)\s*\|\s*Skipped:\s*(\d+)")
+    _RUN_ITEM = re.compile(r"^\s*\[(TV|MOVIE)\]\s*(.+?)\s*\(([\d.]+[GMK])\s+in\s+(\d+)s\s*@\s*([\d.]+)\s*MB/s\)")
+    _RUN_FAIL = re.compile(r"^\s*FAIL\s+(.+)$")
+
+    runs = []
+    try:
+        files = sorted(_glob.glob(os.path.join(SB_RUNS_DIR, "*.log")), reverse=True)[:7]
+        for fpath in files:
+            date = os.path.basename(fpath).replace(".log", "")
+            try:
+                with open(fpath, "r", errors="replace") as f:
+                    content = f.read()
+            except Exception:
+                continue
+            blocks = _RUN_HDR.split(content)
+            i = 1
+            while i < len(blocks) - 1:
+                ts   = blocks[i]
+                body = blocks[i + 1]
+                i += 2
+                run = {"ts": ts, "date": date, "duration": 0, "gb": 0.0,
+                       "ok": 0, "failed": 0, "skipped": 0, "items": [], "fails": []}
+                m = _RUN_DUR.search(body)
+                if m: run["duration"] = int(m.group(1)); run["gb"] = float(m.group(2))
+                m = _RUN_STAT.search(body)
+                if m: run["ok"] = int(m.group(1)); run["failed"] = int(m.group(2)); run["skipped"] = int(m.group(3))
+                for line in body.splitlines():
+                    mi = _RUN_ITEM.match(line)
+                    if mi:
+                        run["items"].append({
+                            "label": mi.group(1), "name": mi.group(2)[:80],
+                            "size": mi.group(3), "elapsed": int(mi.group(4)), "mbps": float(mi.group(5))
+                        })
+                    mf = _RUN_FAIL.match(line)
+                    if mf: run["fails"].append(mf.group(1)[:80])
+                runs.append(run)
+    except Exception as e:
+        return jsonify({"runs": [], "error": str(e)})
+    return jsonify({"runs": runs})
+
+
+@app.route("/api/storagebox/library")
+@login_required
+def api_storagebox_library():
+    base = "/mnt/storagebox"
+    result = {"mounted": False, "movies": 0, "tv_shows": 0, "tv_seasons": 0, "error": None}
+    try:
+        if not os.path.ismount(base):
+            result["error"] = "not mounted"
+            return jsonify(result)
+        result["mounted"] = True
+        movies_dir = os.path.join(base, "MOVIES")
+        tv_dir     = os.path.join(base, "TV")
+        if os.path.isdir(movies_dir):
+            result["movies"] = len([e for e in os.scandir(movies_dir) if e.is_dir()])
+        if os.path.isdir(tv_dir):
+            shows = [e for e in os.scandir(tv_dir) if e.is_dir()]
+            result["tv_shows"] = len(shows)
+            seasons = sum(
+                len([s for s in os.scandir(show.path) if s.is_dir()])
+                for show in shows
+            )
+            result["tv_seasons"] = seasons
+    except Exception as e:
+        result["error"] = str(e)
+    return jsonify(result)
 
 
 QUEUE_LOG    = "/mnt/hdd/logs/storagebox-queue.log"
