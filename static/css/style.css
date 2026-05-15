@@ -1290,3 +1290,13 @@ footer {
   font-family: var(--font-m); font-size: 9px; color: var(--text-dim);
   letter-spacing: 1px;
 }
+
+/* ══════════════════════════════════════════════════════════
+   OPS TAB SECTION LABEL
+   ══════════════════════════════════════════════════════════ */
+.ops-section-label {
+  font-family: var(--font-m); font-size: 9px; letter-spacing: 4px;
+  color: var(--text-dim); padding: 14px 0 10px;
+  border-top: 1px solid var(--border2); margin-top: 6px;
+  text-transform: uppercase;
+}

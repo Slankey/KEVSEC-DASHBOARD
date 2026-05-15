@@ -169,7 +169,7 @@ function loadTab(tab) {
   if (tab === 'garden') { loadGarden(); loadWateringLog(); renderInvasives(); setTimeout(initLawnMap, 100); }
   if (tab === 'settings') {
     loadServerStats(); loadQueue(); loadBandwidth(); loadStorageboxDisk(); loadTarpitStats();
-    loadRtorrent(); loadSbLibrary(); loadSbRuns();
+    loadRtorrent(); loadSbLibrary(); loadSbRuns(); loadGardenOps();
     setTimeout(() => loadProxmox(),         1*M);
     setTimeout(() => loadGoals(),           2*M);
     setTimeout(() => loadDjStatus(),        3*M);
@@ -5003,6 +5003,61 @@ function copyRssUrl() {
     document.execCommand('copy');
     if (fb) fb.textContent = 'URL selected — press Ctrl+C';
   });
+}
+
+// ══════════════════════════════════════════════════════════
+//  GARDEN QUICK ACCESS (OPS TAB)
+// ══════════════════════════════════════════════════════════
+function loadGardenOps() {
+  fetch('/api/garden').then(r => r.json()).then(d => {
+    const el = document.getElementById('ops-mow-status');
+    if (!el) return;
+    const mow = d.mowing || {};
+    const statusColor = {OK:'#4a9c4a',SOON:'#cc9900',DUE:'#cc9900',OVERDUE:'#cc4444',UNKNOWN:'var(--text-dim)'}[mow.status] || 'var(--text-dim)';
+    const last = mow.last_mow ? `Last: ${mow.last_mow} (${mow.days_since}d ago)` : 'Never logged';
+    el.innerHTML = `
+      <div style="margin-bottom:6px">
+        <span style="color:${statusColor};font-weight:600;letter-spacing:2px">${mow.status || 'UNKNOWN'}</span>
+        <span style="color:var(--text-dim);margin-left:10px;font-size:10px">${last}</span>
+      </div>
+      <div style="color:var(--text-dim);font-size:10px;line-height:1.6">${mow.message || ''}</div>`;
+  }).catch(() => {
+    const el = document.getElementById('ops-mow-status');
+    if (el) el.textContent = 'Failed to load';
+  });
+}
+
+function opsLogMow() {
+  const note = (document.getElementById('ops-mow-note') || {}).value || '';
+  const csrf = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
+  const fb = document.getElementById('ops-garden-feedback');
+  fetch('/api/mowing_log', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json','X-CSRF-Token':csrf},
+    body: JSON.stringify({date: new Date().toISOString().slice(0,10), note})
+  }).then(r => r.json()).then(() => {
+    if (fb) { fb.textContent = 'Mow logged ✓'; setTimeout(() => { if(fb) fb.textContent=''; }, 3000); }
+    loadGardenOps();
+    const noteEl = document.getElementById('ops-mow-note');
+    if (noteEl) noteEl.value = '';
+  }).catch(() => { if (fb) fb.textContent = 'Failed'; });
+}
+
+function opsLogWater() {
+  const plant  = (document.getElementById('ops-wlog-plant') || {}).value || 'lawn';
+  const amount = parseFloat((document.getElementById('ops-wlog-amount') || {}).value) || 0;
+  const csrf   = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
+  const fb     = document.getElementById('ops-garden-feedback');
+  if (!amount) { if (fb) fb.textContent = 'Enter amount'; return; }
+  fetch('/api/watering', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json','X-CSRF-Token':csrf},
+    body: JSON.stringify({plant, date: new Date().toISOString().slice(0,10), amount_in: amount, note:''})
+  }).then(r => r.json()).then(() => {
+    if (fb) { fb.textContent = `${plant} watered (${amount}") ✓`; setTimeout(() => { if(fb) fb.textContent=''; }, 3000); }
+    const amtEl = document.getElementById('ops-wlog-amount');
+    if (amtEl) amtEl.value = '';
+  }).catch(() => { if (fb) fb.textContent = 'Failed'; });
 }
 
 // ══════════════════════════════════════════════════════════

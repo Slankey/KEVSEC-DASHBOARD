@@ -817,26 +817,28 @@
 
 <!-- ═══════════════════════════════════════════════════════ GARDEN ═══ -->
 <div id="tab-garden" class="tab-content">
-  <div style="background:linear-gradient(90deg,#071007,#0a140a,#071007);border-bottom:1px solid var(--border);
-       padding:8px 16px;font-family:var(--font-m);font-size:9px;letter-spacing:3px;color:#6a9c4a;text-align:center">
-    AZALEAS · WILDFLOWERS · LAWN · CATNIP // ZONE 5b // PORT WASHINGTON 53074 // WATERING INTELLIGENCE
+  <div style="background:var(--bg2);border-bottom:1px solid var(--border);border-top:2px solid var(--accent);
+       padding:10px 16px;font-family:var(--font-m);font-size:9px;letter-spacing:3px;color:var(--accent);text-align:center">
+    AZALEAS · WILDFLOWERS · LAWN · CATNIP // ZONE 5b // PORT WASHINGTON 53074 // WATERING INTELLIGENCE SYSTEM
   </div>
 
   <!-- Mowing Panel -->
   <div class="panel">
     <div class="panel-header">
-      <span>✂ Lawn Mowing</span>
+      <span>LAWN MOWING</span>
       <button class="refresh-btn" onclick="loadGarden(true)">⟳ Refresh</button>
     </div>
     <div id="mowing-panel"></div>
   </div>
+
+  <div style="margin:0 0 0;border-top:1px solid var(--border2)"></div>
 
   <!-- Soil Moisture + Stats row -->
   <div class="panel-row">
     <!-- Soil Moisture -->
     <div class="panel">
       <div class="panel-header">
-        <span>💧 Soil Moisture — Open-Meteo Model</span>
+        <span>SOIL MOISTURE — OPEN-METEO MODEL</span>
         <span id="garden-ts" class="ts"></span>
         <button class="refresh-btn" onclick="loadGarden(true)">⟳ Refresh</button>
       </div>
@@ -844,7 +846,7 @@
     </div>
     <!-- Garden Status -->
     <div class="panel">
-      <div class="panel-header">🌿 Garden Status — All Plants</div>
+      <div class="panel-header">GARDEN STATUS — ALL PLANTS</div>
       <div id="garden-status-panel" class="loading">Loading...</div>
     </div>
   </div>
@@ -852,7 +854,7 @@
   <!-- Watering Schedule (the full watering panel, moved from weather tab) -->
   <div class="panel">
     <div class="panel-header">
-      <span>🌱 Garden &amp; Lawn Care — Watering Schedule</span>
+      <span>GARDEN &amp; LAWN CARE — WATERING SCHEDULE</span>
       <button class="refresh-btn" onclick="loadGarden(true)">⟳ Refresh</button>
     </div>
     <div id="garden-panel" class="loading">Calculating garden conditions...</div>
@@ -861,17 +863,17 @@
   <!-- Watering Log -->
   <div class="panel">
     <div class="panel-header">
-      <span>📋 Watering Log — Actual vs Suggested</span>
+      <span>WATERING LOG — ACTUAL VS SUGGESTED</span>
       <button class="refresh-btn" onclick="loadWateringLog()">⟳ Refresh</button>
     </div>
     <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
       <div style="font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:8px">LOG ACTUAL WATERING EVENT</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
         <select id="wlog-plant" style="background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:4px 8px;font-size:12px">
-          <option value="lawn">🌿 Lawn</option>
-          <option value="azalea">🌸 Azaleas</option>
-          <option value="wildflowers">🌻 Wildflowers</option>
-          <option value="catnip">🐱 Catnip</option>
+          <option value="lawn">Lawn</option>
+          <option value="azalea">Azaleas</option>
+          <option value="wildflowers">Wildflowers</option>
+          <option value="catnip">Catnip</option>
         </select>
         <input type="date" id="wlog-date" style="background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:4px 8px;font-size:16px;width:140px">
         <input type="number" id="wlog-amount" placeholder='Amount (inches, e.g. 0.75)' step="0.1" min="0" max="5"
@@ -888,7 +890,7 @@
   <!-- Lawn Map -->
   <div class="panel">
     <div class="panel-header">
-      <span>🗺 Lawn Map — 841 W 4th Ave</span>
+      <span>LAWN MAP — 841 W 4TH AVE</span>
       <div style="display:flex;gap:6px;align-items:center">
         <button class="refresh-btn" onclick="if(_lawnMap){_lawnMap.setView(LAWN_CENTER,LAWN_ZOOM);}">⌖ Re-center</button>
         <button class="refresh-btn" id="map-draw-btn" onclick="toggleMapDraw()">✏ Draw</button>
@@ -899,9 +901,9 @@
     <div id="lawn-map" style="height:380px;width:100%"></div>
     <div style="padding:6px 16px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;border-top:1px solid var(--border)">
       <span style="font-size:9px;color:var(--text-dim);letter-spacing:1px">ZONE COLOR:</span>
-      <button class="refresh-btn" onclick="setDrawColor('#4caf50')" style="color:#4caf50;border-color:#4caf50;font-size:10px">🟢 Mowed</button>
-      <button class="refresh-btn" onclick="setDrawColor('#ff9800')" style="color:#ff9800;border-color:#ff9800;font-size:10px">🟠 Needs Mow</button>
-      <button class="refresh-btn" onclick="setDrawColor('#2196f3')" style="color:#2196f3;border-color:#2196f3;font-size:10px">🔵 Fertilized</button>
+      <button class="refresh-btn" onclick="setDrawColor('#4caf50')" style="color:#4caf50;border-color:#4caf50;font-size:10px">MOWED</button>
+      <button class="refresh-btn" onclick="setDrawColor('#ff9800')" style="color:#ff9800;border-color:#ff9800;font-size:10px">NEEDS MOW</button>
+      <button class="refresh-btn" onclick="setDrawColor('#2196f3')" style="color:#2196f3;border-color:#2196f3;font-size:10px">FERTILIZED</button>
       <span style="font-size:9px;color:var(--text-dim);margin-left:8px">Click to add points · Double-click to finish polygon</span>
     </div>
   </div>
@@ -909,7 +911,7 @@
   <!-- Invasive Species -->
   <div class="panel">
     <div class="panel-header">
-      <span>🚨 Invasive Species Watch — Ozaukee County, WI</span>
+      <span>INVASIVE SPECIES WATCH — OZAUKEE COUNTY, WI</span>
       <a href="https://datcpservices.wisconsin.gov/lsa/invasivesearch.jsp" target="_blank"
          class="refresh-btn" style="text-decoration:none">WI DNR ↗</a>
     </div>
@@ -918,7 +920,7 @@
 
   <!-- Quick Links -->
   <div class="panel">
-    <div class="panel-header">🔗 Garden Resources — 53074 / Zone 5b</div>
+    <div class="panel-header">GARDEN RESOURCES — ZONE 5b / 53074</div>
     <div style="padding:12px 16px;display:flex;gap:8px;flex-wrap:wrap">
       <a href="https://forecast.weather.gov/MapClick.php?CityName=Port+Washington&state=WI&site=MKX&textField1=43.3875&textField2=-87.8756" target="_blank"
          style="color:var(--accent);text-decoration:none;border:1px solid var(--accent);padding:4px 12px;font-size:10px;letter-spacing:1px">NWS Forecast 53074 ↗</a>
@@ -1673,9 +1675,106 @@
 
 <!-- ═══════════════════════════════════════════════════ SETTINGS ═══ -->
 <div id="tab-settings" class="tab-content">
+  <!-- 1. Refresh All -->
   <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
     <button class="refresh-btn" onclick="refreshAllCommand()" style="padding:6px 14px;font-size:11px;letter-spacing:1px">⟳ REFRESH ALL</button>
   </div>
+
+  <!-- 2. Settings section divider -->
+  <div class="ops-section-label">DASHBOARD CONFIGURATION &amp; STATUS</div>
+
+  <!-- 3. Display Settings -->
+  <div class="settings-panel" style="margin-bottom:14px">
+    <div class="settings-panel-title">◈ DISPLAY SETTINGS</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;flex-wrap:wrap">
+      <!-- Theme selector -->
+      <div>
+        <div style="font-family:var(--font-m);font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:10px">COLOR THEME</div>
+        <div style="display:flex;flex-direction:column;gap:6px" id="theme-selector">
+          <div class="theme-select-row" onclick="setTheme('presidential',null)" data-theme="presidential">
+            <span class="theme-select-swatch" style="background:#0a1628;border-color:#c9a84c"></span>
+            <span class="theme-select-name">PRESIDENTIAL</span>
+            <span class="theme-select-desc">Navy · Gold — default</span>
+          </div>
+          <div class="theme-select-row" onclick="setTheme('phantom',null)" data-theme="phantom">
+            <span class="theme-select-swatch" style="background:#0f0f0f;border-color:#cc2020"></span>
+            <span class="theme-select-name">PHANTOM</span>
+            <span class="theme-select-desc">Black · Red — high contrast</span>
+          </div>
+          <div class="theme-select-row" onclick="setTheme('agency',null)" data-theme="agency">
+            <span class="theme-select-swatch" style="background:#050805;border-color:#39ff14"></span>
+            <span class="theme-select-name">AGENCY</span>
+            <span class="theme-select-desc">Black · Green — terminal</span>
+          </div>
+          <div class="theme-select-row" onclick="setTheme('midnight',null)" data-theme="midnight">
+            <span class="theme-select-swatch" style="background:#0c0818;border-color:#a08cff"></span>
+            <span class="theme-select-name">MIDNIGHT</span>
+            <span class="theme-select-desc">Dark purple · Violet</span>
+          </div>
+          <div class="theme-select-row" onclick="setTheme('kevsec',null)" data-theme="kevsec">
+            <span class="theme-select-swatch" style="background:#04080e;border-color:#e8631c"></span>
+            <span class="theme-select-name">KEVSEC</span>
+            <span class="theme-select-desc">Navy · Orange — brand</span>
+          </div>
+        </div>
+      </div>
+      <!-- Font size -->
+      <div>
+        <div style="font-family:var(--font-m);font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:10px">FONT SIZE</div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px">
+          <button onclick="dashSize(-1)" class="log-filter-btn" style="min-width:44px;min-height:44px;font-size:16px;padding:0">A−</button>
+          <span id="font-size-display" style="font-family:var(--font-m);font-size:11px;color:var(--text);min-width:30px;text-align:center">—</span>
+          <button onclick="dashSize(1)"  class="log-filter-btn" style="min-width:44px;min-height:44px;font-size:16px;padding:0">A+</button>
+        </div>
+        <div style="font-family:var(--font-m);font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:10px">LAYOUT MODE</div>
+        <button class="tab desktop-mode-btn" id="desktop-mode-btn-settings" onclick="toggleDesktopMode()" style="font-family:var(--font-m);font-size:10px;letter-spacing:2px;background:var(--bg4);border:1px solid var(--border2);color:var(--text-dim);padding:8px 16px;cursor:pointer;min-height:44px">TOGGLE MOBILE/DESKTOP</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. settings-grid: Warm Cache + Active Sessions -->
+  <div class="settings-grid">
+    <!-- Warm Cache -->
+    <div class="settings-panel">
+      <div class="settings-panel-title">◈ WARM CACHE</div>
+      <div id="settings-cache-status" style="margin-bottom:12px;font-family:var(--font-m);font-size:11px;color:var(--text-dim)">Loading…</div>
+      <div style="margin-bottom:12px">
+        <div style="font-family:var(--font-m);font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:8px">CACHE KEYS</div>
+        <div id="settings-cache-keys" class="cache-key-pills"></div>
+      </div>
+      <button id="btn-warm-cache" onclick="triggerWarmCache()"
+        style="font-family:var(--font-m);font-size:10px;letter-spacing:2px;background:var(--bg4);border:1px solid var(--accent);color:var(--accent);padding:6px 16px;cursor:pointer;transition:all .12s">
+        ▶ TRIGGER WARM CACHE
+      </button>
+    </div>
+    <!-- Active Sessions -->
+    <div class="settings-panel">
+      <div class="settings-panel-title">◈ ACTIVE SESSIONS</div>
+      <div id="settings-sessions">Loading…</div>
+    </div>
+  </div>
+
+  <!-- 5. Daily Goals -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>🎯 Today's Objectives</span>
+      <span class="ts" id="goals-ts"></span>
+      <button class="refresh-btn" onclick="loadGoals()">⟳ Refresh</button>
+      <button class="refresh-btn" onclick="toggleGoalsEdit()" id="goals-edit-btn">✏ Edit</button>
+    </div>
+    <div id="goals-view" style="padding:12px 16px"></div>
+    <div id="goals-editor" style="display:none;padding:12px 16px">
+      <textarea id="goals-textarea" style="width:100%;min-height:160px;background:var(--bg3);
+        border:1px solid var(--border2);color:var(--text);font-family:var(--font-m);
+        font-size:16px;padding:10px;border-radius:3px;resize:vertical"></textarea>
+      <div style="margin-top:8px;display:flex;gap:8px">
+        <button class="refresh-btn" onclick="saveGoals()">💾 Save</button>
+        <button class="refresh-btn" onclick="toggleGoalsEdit()">✕ Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. panel-row: Server Stats + Proxmox + Network/Storage -->
   <div class="panel-row">
 
     <!-- Local Server -->
@@ -1736,199 +1835,7 @@
     </div>
   </div>
 
-  <!-- Server Control -->
-  <div class="panel">
-    <div class="panel-header">
-      <span>⚡ Server Control</span>
-      <span id="svc-feedback" class="ts" style="color:var(--accent)"></span>
-    </div>
-    <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
-      <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:10px">SYSTEM</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-        <button class="svc-btn svc-btn-warn" onclick="serverAction('restart',0)">🔁 Restart Now</button>
-        <button class="svc-btn svc-btn-warn" onclick="serverAction('shutdown',0)">⏹ Shutdown</button>
-        <button class="svc-btn" onclick="serverAction('cancel',0)" style="color:var(--text-dim)">✕ Cancel Scheduled</button>
-        <span style="font-size:10px;color:var(--text-dim);margin-left:8px">Restart in</span>
-        <input id="restart-delay" type="number" min="1" max="1440" value="5"
-               autocomplete="off" inputmode="numeric"
-               style="width:52px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);
-                      font-family:var(--font-m);font-size:16px;padding:4px 6px;text-align:center">
-        <span style="font-size:10px;color:var(--text-dim)">min</span>
-        <button class="svc-btn svc-btn-warn" onclick="serverAction('restart', parseInt(document.getElementById('restart-delay').value)||5)">🕐 Schedule</button>
-        <button class="svc-btn svc-btn-warn" onclick="serverAction('update-restart',0)" style="margin-left:8px">📦 Update + Restart</button>
-      </div>
-    </div>
-    <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
-      <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:10px">MAINTENANCE</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
-        <button class="svc-btn" onclick="cleanupTmp()">🗑 Clean /tmp</button>
-        <span style="font-size:10px;color:var(--text-dim)">Removes Claude Code sandbox dirs that accumulate and fill root disk</span>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-        <button class="svc-btn" onclick="jellyfinScan()" id="jf-scan-btn">📺 Rescan Jellyfin Library</button>
-        <span style="font-size:10px;color:var(--text-dim)">Run after manually adding or deleting files — forces Jellyfin to re-index all media folders</span>
-        <span id="jf-scan-status" style="font-size:10px;color:var(--accent);margin-left:4px"></span>
-      </div>
-    </div>
-    <div style="padding:12px 16px">
-      <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:10px">SERVICES</div>
-      <div id="svc-control-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px"></div>
-    </div>
-  </div>
-
-  <!-- Tarpit & Honeypot -->
-  <div class="panel">
-    <div class="panel-header">
-      <span>🕳 SSH Tarpit &amp; Honeypot — Active Defense</span>
-      <span id="tarpit-ts" class="ts"></span>
-      <button class="refresh-btn" onclick="loadTarpitStats(true)">⟳ Refresh</button>
-    </div>
-    <div class="panel-row" style="margin:0;gap:0;border-bottom:1px solid var(--border)">
-      <div style="flex:1;padding:12px 16px">
-        <div style="font-size:9px;letter-spacing:3px;color:var(--accent);margin-bottom:10px">🐢 ENDLESSH — SSH TARPIT</div>
-        <div id="tarpit-ssh-stats" class="stats-grid" style="margin-bottom:8px"></div>
-        <div style="font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:6px">RECENT CATCHES</div>
-        <div id="tarpit-recent-ips" style="font-family:var(--font-m);font-size:11px;line-height:1.8"></div>
-      </div>
-      <div style="flex:1;padding:12px 16px;border-left:1px solid var(--border)">
-        <div style="font-size:9px;letter-spacing:3px;color:var(--accent);margin-bottom:10px">🍯 HONEYPOT — WEB TRAPS</div>
-        <div id="tarpit-honeypot-stats" class="stats-grid" style="margin-bottom:8px"></div>
-        <div style="font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:6px">RECENT PROBES</div>
-        <div id="tarpit-honeypot-log"></div>
-      </div>
-    </div>
-    <div id="tarpit-error" style="display:none;padding:10px 16px;color:var(--red2);font-size:11px;font-family:var(--font-m)"></div>
-  </div>
-
-  <div class="panel-row">
-    <!-- Pending Updates -->
-    <div class="panel">
-      <div class="panel-header">
-        <span>📦 Pending System Updates</span>
-        <button class="refresh-btn" onclick="loadUpdates()">⟳ Check Now</button>
-      </div>
-      <div id="updates-list" class="updates-list">
-        <div class="loading">Click "Check Now" to scan for updates</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Local Service Uptime Monitor -->
-  <div class="panel">
-    <div class="panel-header">
-      <span>🚦 Local Service Uptime Monitor</span>
-      <span class="ts" id="local-svc-ts"></span>
-      <button class="refresh-btn" onclick="loadExtServices(true)">⟳</button>
-    </div>
-    <div id="local-services-grid" class="loading">Loading...</div>
-  </div>
-
-  <!-- External Service Status -->
-  <div class="panel">
-    <div class="panel-header">
-      <span>🌐 Internet Service Status</span>
-      <span class="ts" id="ext-svc-ts"></span>
-      <button class="refresh-btn" onclick="loadExtServices(true)">⟳</button>
-    </div>
-    <div id="ext-services-grid" class="loading">Loading service status...</div>
-  </div>
-
-  <!-- Daily Goals -->
-  <div class="panel">
-    <div class="panel-header">
-      <span>🎯 Today's Objectives</span>
-      <span class="ts" id="goals-ts"></span>
-      <button class="refresh-btn" onclick="loadGoals()">⟳ Refresh</button>
-      <button class="refresh-btn" onclick="toggleGoalsEdit()" id="goals-edit-btn">✏ Edit</button>
-    </div>
-    <div id="goals-view" style="padding:12px 16px"></div>
-    <div id="goals-editor" style="display:none;padding:12px 16px">
-      <textarea id="goals-textarea" style="width:100%;min-height:160px;background:var(--bg3);
-        border:1px solid var(--border2);color:var(--text);font-family:var(--font-m);
-        font-size:16px;padding:10px;border-radius:3px;resize:vertical"></textarea>
-      <div style="margin-top:8px;display:flex;gap:8px">
-        <button class="refresh-btn" onclick="saveGoals()">💾 Save</button>
-        <button class="refresh-btn" onclick="toggleGoalsEdit()">✕ Cancel</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- rtorrent Stats -->
-  <div class="panel">
-    <div class="panel-header">
-      <span>⬇ rtorrent — Live Torrent Stats</span>
-      <span id="rt-ts" class="ts"></span>
-      <button class="refresh-btn" onclick="loadRtorrent(true)">⟳</button>
-    </div>
-    <!-- Global stats bar -->
-    <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;gap:24px;flex-wrap:wrap">
-      <div class="stat-item"><span class="stat-val" id="rt-dl-rate">—</span><span class="stat-label">↓ DL KB/s</span></div>
-      <div class="stat-item"><span class="stat-val" id="rt-ul-rate">—</span><span class="stat-label">↑ UL KB/s</span></div>
-      <div class="stat-item"><span class="stat-val" id="rt-seeding">—</span><span class="stat-label">SEEDING</span></div>
-      <div class="stat-item"><span class="stat-val" id="rt-leeching">—</span><span class="stat-label">LEECHING</span></div>
-      <div class="stat-item"><span class="stat-val" id="rt-paused">—</span><span class="stat-label">PAUSED</span></div>
-      <div class="stat-item"><span class="stat-val" id="rt-total">—</span><span class="stat-label">TOTAL</span></div>
-      <div class="stat-item"><span class="stat-val" id="rt-total-ul">—</span><span class="stat-label">TOTAL UL GB</span></div>
-      <div class="stat-item"><span class="stat-val" id="rt-total-dl">—</span><span class="stat-label">TOTAL DL GB</span></div>
-    </div>
-    <!-- Torrent table -->
-    <div style="overflow-x:auto;max-height:300px;overflow-y:auto">
-      <table class="settings-table" style="min-width:600px">
-        <thead><tr>
-          <th>NAME</th><th>LABEL</th><th>SIZE</th><th>RATIO</th><th>↑ RATE</th><th>↓ RATE</th><th>STATUS</th>
-        </tr></thead>
-        <tbody id="rt-tbody">
-          <tr><td colspan="7" style="text-align:center;color:var(--text-dim);padding:12px">Loading…</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- StorageBox Library + Run History -->
-  <div class="panel-row">
-    <!-- Library Stats -->
-    <div class="panel">
-      <div class="panel-header">
-        <span>📚 StorageBox Library</span>
-        <span id="sb-lib-ts" class="ts"></span>
-        <button class="refresh-btn" onclick="loadSbLibrary(true)">⟳</button>
-      </div>
-      <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
-        <div id="sb-lib-mount" style="font-family:var(--font-m);font-size:10px;letter-spacing:2px;margin-bottom:12px"></div>
-        <div class="stats-grid">
-          <div class="stat-item"><span class="stat-val" id="sb-lib-movies">—</span><span class="stat-label">MOVIES</span></div>
-          <div class="stat-item"><span class="stat-val" id="sb-lib-shows">—</span><span class="stat-label">TV SHOWS</span></div>
-          <div class="stat-item"><span class="stat-val" id="sb-lib-seasons">—</span><span class="stat-label">SEASONS</span></div>
-        </div>
-      </div>
-      <div style="padding:12px 16px">
-        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:10px">DISK USAGE</div>
-        <div class="stats-grid">
-          <div class="stat-item"><span class="stat-val" id="sb-lib-used">—</span><span class="stat-label">USED GB</span></div>
-          <div class="stat-item"><span class="stat-val" id="sb-lib-free">—</span><span class="stat-label">FREE GB</span></div>
-          <div class="stat-item"><span class="stat-val" id="sb-lib-pct">—</span><span class="stat-label">% FULL</span></div>
-        </div>
-        <div id="sb-lib-bar-wrap" style="margin-top:8px;background:var(--bg3);border-radius:3px;height:6px;overflow:hidden">
-          <div id="sb-lib-bar" style="height:100%;width:0%;background:var(--accent);transition:width 0.6s"></div>
-        </div>
-        <div id="sb-lib-total" style="font-size:9px;color:var(--text-dim);margin-top:4px">Total: —</div>
-      </div>
-    </div>
-
-    <!-- Run History -->
-    <div class="panel">
-      <div class="panel-header">
-        <span>📋 StorageBox Run History</span>
-        <span id="sb-runs-ts" class="ts"></span>
-        <button class="refresh-btn" onclick="loadSbRuns(true)">⟳</button>
-      </div>
-      <div id="sb-runs-list" style="font-family:var(--font-m);font-size:11px;max-height:340px;overflow-y:auto">
-        <div class="loading" style="padding:12px 16px">Loading…</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- StorageBox Transfer Queue -->
+  <!-- 7. StorageBox Transfer Queue -->
   <div class="panel" id="queue-panel">
     <div class="panel-header">
       <span>📦 StorageBox Transfer Queue</span>
@@ -1979,104 +1886,196 @@
     </div>
   </div>
 
-  <!-- ── Settings Section ─────────────────────────────────── -->
-  <div style="margin:20px 0 10px;border-top:1px solid var(--border2);padding-top:16px">
-    <div style="font-family:var(--font-m);font-size:9px;letter-spacing:4px;color:var(--text-dim);margin-bottom:14px">⚙ DASHBOARD SETTINGS &amp; STATUS</div>
-  </div>
-
-  <!-- Display Settings -->
-  <div class="settings-panel" style="margin-bottom:14px">
-    <div class="settings-panel-title">◈ DISPLAY SETTINGS</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;flex-wrap:wrap">
-      <!-- Theme selector -->
-      <div>
-        <div style="font-family:var(--font-m);font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:10px">COLOR THEME</div>
-        <div style="display:flex;flex-direction:column;gap:6px" id="theme-selector">
-          <div class="theme-select-row" onclick="setTheme('presidential',null)" data-theme="presidential">
-            <span class="theme-select-swatch" style="background:#0a1628;border-color:#c9a84c"></span>
-            <span class="theme-select-name">PRESIDENTIAL</span>
-            <span class="theme-select-desc">Navy · Gold — default</span>
-          </div>
-          <div class="theme-select-row" onclick="setTheme('phantom',null)" data-theme="phantom">
-            <span class="theme-select-swatch" style="background:#0f0f0f;border-color:#cc2020"></span>
-            <span class="theme-select-name">PHANTOM</span>
-            <span class="theme-select-desc">Black · Red — high contrast</span>
-          </div>
-          <div class="theme-select-row" onclick="setTheme('agency',null)" data-theme="agency">
-            <span class="theme-select-swatch" style="background:#050805;border-color:#39ff14"></span>
-            <span class="theme-select-name">AGENCY</span>
-            <span class="theme-select-desc">Black · Green — terminal</span>
-          </div>
-          <div class="theme-select-row" onclick="setTheme('midnight',null)" data-theme="midnight">
-            <span class="theme-select-swatch" style="background:#0c0818;border-color:#a08cff"></span>
-            <span class="theme-select-name">MIDNIGHT</span>
-            <span class="theme-select-desc">Dark purple · Violet</span>
-          </div>
-          <div class="theme-select-row" onclick="setTheme('kevsec',null)" data-theme="kevsec">
-            <span class="theme-select-swatch" style="background:#04080e;border-color:#e8631c"></span>
-            <span class="theme-select-name">KEVSEC</span>
-            <span class="theme-select-desc">Navy · Orange — brand</span>
-          </div>
+  <!-- 8. StorageBox Library + Run History -->
+  <div class="panel-row">
+    <!-- Library Stats -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>📚 StorageBox Library</span>
+        <span id="sb-lib-ts" class="ts"></span>
+        <button class="refresh-btn" onclick="loadSbLibrary(true)">⟳</button>
+      </div>
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+        <div id="sb-lib-mount" style="font-family:var(--font-m);font-size:10px;letter-spacing:2px;margin-bottom:12px"></div>
+        <div class="stats-grid">
+          <div class="stat-item"><span class="stat-val" id="sb-lib-movies">—</span><span class="stat-label">MOVIES</span></div>
+          <div class="stat-item"><span class="stat-val" id="sb-lib-shows">—</span><span class="stat-label">TV SHOWS</span></div>
+          <div class="stat-item"><span class="stat-val" id="sb-lib-seasons">—</span><span class="stat-label">SEASONS</span></div>
         </div>
       </div>
-      <!-- Font size -->
-      <div>
-        <div style="font-family:var(--font-m);font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:10px">FONT SIZE</div>
-        <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px">
-          <button onclick="dashSize(-1)" class="log-filter-btn" style="min-width:44px;min-height:44px;font-size:16px;padding:0">A−</button>
-          <span id="font-size-display" style="font-family:var(--font-m);font-size:11px;color:var(--text);min-width:30px;text-align:center">—</span>
-          <button onclick="dashSize(1)"  class="log-filter-btn" style="min-width:44px;min-height:44px;font-size:16px;padding:0">A+</button>
+      <div style="padding:12px 16px">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:10px">DISK USAGE</div>
+        <div class="stats-grid">
+          <div class="stat-item"><span class="stat-val" id="sb-lib-used">—</span><span class="stat-label">USED GB</span></div>
+          <div class="stat-item"><span class="stat-val" id="sb-lib-free">—</span><span class="stat-label">FREE GB</span></div>
+          <div class="stat-item"><span class="stat-val" id="sb-lib-pct">—</span><span class="stat-label">% FULL</span></div>
         </div>
-        <div style="font-family:var(--font-m);font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:10px">LAYOUT MODE</div>
-        <button class="tab desktop-mode-btn" id="desktop-mode-btn-settings" onclick="toggleDesktopMode()" style="font-family:var(--font-m);font-size:10px;letter-spacing:2px;background:var(--bg4);border:1px solid var(--border2);color:var(--text-dim);padding:8px 16px;cursor:pointer;min-height:44px">TOGGLE MOBILE/DESKTOP</button>
+        <div id="sb-lib-bar-wrap" style="margin-top:8px;background:var(--bg3);border-radius:3px;height:6px;overflow:hidden">
+          <div id="sb-lib-bar" style="height:100%;width:0%;background:var(--accent);transition:width 0.6s"></div>
+        </div>
+        <div id="sb-lib-total" style="font-size:9px;color:var(--text-dim);margin-top:4px">Total: —</div>
+      </div>
+    </div>
+
+    <!-- Run History -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>📋 StorageBox Run History</span>
+        <span id="sb-runs-ts" class="ts"></span>
+        <button class="refresh-btn" onclick="loadSbRuns(true)">⟳</button>
+      </div>
+      <div id="sb-runs-list" style="font-family:var(--font-m);font-size:11px;max-height:340px;overflow-y:auto">
+        <div class="loading" style="padding:12px 16px">Loading…</div>
       </div>
     </div>
   </div>
 
-  <div class="settings-grid">
-    <!-- Warm Cache -->
-    <div class="settings-panel">
-      <div class="settings-panel-title">◈ WARM CACHE</div>
-      <div id="settings-cache-status" style="margin-bottom:12px;font-family:var(--font-m);font-size:11px;color:var(--text-dim)">Loading…</div>
-      <div style="margin-bottom:12px">
-        <div style="font-family:var(--font-m);font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:8px">CACHE KEYS</div>
-        <div id="settings-cache-keys" class="cache-key-pills"></div>
-      </div>
-      <button id="btn-warm-cache" onclick="triggerWarmCache()"
-        style="font-family:var(--font-m);font-size:10px;letter-spacing:2px;background:var(--bg4);border:1px solid var(--accent);color:var(--accent);padding:6px 16px;cursor:pointer;transition:all .12s">
-        ▶ TRIGGER WARM CACHE
-      </button>
+  <!-- 9. rtorrent Stats -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>⬇ rtorrent — Live Torrent Stats</span>
+      <span id="rt-ts" class="ts"></span>
+      <button class="refresh-btn" onclick="loadRtorrent(true)">⟳</button>
     </div>
-    <!-- Active Sessions -->
-    <div class="settings-panel">
-      <div class="settings-panel-title">◈ ACTIVE SESSIONS</div>
-      <div id="settings-sessions">Loading…</div>
+    <!-- Global stats bar -->
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;gap:24px;flex-wrap:wrap">
+      <div class="stat-item"><span class="stat-val" id="rt-dl-rate">—</span><span class="stat-label">↓ DL KB/s</span></div>
+      <div class="stat-item"><span class="stat-val" id="rt-ul-rate">—</span><span class="stat-label">↑ UL KB/s</span></div>
+      <div class="stat-item"><span class="stat-val" id="rt-seeding">—</span><span class="stat-label">SEEDING</span></div>
+      <div class="stat-item"><span class="stat-val" id="rt-leeching">—</span><span class="stat-label">LEECHING</span></div>
+      <div class="stat-item"><span class="stat-val" id="rt-paused">—</span><span class="stat-label">PAUSED</span></div>
+      <div class="stat-item"><span class="stat-val" id="rt-total">—</span><span class="stat-label">TOTAL</span></div>
+      <div class="stat-item"><span class="stat-val" id="rt-total-ul">—</span><span class="stat-label">TOTAL UL GB</span></div>
+      <div class="stat-item"><span class="stat-val" id="rt-total-dl">—</span><span class="stat-label">TOTAL DL GB</span></div>
     </div>
-  </div>
-
-  <!-- Auth Log -->
-  <div class="settings-panel" style="margin-top:14px">
-    <div class="settings-panel-title">◈ AUTH LOG</div>
-    <div>
-      <button class="log-filter-btn active" onclick="filterAuthLog('all',this)">ALL</button>
-      <button class="log-filter-btn" onclick="filterAuthLog('LOGIN_SUCCESS',this)">SUCCESS</button>
-      <button class="log-filter-btn" onclick="filterAuthLog('LOGIN_FAILED',this)">FAILED</button>
-      <button class="log-filter-btn" onclick="filterAuthLog('HONEYPOT_HIT',this)">HONEYPOT</button>
-      <button class="log-filter-btn" onclick="filterAuthLog('HONEYPOT TRAP_HIT',this)">TRAP</button>
-    </div>
-    <div style="overflow-x:auto">
-      <table class="settings-table">
+    <!-- Torrent table -->
+    <div style="overflow-x:auto;max-height:300px;overflow-y:auto">
+      <table class="settings-table" style="min-width:600px">
         <thead><tr>
-          <th>TIMESTAMP</th><th>EVENT</th><th>USER</th><th>IP</th><th>PATH / UA</th>
+          <th>NAME</th><th>LABEL</th><th>SIZE</th><th>RATIO</th><th>↑ RATE</th><th>↓ RATE</th><th>STATUS</th>
         </tr></thead>
-        <tbody id="settings-log-tbody">
-          <tr><td colspan="5" style="color:var(--text-dim);text-align:center;padding:12px">Loading…</td></tr>
+        <tbody id="rt-tbody">
+          <tr><td colspan="7" style="text-align:center;color:var(--text-dim);padding:12px">Loading…</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 
-  <!-- System Info + RSS Feed -->
+  <!-- 10. Garden Quick Access -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>GARDEN — Quick Status</span>
+      <button class="refresh-btn" onclick="loadGardenOps()">⟳</button>
+      <button class="refresh-btn" onclick="document.querySelector('[data-tab=garden]').click()" style="color:var(--accent)">Full View →</button>
+    </div>
+    <div class="panel-row" style="margin:0;gap:0">
+      <!-- Mowing status -->
+      <div style="flex:1;padding:12px 16px;border-right:1px solid var(--border)">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:10px">LAWN MOWING</div>
+        <div id="ops-mow-status" style="font-family:var(--font-m);font-size:11px;color:var(--text-dim)">Loading…</div>
+        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+          <input type="text" id="ops-mow-note" placeholder="Mow note (optional)"
+                 style="flex:1;min-width:120px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);
+                        font-family:var(--font-m);font-size:16px;padding:5px 8px">
+          <button class="svc-btn" onclick="opsLogMow()">+ LOG MOW</button>
+        </div>
+      </div>
+      <!-- Quick water log -->
+      <div style="flex:1;padding:12px 16px">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:10px">QUICK WATER LOG</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <select id="ops-wlog-plant" style="background:var(--bg3);border:1px solid var(--border2);color:var(--text);
+                  font-family:var(--font-m);font-size:16px;padding:5px 8px">
+            <option value="lawn">Lawn</option>
+            <option value="azalea">Azaleas</option>
+            <option value="wildflowers">Wildflowers</option>
+            <option value="catnip">Catnip</option>
+          </select>
+          <input type="number" id="ops-wlog-amount" placeholder="Inches" step="0.1" min="0" max="5"
+                 autocomplete="off" inputmode="decimal"
+                 style="width:90px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);
+                        font-family:var(--font-m);font-size:16px;padding:5px 8px;text-align:center">
+          <button class="svc-btn" onclick="opsLogWater()">+ LOG WATER</button>
+        </div>
+        <div id="ops-garden-feedback" style="font-family:var(--font-m);font-size:10px;color:var(--accent);margin-top:8px;min-height:16px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 11. Server Control -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>⚡ Server Control</span>
+      <span id="svc-feedback" class="ts" style="color:var(--accent)"></span>
+    </div>
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+      <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:10px">SYSTEM</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button class="svc-btn svc-btn-warn" onclick="serverAction('restart',0)">🔁 Restart Now</button>
+        <button class="svc-btn svc-btn-warn" onclick="serverAction('shutdown',0)">⏹ Shutdown</button>
+        <button class="svc-btn" onclick="serverAction('cancel',0)" style="color:var(--text-dim)">✕ Cancel Scheduled</button>
+        <span style="font-size:10px;color:var(--text-dim);margin-left:8px">Restart in</span>
+        <input id="restart-delay" type="number" min="1" max="1440" value="5"
+               autocomplete="off" inputmode="numeric"
+               style="width:52px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);
+                      font-family:var(--font-m);font-size:16px;padding:4px 6px;text-align:center">
+        <span style="font-size:10px;color:var(--text-dim)">min</span>
+        <button class="svc-btn svc-btn-warn" onclick="serverAction('restart', parseInt(document.getElementById('restart-delay').value)||5)">🕐 Schedule</button>
+        <button class="svc-btn svc-btn-warn" onclick="serverAction('update-restart',0)" style="margin-left:8px">📦 Update + Restart</button>
+      </div>
+    </div>
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+      <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:10px">MAINTENANCE</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+        <button class="svc-btn" onclick="cleanupTmp()">🗑 Clean /tmp</button>
+        <span style="font-size:10px;color:var(--text-dim)">Removes Claude Code sandbox dirs that accumulate and fill root disk</span>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button class="svc-btn" onclick="jellyfinScan()" id="jf-scan-btn">📺 Rescan Jellyfin Library</button>
+        <span style="font-size:10px;color:var(--text-dim)">Run after manually adding or deleting files — forces Jellyfin to re-index all media folders</span>
+        <span id="jf-scan-status" style="font-size:10px;color:var(--accent);margin-left:4px"></span>
+      </div>
+    </div>
+    <div style="padding:12px 16px">
+      <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:10px">SERVICES</div>
+      <div id="svc-control-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px"></div>
+    </div>
+  </div>
+
+  <!-- 12. panel-row: Pending Updates -->
+  <div class="panel-row">
+    <div class="panel">
+      <div class="panel-header">
+        <span>📦 Pending System Updates</span>
+        <button class="refresh-btn" onclick="loadUpdates()">⟳ Check Now</button>
+      </div>
+      <div id="updates-list" class="updates-list">
+        <div class="loading">Click "Check Now" to scan for updates</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 13. Local Service Uptime Monitor -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>🚦 Local Service Uptime Monitor</span>
+      <span class="ts" id="local-svc-ts"></span>
+      <button class="refresh-btn" onclick="loadExtServices(true)">⟳</button>
+    </div>
+    <div id="local-services-grid" class="loading">Loading...</div>
+  </div>
+
+  <!-- 14. External Service Status -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>🌐 Internet Service Status</span>
+      <span class="ts" id="ext-svc-ts"></span>
+      <button class="refresh-btn" onclick="loadExtServices(true)">⟳</button>
+    </div>
+    <div id="ext-services-grid" class="loading">Loading service status...</div>
+  </div>
+
+  <!-- 15. System Info + RSS Feed -->
   <div class="settings-grid" style="margin-top:14px">
     <div class="settings-panel">
       <div class="settings-panel-title">◈ SYSTEM INFO</div>
@@ -2105,7 +2104,53 @@
     </div>
   </div>
 
-  <!-- NUKE AUTHORITY -->
+  <!-- 16. Auth Log -->
+  <div class="settings-panel" style="margin-top:14px">
+    <div class="settings-panel-title">◈ AUTH LOG</div>
+    <div>
+      <button class="log-filter-btn active" onclick="filterAuthLog('all',this)">ALL</button>
+      <button class="log-filter-btn" onclick="filterAuthLog('LOGIN_SUCCESS',this)">SUCCESS</button>
+      <button class="log-filter-btn" onclick="filterAuthLog('LOGIN_FAILED',this)">FAILED</button>
+      <button class="log-filter-btn" onclick="filterAuthLog('HONEYPOT_HIT',this)">HONEYPOT</button>
+      <button class="log-filter-btn" onclick="filterAuthLog('HONEYPOT TRAP_HIT',this)">TRAP</button>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="settings-table">
+        <thead><tr>
+          <th>TIMESTAMP</th><th>EVENT</th><th>USER</th><th>IP</th><th>PATH / UA</th>
+        </tr></thead>
+        <tbody id="settings-log-tbody">
+          <tr><td colspan="5" style="color:var(--text-dim);text-align:center;padding:12px">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 17. Tarpit & Honeypot -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>🕳 SSH Tarpit &amp; Honeypot — Active Defense</span>
+      <span id="tarpit-ts" class="ts"></span>
+      <button class="refresh-btn" onclick="loadTarpitStats(true)">⟳ Refresh</button>
+    </div>
+    <div class="panel-row" style="margin:0;gap:0;border-bottom:1px solid var(--border)">
+      <div style="flex:1;padding:12px 16px">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--accent);margin-bottom:10px">🐢 ENDLESSH — SSH TARPIT</div>
+        <div id="tarpit-ssh-stats" class="stats-grid" style="margin-bottom:8px"></div>
+        <div style="font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:6px">RECENT CATCHES</div>
+        <div id="tarpit-recent-ips" style="font-family:var(--font-m);font-size:11px;line-height:1.8"></div>
+      </div>
+      <div style="flex:1;padding:12px 16px;border-left:1px solid var(--border)">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--accent);margin-bottom:10px">🍯 HONEYPOT — WEB TRAPS</div>
+        <div id="tarpit-honeypot-stats" class="stats-grid" style="margin-bottom:8px"></div>
+        <div style="font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:6px">RECENT PROBES</div>
+        <div id="tarpit-honeypot-log"></div>
+      </div>
+    </div>
+    <div id="tarpit-error" style="display:none;padding:10px 16px;color:var(--red2);font-size:11px;font-family:var(--font-m)"></div>
+  </div>
+
+  <!-- 18. NUKE AUTHORITY -->
   <div class="panel" style="margin-top:14px;border:2px solid #7a0000;background:linear-gradient(135deg,#0d0000 0%,#1a0000 100%)">
     <div class="panel-header" style="border-bottom:1px solid #7a0000;background:transparent">
       <span style="color:#ff2200;letter-spacing:4px;font-size:11px">⚛ NUKE AUTHORITY // TIER-OMEGA PROTOCOL</span>
