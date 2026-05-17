@@ -113,7 +113,7 @@ CACHE_TTL_DAY    = 86400  # 24 hr — APOD, Wikipedia (rate-limited or near-stat
 # All major data keys are persisted to disk so service restarts don't re-fetch
 DISK_CACHE_KEYS = {
     "apod", "wikipedia",            # rate-limited / daily
-    "news",                         # 20 RSS feeds — slow to fetch
+    "news",                         # 30+ RSS feeds — slow to fetch
     "weather", "swpc", "airnow", "wildfires",  # NWS / NOAA — be a good citizen
     "metar", "wi_warnings",         # aviation weather + WI alerts
     "threat", "cves", "quakes",     # external APIs
@@ -121,7 +121,15 @@ DISK_CACHE_KEYS = {
     "lnm",                          # USCG daily
     "lake",                         # NDBC buoy + AFD — survives restarts
     "burn_ban", "president_intel", "congress_status", "midterm_intel",
-    "f1", "polls", "govt_intel", "gdacs",
+    "f1", "polls", "govt_intel", "gdacs", "factbase",
+    "ozaukee_alerts",               # Ozaukee County NWS alerts
+    "server_stats", "network_stats",          # local system stats
+    "rtorrent",                     # torrent client status
+    "proxmox",                      # VM status
+    "tarpit_stats", "firewall_drops",         # security/honeypot
+    "storagebox_disk", "storagebox_library", "storagebox_runs",  # storage
+    "ext_services",                 # external service health
+    "bandwidth",                    # network I/O — short TTL
 }
 DISK_CACHE_DIR = os.path.join(DATA_DIR, "cache")
 os.makedirs(DISK_CACHE_DIR, exist_ok=True)
@@ -282,7 +290,7 @@ reset_tokens = {}
 def landing():
     return render_template("landing.html", error=None, show_modal=False)
 
-@app.route("/ops", methods=["GET", "POST"])
+@app.route("/kev-88f2c91a", methods=["GET", "POST"])
 def login():
     if "user" in session:
         return redirect(url_for("dashboard"))
@@ -516,6 +524,43 @@ def api_news():
     cached = cache_get("news", ttl=10800, force=force)
     if cached:
         return jsonify(cached)
+    # Short tags prepended to titles so the source is obvious at a glance
+    _SOURCE_TAG = {
+        "NPR":                       "NPR",
+        "AP News":                   "AP",
+        "Reuters":                   "REU",
+        "BBC World":                 "BBC",
+        "Al Jazeera":                "AJ",
+        "The Guardian":              "GRD",
+        "NYT":                       "NYT",
+        "Washington Post":           "WaPo",
+        "The Hill":                  "HILL",
+        "Politico":                  "PLCO",
+        "Axios":                     "AXOS",
+        "Fox News":                  "FOX",
+        "ABC News":                  "ABC",
+        "CBS News":                  "CBS",
+        "CNBC":                      "CNBC",
+        "Bloomberg":                 "BBG",
+        "Yahoo Finance":             "YFN",
+        "Wired":                     "WIRED",
+        "Ars Technica":              "ARS",
+        "ProPublica":                "PPB",
+        "Vox":                       "VOX",
+        "Epoch Times":               "ET",
+        "Drudge Report":             "DRDG",
+        "The Intercept":             "INTCP",
+        "AllSides":                  "ALLSD",
+        "WPR":                       "WPR",
+        "TMJ4 (WI)":                 "TMJ4",
+        "CBS58 (WI)":                "CBS58",
+        "Milwaukee Journal Sentinel":"MJS",
+        "Google News":               "GNWS",
+        "Google: World":             "G:WLD",
+        "Google: Tech":              "G:TECH",
+        "Google: Business":          "G:BIZ",
+        "Google: Science":           "G:SCI",
+    }
     feeds = [
         ("NPR",            "https://feeds.npr.org/1001/rss.xml"),
         ("AP News",        "https://feeds.apnews.com/rss/apf-topnews"),
@@ -546,7 +591,6 @@ def api_news():
         ("TMJ4 (WI)",      "https://www.tmj4.com/news/local/rss"),
         ("CBS58 (WI)",     "https://www.cbs58.com/news/local-news.rss"),
         ("Milwaukee Journal Sentinel", "https://rss.jsonengage.com/milwaukee-journal-sentinel/"),
-        ("Investing.com",  "https://www.investing.com/rss/news.rss"),
         # Google News topic feeds
         ("Google News",    "https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en"),
         ("Google: World",  "https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRGx1YlY4U0FtVnVHZ0pWVXlnQVAB?hl=en-US&gl=US&ceid=US:en"),
@@ -558,9 +602,11 @@ def api_news():
         try:
             f = feedparser.parse(url)
             out = []
+            tag = _SOURCE_TAG.get(source, source)
             for e in f.entries[:10]:
                 summary = re.sub(r"<[^>]+>", "", e.get("summary", ""))[:220]
-                out.append({"source": source, "title": e.get("title", "")[:120],
+                title = f"[{tag}] {e.get('title', '')}"[:120]
+                out.append({"source": source, "title": title,
                             "link": e.get("link", "#"), "published": e.get("published", "")[:25],
                             "summary": summary})
             return out
@@ -966,18 +1012,30 @@ def _monitor_flights():
         except Exception as e:
             app.logger.warning("Flight monitor loop error: %s", e)
 
-# Travel feeds — deals and editorial inspiration
+# Home airports — ONLY deals mentioning these pass the filter
+_HOME_TERMS = {"MKE", "ORD", "MDW", "ATW", "MILWAUKEE", "APPLETON", "CHICAGO", "O'HARE", "MIDWAY"}
+
+# Feeds: curated deal sites + Google News airport-specific queries
+# ALL results are filtered — only items mentioning home airports are kept
+import urllib.parse as _ulp_travel
+_GN = "https://news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q="
 _DEAL_FEEDS = [
-    # Flight deal aggregators
-    ("Secret Flying",    "deals", "https://www.secretflying.com/posts/feed/"),
+    # Best curated deal aggregator — covers ORD/MDW deals regularly
     ("The Flight Deal",  "deals", "https://theflightdeal.com/feed/"),
-    ("Airfarewatchdog",  "deals", "https://www.airfarewatchdog.com/blog/feed/"),
-    # Editorial / inspiration
+    # Google News: airport-specific deal & route queries (deduplicated below)
+    ("MKE / Routes",  "deals", _GN + _ulp_travel.quote('"Milwaukee" (flight OR flights OR nonstop) (deal OR cheap OR sale OR nonstop OR route) 2026')),
+    ("ORD / Routes",  "deals", _GN + _ulp_travel.quote('"O\'Hare" OR "ORD" (flight OR flights) (deal OR cheap OR sale OR nonstop OR route) 2026')),
+    ("MDW / Routes",  "deals", _GN + _ulp_travel.quote('"Midway" OR "MDW" (flight OR flights) (deal OR cheap OR sale OR nonstop OR route) 2026')),
+    ("ATW / Routes",  "deals", _GN + _ulp_travel.quote('"Appleton" (airport OR flight OR nonstop) 2026')),
+    ("Southwest MKE", "deals", _GN + _ulp_travel.quote('Southwest Airlines Milwaukee nonstop route sale 2026')),
+    ("Frontier MDW",  "deals", _GN + _ulp_travel.quote('Frontier Airlines Chicago Midway nonstop route sale 2026')),
+    ("United ORD",    "deals", _GN + _ulp_travel.quote('United Airlines "O\'Hare" ORD nonstop route sale 2026')),
+    ("American MDW",  "deals", _GN + _ulp_travel.quote('American Airlines Chicago "O\'Hare" OR "Midway" nonstop route 2026')),
+    # Editorial inspiration (not filtered — any travel content OK here)
     ("NYT Travel",       "inspire", "https://feeds.nytimes.com/nyt/rss/Travel"),
     ("Travel + Leisure", "inspire", "https://www.travelandleisure.com/feeds/all.rss"),
     ("Condé Nast",       "inspire", "https://www.cntraveler.com/feed/rss"),
     ("Lonely Planet",    "inspire", "https://www.lonelyplanet.com/news/feed"),
-    ("Frommer's",        "inspire", "https://www.frommers.com/rss/articles.rss"),
 ]
 
 _PRICE_RE = re.compile(r'\$\s*(\d[\d,]+)')
@@ -985,17 +1043,17 @@ _PRICE_RE = re.compile(r'\$\s*(\d[\d,]+)')
 @app.route("/api/flight_deals")
 @login_required
 def api_flight_deals():
-    """Fetch travel RSS feeds — cached every 6 hours."""
+    """Local airport flight deals — MDW / MKE / ORD / ATW only."""
     force = request.args.get("force") == "1"
     cached = cache_get("flight_deals", ttl=CACHE_TTL_LONG, force=force)
     if cached:
         return jsonify(cached)
-    deals, inspire = [], []
+
     def _fetch_feed(source, kind, url):
         try:
             feed = feedparser.parse(url)
             out = []
-            for e in feed.entries[:5]:
+            for e in feed.entries[:8]:
                 pub = getattr(e, "published", None) or getattr(e, "updated", None) or ""
                 raw_summary = e.get("summary", "") or ""
                 summary = re.sub(r"<[^>]+>", " ", raw_summary)
@@ -1005,7 +1063,6 @@ def api_flight_deals():
                 m = _PRICE_RE.search(title) or _PRICE_RE.search(summary)
                 if m:
                     price = "$" + m.group(1)
-                # Extract thumbnail if available
                 thumb = None
                 if hasattr(e, "media_thumbnail") and e.media_thumbnail:
                     thumb = e.media_thumbnail[0].get("url")
@@ -1022,26 +1079,44 @@ def api_flight_deals():
             app.logger.warning("Travel feed %s failed: %s", source, ex)
             return []
 
-    with ThreadPoolExecutor(max_workers=6) as ex:
+    all_rows = []
+    with ThreadPoolExecutor(max_workers=8) as ex:
         futs = {ex.submit(_fetch_feed, src, kind, url): src for src, kind, url in _DEAL_FEEDS}
         for fut in as_completed(futs):
-            rows = fut.result()
-            for r in rows:
-                (deals if r["kind"] == "deals" else inspire).append(r)
+            all_rows.extend(fut.result())
 
-    # Tag deals that mention home airports or nearby cities
-    _LOCAL_TERMS = {"MKE", "ATW", "ORD", "MDW", "Milwaukee", "Appleton", "Chicago", "O'Hare", "Midway"}
-    for r in deals:
+    # Deals: ONLY items mentioning home airports — deduplicated by title
+    deals, inspire = [], []
+    seen_titles = set()
+    for r in all_rows:
+        if r["kind"] == "inspire":
+            inspire.append(r)
+            continue
         text = (r.get("title","") + " " + r.get("summary","")).upper()
-        if any(term.upper() in text for term in _LOCAL_TERMS):
-            r["local"] = True
+        if any(t in text for t in _HOME_TERMS):
+            key = r["title"][:60].lower().strip()
+            if key not in seen_titles:
+                seen_titles.add(key)
+                r["local"] = True
+                deals.append(r)
 
-    # Quick-search links for home airports (Google Flights explore)
+    # Sort: items with prices first, then by date
+    deals.sort(key=lambda r: (0 if r.get("price") else 1, r.get("pub","") or ""), reverse=False)
+    deals.sort(key=lambda r: r.get("price") is not None, reverse=True)
+
     home_airports = [
-        {"code": "MKE", "name": "Milwaukee Mitchell", "url": "https://www.google.com/travel/flights?q=flights+from+MKE"},
-        {"code": "ATW", "name": "Appleton Intl", "url": "https://www.google.com/travel/flights?q=flights+from+ATW"},
-        {"code": "ORD", "name": "O'Hare (Chicago)", "url": "https://www.google.com/travel/flights?q=flights+from+ORD"},
-        {"code": "MDW", "name": "Midway (Chicago)", "url": "https://www.google.com/travel/flights?q=flights+from+MDW"},
+        {"code": "MKE", "name": "Milwaukee Mitchell",
+         "url": "https://www.google.com/travel/flights/search?tfs=CBwQAhooagcIARIDTUtFEgoyMDI2LTA2LTAxcg8IAhILEgNNS0UaA01LRRAB",
+         "kayak": "https://www.kayak.com/flights/MKE-anywhere/2026-06-01/2026-06-08?sort=price_a"},
+        {"code": "ORD", "name": "Chicago O'Hare",
+         "url": "https://www.google.com/travel/flights?q=flights+from+ORD",
+         "kayak": "https://www.kayak.com/flights/ORD-anywhere/2026-06-01/2026-06-08?sort=price_a"},
+        {"code": "MDW", "name": "Chicago Midway",
+         "url": "https://www.google.com/travel/flights?q=flights+from+MDW",
+         "kayak": "https://www.kayak.com/flights/MDW-anywhere/2026-06-01/2026-06-08?sort=price_a"},
+        {"code": "ATW", "name": "Appleton Intl",
+         "url": "https://www.google.com/travel/flights?q=flights+from+ATW",
+         "kayak": "https://www.kayak.com/flights/ATW-anywhere/2026-06-01/2026-06-08?sort=price_a"},
     ]
 
     result = {"deals": deals, "inspire": inspire, "home_airports": home_airports,
@@ -4006,6 +4081,10 @@ def api_ban_control():
 @login_required
 def api_network_stats():
     """Network rx/tx bytes for main interface."""
+    force = request.args.get("force") == "1"
+    cached = cache_get("network_stats", ttl=30, force=force)
+    if cached:
+        return jsonify(cached)
     try:
         with open("/proc/net/dev") as f:
             lines = f.readlines()
@@ -4031,8 +4110,10 @@ def api_network_stats():
                 procs.append({"user": parts[0], "pid": parts[1],
                                "cpu": parts[2], "mem": parts[3],
                                "cmd": parts[10][:40]})
-        return jsonify({"interfaces": ifaces, "top_procs": procs,
-                        "ts": datetime.datetime.now().strftime("%H:%M:%S")})
+        result = {"interfaces": ifaces, "top_procs": procs,
+                  "ts": datetime.datetime.now().strftime("%H:%M:%S")}
+        cache_set("network_stats", result)
+        return jsonify(result)
     except Exception as e:
         return jsonify({"error": str(e)})
 
@@ -4313,6 +4394,61 @@ def api_congress_status():
     }
     cache_set("congress_status", result)
     return jsonify(result)
+
+
+@app.route("/api/factbase")
+@login_required
+def api_factbase():
+    """Presidential schedule, Truth Social posts, and transcripts from Roll Call/Factbase."""
+    force = request.args.get("force") == "1"
+    cached = cache_get("factbase", ttl=7200, force=force)
+    if cached:
+        return jsonify(cached)
+    # Disk cache written by factbase_worker.py cron — serve from disk if available
+    disk = _disk_path("factbase")
+    if os.path.exists(disk):
+        try:
+            with open(disk) as _f:
+                _p = json.load(_f)
+            if _p.get("_data"):
+                return jsonify(_p["_data"])
+        except Exception:
+            pass
+    # Fallback: live fetch (slow — worker keeps disk warm)
+    try:
+        from bs4 import BeautifulSoup as _BS4
+        import urllib.parse as _up
+        HDRS2 = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0"}
+        _BASE = "https://rollcall.com/wp-json/factbase/v1"
+
+        # Social posts (JSON)
+        posts = []
+        try:
+            _pr = requests.get(f"{_BASE}/twitter", headers=HDRS2, timeout=12)
+            for _item in _pr.json().get("data", [])[:15]:
+                _txt = _item.get("text","").strip()
+                if _txt.startswith("RT: https://") and len(_txt) < 50:
+                    continue
+                _dt = _item.get("date","")
+                _disp = ""
+                if _dt:
+                    try:
+                        import zoneinfo as _zi2
+                        _dto = datetime.datetime.fromisoformat(_dt.replace("Z","+00:00"))
+                        _dtc = _dto.astimezone(_zi2.ZoneInfo("America/Chicago"))
+                        _disp = _dtc.strftime("%-m/%-d %I:%M %p CT")
+                    except Exception: _disp = _dt[:16]
+                posts.append({"text":_txt[:400],"date":_disp,"date_raw":_dt,
+                              "platform":_item.get("platform","Truth Social"),
+                              "post_url":_item.get("post_url","")})
+        except Exception: pass
+
+        result = {"calendar":[],"posts":posts,"transcripts":[],
+                  "fetched":_ts(),"source_url":"https://rollcall.com/factbase/donald-trump/"}
+        cache_set("factbase", result)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e), "calendar":[], "posts":[], "transcripts":[], "fetched":_ts()})
 
 
 @app.route("/api/midterm_intel")
@@ -4685,8 +4821,19 @@ def _warm_cache_impl(force=False):
     today = datetime.date.today()
     mm = today.strftime("%m"); dd = today.strftime("%d")
 
-    # News feeds
+    # News feeds — keep in sync with api_news feeds list
     try:
+        _wc_tags = {
+            "NPR":"NPR","AP News":"AP","Reuters":"REU","BBC World":"BBC","Al Jazeera":"AJ",
+            "The Guardian":"GRD","NYT":"NYT","Washington Post":"WaPo","The Hill":"HILL",
+            "Politico":"PLCO","Axios":"AXOS","Fox News":"FOX","ABC News":"ABC","CBS News":"CBS",
+            "CNBC":"CNBC","Bloomberg":"BBG","Yahoo Finance":"YFN","Wired":"WIRED",
+            "Ars Technica":"ARS","ProPublica":"PPB","Vox":"VOX","Epoch Times":"ET",
+            "Drudge Report":"DRDG","The Intercept":"INTCP","AllSides":"ALLSD","WPR":"WPR",
+            "TMJ4 (WI)":"TMJ4","CBS58 (WI)":"CBS58","Milwaukee Journal Sentinel":"MJS",
+            "Google News":"GNWS","Google: World":"G:WLD","Google: Tech":"G:TECH",
+            "Google: Business":"G:BIZ","Google: Science":"G:SCI",
+        }
         feeds = [
             ("NPR","https://feeds.npr.org/1001/rss.xml"),
             ("AP News","https://feeds.apnews.com/rss/apf-topnews"),
@@ -4708,13 +4855,15 @@ def _warm_cache_impl(force=False):
             ("Wired","https://www.wired.com/feed/rss"),
             ("Ars Technica","http://feeds.arstechnica.com/arstechnica/index"),
             ("ProPublica","https://feeds.propublica.org/propublica/main"),
+            ("Vox","https://www.vox.com/rss/index.xml"),
+            ("Epoch Times","https://www.theepochtimes.com/feed/"),
+            ("Drudge Report","https://feeds.feedburner.com/DrudgeReportFeed"),
             ("The Intercept","https://theintercept.com/feed/?rss"),
             ("AllSides","https://www.allsides.com/news/rss"),
             ("WPR","https://www.wpr.org/feed"),
             ("TMJ4 (WI)","https://www.tmj4.com/news/local/rss"),
             ("CBS58 (WI)","https://www.cbs58.com/news/local-news.rss"),
             ("Milwaukee Journal Sentinel","https://rss.jsonengage.com/milwaukee-journal-sentinel/"),
-            ("Investing.com","https://www.investing.com/rss/news.rss"),
             ("Google News","https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en"),
             ("Google: World","https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRGx1YlY4U0FtVnVHZ0pWVXlnQVAB?hl=en-US&gl=US&ceid=US:en"),
             ("Google: Tech","https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRGRqTVhZU0FtVnVHZ0pWVXlnQVAB?hl=en-US&gl=US&ceid=US:en"),
@@ -4725,9 +4874,10 @@ def _warm_cache_impl(force=False):
         for source, url in feeds:
             try:
                 f = feedparser.parse(url)
+                tag = _wc_tags.get(source, source)
                 for e in f.entries[:10]:
                     summary = re.sub(r"<[^>]+>", "", e.get("summary", ""))[:220]
-                    articles.append({"source": source, "title": e.get("title","")[:120],
+                    articles.append({"source": source, "title": f"[{tag}] {e.get('title','')}"[:120],
                                      "link": e.get("link","#"), "published": e.get("published","")[:25],
                                      "summary": summary})
             except: pass
@@ -5488,6 +5638,66 @@ def _warm_cache_impl(force=False):
         except Exception as e:
             app.logger.warning("[warm_cache] threat: %s", e)
 
+    # Midterm Intel — 1hr TTL (mostly static + Kalshi API)
+    if force or (time.time()-(_cache.get("midterm_intel",(None,0))[1] or 0)) > 3600:
+        try:
+            _mi_key_races = [
+                {"chamber":"Senate","state":"FL","type":"Special","desc":"Rubio Vacancy","rating":"Lean R","cook":"Lean R","url":"https://ballotpedia.org/United_States_Senate_special_election_in_Florida,_2026"},
+                {"chamber":"Senate","state":"OH","type":"Special","desc":"Vance Vacancy","rating":"Toss-up","cook":"Toss-up","url":"https://ballotpedia.org/United_States_Senate_special_election_in_Ohio,_2026"},
+                {"chamber":"Senate","state":"GA","type":"Regular","desc":"Ossoff seat","rating":"Toss-up","cook":"Toss-up","url":"https://ballotpedia.org/United_States_Senate_election_in_Georgia,_2026"},
+                {"chamber":"Senate","state":"MI","type":"Regular","desc":"Peters seat","rating":"Lean D","cook":"Lean D","url":"https://ballotpedia.org/United_States_Senate_election_in_Michigan,_2026"},
+                {"chamber":"Senate","state":"NH","type":"Regular","desc":"Open seat","rating":"Toss-up","cook":"Toss-up","url":"https://ballotpedia.org/United_States_Senate_election_in_New_Hampshire,_2026"},
+                {"chamber":"Senate","state":"NC","type":"Regular","desc":"Open seat","rating":"Lean R","cook":"Lean R","url":"https://ballotpedia.org/United_States_Senate_election_in_North_Carolina,_2026"},
+                {"chamber":"Senate","state":"WI","type":"Regular","desc":"Baldwin seat","rating":"Lean D","cook":"Lean D","url":"https://ballotpedia.org/United_States_Senate_election_in_Wisconsin,_2026"},
+                {"chamber":"Senate","state":"VA","type":"Regular","desc":"Warner seat","rating":"Lean D","cook":"Lean D","url":"https://ballotpedia.org/United_States_Senate_election_in_Virginia,_2026"},
+                {"chamber":"Senate","state":"AK","type":"Regular","desc":"Murkowski seat","rating":"Lean R","cook":"Lean R","url":"https://ballotpedia.org/United_States_Senate_election_in_Alaska,_2026"},
+                {"chamber":"House","state":"TX","type":"Redistricting","desc":"Mid-decade remap","rating":"Watch","cook":"","url":"https://ballotpedia.org/Texas%27s_congressional_districts"},
+                {"chamber":"House","state":"CA","type":"Redistricting","desc":"Mid-decade remap","rating":"Watch","cook":"","url":"https://ballotpedia.org/California%27s_congressional_districts"},
+            ]
+            _mi_primaries = [
+                {"date":"2026-05-05","states":"Indiana, Ohio","note":"FL/OH Senate special elections"},
+                {"date":"2026-05-19","states":"PA, KY, OR, GA, ID","note":"Blue wall baseline"},
+                {"date":"2026-06-02","states":"CA, NJ, IA, MT, NM, SD","note":"CA redistricting results"},
+                {"date":"2026-06-09","states":"MS, NC, SC, ND","note":"NC redistricting results"},
+                {"date":"2026-08-04","states":"KS, MI, MO, WA","note":"MO redistricting results"},
+                {"date":"2026-08-11","states":"WI","note":"LOCAL FOCUS — Wisconsin Primary"},
+            ]
+            _mi_macros = [
+                {"label":"Historical Avg Seat Loss","value":"-28 House seats","note":"Incumbent party midterm avg","url":"https://ballotpedia.org/Historical_midterm_election_trends"},
+                {"label":"Open Seats (retirements)","value":"55+","note":"Flip opportunity targets","url":"https://ballotpedia.org/United_States_Congress_elections,_2026"},
+                {"label":"Special Elec. Dem Overperform","value":"+11.5","note":"vs. 2024 baseline (Brookings/Apr)","url":"https://www.brookings.edu/articles/midterm-elections-2026/"},
+                {"label":"Prediction Markets (House)","value":"D +11.5 shift","note":"Kalshi/Polymarket consensus","url":"https://kalshi.com/markets/elections"},
+                {"label":"Redistricting States","value":"TX, CA, NC, MO","note":"Mid-decade remap active","url":"https://ballotpedia.org/Redistricting_in_the_United_States"},
+                {"label":"Senate Battlegrounds","value":"9","note":"Ballotpedia tracking","url":"https://ballotpedia.org/United_States_Senate_elections,_2026"},
+                {"label":"House Toss-ups","value":"42","note":"Ballotpedia tracking","url":"https://ballotpedia.org/United_States_House_of_Representatives_elections,_2026"},
+                {"label":"Presidential Approval","value":"~41%","note":"Trump avg — Gallup/Pew Apr 2026","url":"https://news.gallup.com/poll/203207/trump-job-approval-weekly.aspx"},
+                {"label":"Dem Generic Ballot Avg","value":"D +7","note":"Cook/538 composite Apr 2026","url":"https://www.cookpolitical.com/charts/house-charts/generic-ballot-trend-chart"},
+                {"label":"Trump Net Approval","value":"−14","note":"41% approve − 55% disapprove (Apr 2026)","url":"https://projects.fivethirtyeight.com/polls/approval/donald-trump/"},
+                {"label":"2024 Popular Vote Margin","value":"R +2.2","note":"First R pop. vote win since 2004","url":"https://www.fec.gov/introduction-campaign-finance/election-and-voting-information/federal-elections-2024/"},
+                {"label":"Days Until Midterms","value":str((datetime.date(2026,11,3)-datetime.date.today()).days)+" days","note":"Nov 3, 2026 General Election"},
+                {"label":"House Seats In Play","value":"73","note":"Competitive/Toss-up/Lean per Cook Apr 2026","url":"https://www.cookpolitical.com/ratings/house-race-ratings"},
+                {"label":"Net D Special Election Margin","value":"D +14.3","note":"2025–2026 specials vs 2024 baseline","url":"https://www.brookings.edu/articles/midterm-elections-2026/"},
+                {"label":"Senate Seats Up (2026)","value":"34","note":"33 class II + 1 special election","url":"https://ballotpedia.org/United_States_Senate_elections,_2026"},
+                {"label":"D Net Senate Target","value":"+4 needed","note":"Need 51 seats for majority (now 47)","url":"https://ballotpedia.org/United_States_Senate_elections,_2026"},
+            ]
+            _mi_kalshi = {}
+            try:
+                _mkr = requests.get("https://api.elections.kalshi.com/trade-api/v2/markets?limit=20&status=open",
+                                    timeout=8, headers={"User-Agent":"KEVSec/1.0"})
+                if _mkr.status_code == 200:
+                    for _mm in _mkr.json().get("markets",[]):
+                        _tick = _mm.get("ticker_name","")
+                        if any(k in _tick.upper() for k in ("HOUSE","SENATE","CONGRESS")):
+                            _mi_kalshi[_tick] = {"title":_mm.get("title",_tick),
+                                                  "yes_bid":_mm.get("yes_bid",""),
+                                                  "no_bid":_mm.get("no_bid",""),
+                                                  "volume":_mm.get("volume","")}
+            except Exception: pass
+            cache_set("midterm_intel", {"key_races":_mi_key_races,"primaries":_mi_primaries,
+                                         "macros":_mi_macros,"kalshi":_mi_kalshi,"fetched":_ts()})
+        except Exception as e:
+            app.logger.warning("[warm_cache] midterm_intel: %s", e)
+
     # Lake Michigan buoy (PWAW3) + AFD — 5-min TTL, refresh every run
     try:
         from app import ndbc_parse  # reuse existing helper
@@ -5522,6 +5732,35 @@ def _warm_cache_impl(force=False):
         cache_set("lake", _lk_result)
     except Exception as e:
         app.logger.warning("[warm_cache] lake: %s", e)
+
+    # ── OPS tab — pre-warm all local endpoints so the tab loads instantly ──
+    # Uses the Flask test client with an injected session to call each route
+    # exactly as a real request would, populating disk+memory cache.
+    _ops_paths = [
+        "/api/server_stats?force=1",
+        "/api/network_stats?force=1",
+        "/api/bandwidth?force=1",
+        "/api/tarpit_stats?force=1",
+        "/api/firewall_drops?force=1",
+        "/api/rtorrent?force=1",
+        "/api/storagebox_disk?force=1",
+        "/api/storagebox/runs?force=1",
+        "/api/proxmox?force=1",
+        "/api/ext_services?force=1",
+        "/api/storagebox/library?force=1",
+    ]
+    try:
+        with app.test_client() as _tc:
+            with _tc.session_transaction() as _sess:
+                _sess["user"] = "_warmcache"
+            for _p in _ops_paths:
+                try:
+                    _tc.get(_p)
+                except Exception as _pe:
+                    app.logger.warning("[warm_cache] ops %s: %s", _p, _pe)
+        app.logger.info("[warm_cache] OPS tab pre-warm complete")
+    except Exception as _e:
+        app.logger.warning("[warm_cache] OPS warm block failed: %s", _e)
 
 
 def _schedule_daily_refresh():
@@ -5939,6 +6178,10 @@ QUEUE_FILE   = "/var/lib/storagebox-queue.json"
 @app.route("/api/bandwidth")
 @login_required
 def api_bandwidth():
+    force = request.args.get("force") == "1"
+    cached = cache_get("bandwidth", ttl=10, force=force)
+    if cached:
+        return jsonify(cached)
     import time as _time
     def _read_net():
         stats = {}
@@ -5957,11 +6200,16 @@ def api_bandwidth():
             rx_mbps = (s2[iface]["rx"] - s1[iface]["rx"]) * 8 / 1_000_000
             tx_mbps = (s2[iface]["tx"] - s1[iface]["tx"]) * 8 / 1_000_000
             result[iface] = {"rx_mbps": round(rx_mbps, 2), "tx_mbps": round(tx_mbps, 2)}
+    cache_set("bandwidth", result)
     return jsonify(result)
 
 @app.route("/api/storagebox_disk")
 @login_required
 def api_storagebox_disk():
+    force = request.args.get("force") == "1"
+    cached = cache_get("storagebox_disk", ttl=120, force=force)
+    if cached:
+        return jsonify(cached)
     try:
         r = subprocess.run(["df", "-B1", "/mnt/storagebox"], capture_output=True, text=True, timeout=10)
         if r.returncode != 0:
@@ -5972,12 +6220,14 @@ def api_storagebox_disk():
         parts = lines[1].split()
         total = int(parts[1]); used = int(parts[2]); avail = int(parts[3])
         pct = round(used / total * 100, 1) if total else 0
-        return jsonify({
+        result = {
             "total_gb": round(total / 1024**3, 1),
             "used_gb":  round(used  / 1024**3, 1),
             "free_gb":  round(avail / 1024**3, 1),
             "pct":      pct,
-        })
+        }
+        cache_set("storagebox_disk", result)
+        return jsonify(result)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -6008,6 +6258,10 @@ class _SCGITransport(xmlrpc.client.Transport):
 @login_required
 def api_rtorrent():
     import xmlrpc.client as _xc
+    force = request.args.get("force") == "1"
+    cached = cache_get("rtorrent", ttl=30, force=force)
+    if cached:
+        return jsonify(cached)
     try:
         srv = _xc.ServerProxy("http://localhost/RPC2", transport=_SCGITransport(RTORRENT_SOCK))
         dl_rate  = srv.throttle.global_down.rate()
@@ -6037,7 +6291,7 @@ def api_rtorrent():
         seeding    = sum(1 for t in torrents if t["done"] and t["active"])
         leeching   = sum(1 for t in torrents if not t["done"] and t["active"])
         paused     = sum(1 for t in torrents if not t["active"])
-        return jsonify({
+        result = {
             "dl_rate":  dl_rate,
             "ul_rate":  ul_rate,
             "total_ul": total_ul,
@@ -6047,7 +6301,9 @@ def api_rtorrent():
             "leeching": leeching,
             "paused":   paused,
             "torrents": torrents,
-        })
+        }
+        cache_set("rtorrent", result)
+        return jsonify(result)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -6058,6 +6314,10 @@ SB_RUNS_DIR = "/mnt/hdd/logs/storagebox-runs"
 @login_required
 def api_storagebox_runs():
     import glob as _glob
+    force = request.args.get("force") == "1"
+    cached = cache_get("storagebox_runs", ttl=300, force=force)
+    if cached:
+        return jsonify(cached)
     _RUN_HDR  = re.compile(r"StorageBox Queue Run — (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})")
     _RUN_DUR  = re.compile(r"Duration:\s*(\d+)s\s*\|\s*Transferred:\s*([\d.]+)\s*GB")
     _RUN_STAT = re.compile(r"OK:\s*(\d+)\s*\|\s*Failed:\s*(\d+)\s*\|\s*Skipped:\s*(\d+)")
@@ -6098,12 +6358,18 @@ def api_storagebox_runs():
                 runs.append(run)
     except Exception as e:
         return jsonify({"runs": [], "error": str(e)})
-    return jsonify({"runs": runs})
+    result = {"runs": runs}
+    cache_set("storagebox_runs", result)
+    return jsonify(result)
 
 
 @app.route("/api/storagebox/library")
 @login_required
 def api_storagebox_library():
+    force = request.args.get("force") == "1"
+    cached = cache_get("storagebox_library", ttl=300, force=force)
+    if cached:
+        return jsonify(cached)
     base = "/mnt/storagebox"
     result = {"mounted": False, "movies": 0, "tv_shows": 0, "tv_seasons": 0, "error": None}
     try:
@@ -6125,6 +6391,8 @@ def api_storagebox_library():
             result["tv_seasons"] = seasons
     except Exception as e:
         result["error"] = str(e)
+        return jsonify(result)
+    cache_set("storagebox_library", result)
     return jsonify(result)
 
 
@@ -6159,6 +6427,10 @@ def _get_size_bytes(path):
 @app.route("/api/queue")
 @login_required
 def api_queue():
+    force = request.args.get("force") == "1"
+    cached = cache_get("queue", ttl=30, force=force)
+    if cached:
+        return jsonify(cached)
     queue = _get_queue()
     worker_running = subprocess.run(
         ["systemctl", "is-active", "storagebox-queue-worker"],
@@ -6177,13 +6449,15 @@ def api_queue():
             "retries":    item.get("retries", 0),
             "size_gb":    round(sz / 1024**3, 2),
         })
-    return jsonify({
+    result = {
         "items":        items,
         "count":        len(items),
         "total_gb":     round(total_bytes / 1024**3, 2),
         "worker_active": worker_running,
         "cron":         cron,
-    })
+    }
+    cache_set("queue", result)
+    return jsonify(result)
 
 @app.route("/api/queue/run", methods=["POST"])
 @login_required
@@ -6239,6 +6513,13 @@ for _k in ("weather", "swpc", "airnow", "wildfires", "threat", "cves",
            "gdacs", "wi_warnings", "burn_ban", "president_intel",
            "congress_status", "midterm_intel", "f1", "polls", "govt_intel"):
     _SETTINGS_TTL_MAP[_k] = "6hr"
+_SETTINGS_TTL_MAP["factbase"] = "2hr"
+for _k in ("ozaukee_alerts", "tarpit_stats", "firewall_drops",
+           "storagebox_disk", "storagebox_library", "storagebox_runs", "ext_services"):
+    _SETTINGS_TTL_MAP[_k] = "5min"
+for _k in ("server_stats", "network_stats", "rtorrent", "proxmox"):
+    _SETTINGS_TTL_MAP[_k] = "1min"
+_SETTINGS_TTL_MAP["bandwidth"] = "10s"
 
 
 @app.route("/api/settings/status")

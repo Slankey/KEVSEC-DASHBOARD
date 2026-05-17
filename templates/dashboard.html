@@ -41,7 +41,6 @@
 <!-- ═══ TABS ══════════════════════════════════════════════════════════════ -->
 <nav class="tabs">
   <button class="tab active"  data-tab="intel">INTEL</button>
-  <button class="tab"         data-tab="cyber">CYBER</button>
   <button class="tab"         data-tab="weather">WEATHER</button>
   <button class="tab"         data-tab="comms">PERSONAL</button>
   <button class="tab"         data-tab="travel">TRAVEL</button>
@@ -179,6 +178,23 @@
     <div id="president-schedule" class="loading" style="max-height:260px;overflow-y:auto">Loading schedule...</div>
     <div class="panel-sub-header">White House Press Releases</div>
     <div id="president-feed" class="loading">Loading press releases...</div>
+  </div>
+
+  <!-- ── Factbase — Schedule / Truth Social / Transcripts ───────────── -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>📋 Factbase — Schedule &amp; Posts</span>
+      <span id="factbase-ts" class="ts"></span>
+      <a href="https://rollcall.com/factbase/donald-trump/" target="_blank"
+         class="refresh-btn" style="text-decoration:none">rollcall ↗</a>
+      <button class="refresh-btn" onclick="loadFactbase(true)">⟳</button>
+    </div>
+    <div class="panel-sub-header">Presidential Schedule (via Roll Call / Factbase)</div>
+    <div id="factbase-calendar" class="loading" style="max-height:300px;overflow-y:auto">Loading schedule...</div>
+    <div class="panel-sub-header">Truth Social — Latest Posts</div>
+    <div id="factbase-posts" class="loading" style="max-height:280px;overflow-y:auto">Loading posts...</div>
+    <div class="panel-sub-header">Recent Transcripts &amp; Statements</div>
+    <div id="factbase-transcripts" class="loading" style="max-height:200px;overflow-y:auto">Loading transcripts...</div>
   </div>
 
   <!-- ── Congress Status ──────────────────────────────────────────────── -->
@@ -551,206 +567,6 @@
 
 
 <!-- ════════════════════════════════════════════════ CYBER OPS ═══ -->
-<div id="tab-cyber" class="tab-content">
-
-  <!-- CVE + Firewall — two-column row -->
-  <div class="panel-row" style="margin-bottom:16px;align-items:start">
-
-    <!-- CVE Feed -->
-    <div class="panel">
-      <div class="panel-header">
-        <span>🔴 Live CVE Intelligence</span>
-        <span id="cve-ts" class="ts"></span>
-        <button class="refresh-btn" onclick="loadCVEs(true)">⟳ Refresh</button>
-      </div>
-      <div id="cve-list" class="cve-list"></div>
-    </div>
-
-    <!-- Firewall Drops + Fail2Ban -->
-    <div class="panel">
-      <div class="panel-header">
-        <span>🧱 Firewall &amp; Fail2Ban — Blocked Connections</span>
-        <span id="fw-ts" class="ts"></span>
-        <button class="refresh-btn" onclick="loadFirewallDrops()">⟳ Refresh</button>
-      </div>
-    <div class="panel-sub-header">Honeypot — Recent Probe Catches</div>
-    <div class="fw-table-wrap">
-      <table class="fw-table">
-        <thead><tr><th>Time</th><th>Source IP</th><th>Port</th><th>Type</th></tr></thead>
-        <tbody id="fw-tbody"></tbody>
-      </table>
-    </div>
-    <div class="panel-sub-header">Fail2Ban — Automated Bans</div>
-    <div class="fw-table-wrap">
-      <table class="fw-table">
-        <thead><tr><th>Time</th><th>Banned IP</th><th>Jail (Source)</th></tr></thead>
-        <tbody id="f2b-tbody"></tbody>
-      </table>
-    </div>
-    </div><!-- end firewall panel -->
-
-    <!-- Middle-right: IP Management -->
-    <div class="panel">
-      <div class="panel-header">
-        <span>🚫 IP Management — Ban / Unban</span>
-        <span id="banip-feedback" class="ts" style="color:var(--accent)"></span>
-        <button class="refresh-btn" onclick="loadFirewallDrops()">⟳ Refresh</button>
-      </div>
-      <!-- Manual Ban -->
-      <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
-        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">MANUAL BAN</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-          <input id="ban-ip-input" type="text" placeholder="1.2.3.4 or 1.2.3.0/24"
-                 style="flex:1;min-width:160px;background:var(--bg3);border:1px solid var(--border2);
-                        color:var(--text);font-family:var(--font-m);font-size:11px;padding:6px 10px">
-          <input id="ban-reason-input" type="text" placeholder="Reason (optional)"
-                 style="flex:1;min-width:140px;background:var(--bg3);border:1px solid var(--border2);
-                        color:var(--text);font-family:var(--font-m);font-size:11px;padding:6px 10px">
-          <button class="svc-btn svc-btn-warn" onclick="banIP()">🚫 BAN IP</button>
-        </div>
-      </div>
-      <!-- Unban -->
-      <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
-        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">UNBAN FROM ALL JAILS</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-          <input id="unban-ip-input" type="text" placeholder="1.2.3.4"
-                 style="flex:1;min-width:160px;background:var(--bg3);border:1px solid var(--border2);
-                        color:var(--text);font-family:var(--font-m);font-size:11px;padding:6px 10px">
-          <button class="svc-btn" onclick="unbanIP()" style="color:var(--accent)">✓ UNBAN IP</button>
-        </div>
-      </div>
-      <!-- Blacklist Update -->
-      <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
-        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">BLACKLIST SYNC</div>
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-          <button class="svc-btn" onclick="runBlacklistUpdate()" style="color:var(--accent)">⟳ Run Blacklist Update Now</button>
-          <button class="svc-btn" onclick="banControl('purge')" style="color:var(--accent)">⌛ Purge Expired</button>
-          <span style="font-size:10px;color:var(--text-dim)">Sources → TTL local list → nftables</span>
-        </div>
-        <pre id="blacklist-output" style="display:none;margin-top:8px;font-size:10px;color:var(--text-dim);
-             background:var(--bg3);padding:8px;max-height:120px;overflow-y:auto;white-space:pre-wrap"></pre>
-      </div>
-      <!-- Ban Control -->
-      <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
-        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">BAN CONTROL</div>
-        <div id="ban-control-status" style="font-family:var(--font-m);font-size:11px;color:var(--text-dim);margin-bottom:8px">Loading...</div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <button class="svc-btn svc-btn-warn" onclick="banControl('suspend')">⏸ Suspend Banning</button>
-          <button class="svc-btn" onclick="banControl('resume')" style="color:var(--accent)">▶ Resume</button>
-          <button class="svc-btn svc-btn-warn" onclick="banControl('open')">🧹 Remove All + Suspend</button>
-        </div>
-      </div>
-      <!-- Jail Summary -->
-      <div style="padding:12px 16px">
-        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">JAIL SUMMARY</div>
-        <div id="jail-summary" style="font-family:var(--font-m);font-size:11px;line-height:1.8"></div>
-      </div>
-      <div style="padding:12px 16px;border-top:1px solid var(--border)">
-        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">LOCAL BAN TTL QUEUE</div>
-        <div id="local-ban-list" style="font-family:var(--font-m);font-size:10px;line-height:1.6;color:var(--text-dim)"></div>
-      </div>
-    </div>
-
-    <!-- Right column: Server Health + Network -->
-    <div class="panel">
-      <div class="panel-header">
-        <span>💻 Server Health &amp; Network</span>
-        <span id="health-ts" class="ts"></span>
-        <button class="refresh-btn" onclick="loadServerHealth(true)">⟳ Refresh</button>
-      </div>
-      <!-- System stats -->
-      <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
-        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">SYSTEM</div>
-        <div id="health-stats" class="stats-grid"></div>
-      </div>
-      <!-- Network interfaces -->
-      <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
-        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">NETWORK I/O</div>
-        <div id="health-net" style="font-family:var(--font-m);font-size:11px;line-height:1.8"></div>
-      </div>
-      <!-- Top processes -->
-      <div style="padding:12px 16px">
-        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">TOP PROCESSES BY MEM</div>
-        <div class="fw-table-wrap">
-          <table class="fw-table">
-            <thead><tr><th>User</th><th>PID</th><th>CPU%</th><th>MEM%</th><th>Command</th></tr></thead>
-            <tbody id="health-procs"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-  </div><!-- end firewall row -->
-
-  <!-- Threat Maps -->
-  <div class="panel">
-    <div class="panel-header">🌐 Global Cyber Threat Intelligence Maps</div>
-    <div class="threatmap-tabs">
-      <button class="threatmap-tab active" onclick="switchMap('kaspersky',this)">Kaspersky</button>
-      <button class="threatmap-tab" onclick="switchMap('fortinet',this)">FortiGuard</button>
-      <button class="threatmap-tab" onclick="switchMap('bitdefender',this)">Bitdefender</button>
-    </div>
-    <div id="map-kaspersky" class="threatmap-frame active">
-      <iframe src="https://cybermap.kaspersky.com/en/widget/dynamic/dark"
-              style="width:100%;height:520px;border:none;background:#000"
-              allowfullscreen title="Kaspersky Cyber Threat Map"></iframe>
-      <div class="dim" style="text-align:center;padding:6px;font-size:10px;letter-spacing:2px">
-        SOURCE: KASPERSKY SECURITY NETWORK — LIVE GLOBAL ATTACK VECTORS
-      </div>
-    </div>
-    <div id="map-fortinet" class="threatmap-frame">
-      <iframe src="https://threatmap.fortiguard.com/"
-              style="width:100%;height:520px;border:none;background:#000"
-              allowfullscreen title="FortiGuard Threat Map"></iframe>
-      <div class="dim" style="text-align:center;padding:6px;font-size:10px;letter-spacing:2px">
-        SOURCE: FORTIGUARD LABS — REAL-TIME THREAT INTELLIGENCE NETWORK
-      </div>
-    </div>
-    <div id="map-bitdefender" class="threatmap-frame">
-      <iframe src="https://threatmap.bitdefender.com/"
-              style="width:100%;height:520px;border:none;background:#000"
-              allowfullscreen title="Bitdefender Threat Map"></iframe>
-      <div class="dim" style="text-align:center;padding:6px;font-size:10px;letter-spacing:2px">
-        SOURCE: BITDEFENDER THREAT INTELLIGENCE — LIVE ATTACK FEED
-      </div>
-    </div>
-  </div>
-
-  <!-- 0-day feeds: BleepingComputer + THN -->
-  <div class="panel-row" style="margin-bottom:16px;align-items:start">
-    <div class="panel">
-      <div class="panel-header">
-        <span>🩸 BleepingComputer — Exploits &amp; 0-Days</span>
-        <button class="refresh-btn" onclick="loadSWPC()">⟳</button>
-      </div>
-      <div id="bleeping-feed" class="loading">Loading...</div>
-    </div>
-    <div class="panel">
-      <div class="panel-header">
-        <span>🕵 The Hacker News — Latest Threats</span>
-        <button class="refresh-btn" onclick="loadSWPC()">⟳</button>
-      </div>
-      <div id="thn-feed" class="loading">Loading...</div>
-    </div>
-  </div>
-
-  <!-- SANS ISC + Krebs -->
-  <div class="panel-row-3">
-    <div class="panel">
-      <div class="panel-header">🌩 SANS Internet Storm Center — Daily Diary
-        <button class="refresh-btn" onclick="loadSWPC()">⟳</button>
-      </div>
-      <div id="sans-isc-feed" class="loading">Loading SANS ISC...</div>
-    </div>
-    <div class="panel">
-      <div class="panel-header">
-        <span>🔐 Krebs on Security</span>
-        <button class="refresh-btn" onclick="loadSWPC()">⟳</button>
-      </div>
-      <div id="krebs-feed" class="loading">Loading Krebs...</div>
-    </div>
-  </div>
-</div>
 
 <!-- ═══════════════════════════════════════════════════════ TRAVEL ═══ -->
 <div id="tab-travel" class="tab-content">
@@ -946,69 +762,7 @@
 <div id="tab-weather" class="tab-content">
   <div id="wx-alert-banner" class="wx-alert-banner" style="display:none"></div>
 
-  <!-- ── Wisconsin Fire & Burn Ban ──────────────────────────────────── -->
-  <div class="panel">
-    <div class="panel-header">
-      <span>🔥 Wisconsin Fire &amp; Burn Status</span>
-      <span id="burnban-ts" class="ts"></span>
-      <a href="https://apps.dnr.wi.gov/forestryapps/burnrestriction/" target="_blank"
-         class="refresh-btn" style="text-decoration:none">WI DNR ↗</a>
-      <button class="refresh-btn" onclick="loadBurnBan(true)">⟳</button>
-    </div>
-    <div id="burnban-ozaukee" style="padding:12px 16px;border-bottom:1px solid var(--border)"></div>
-    <div class="panel-sub-header">High Danger Counties</div>
-    <div id="burnban-counties" class="loading">Loading burn status...</div>
-  </div>
-
-  <!-- METAR Ticker -->
-  <div class="panel" style="margin-bottom:12px">
-    <div class="panel-header">
-      📻 METAR — KMKE / KETB / KMWC / KSBM
-      <button class="refresh-btn" onclick="loadMETAR()">⟳ Refresh</button>
-      <span id="metar-ts" class="ts"></span>
-    </div>
-    <div id="metar-panel" class="loading">Loading METAR data...</div>
-  </div>
-
-  <div class="panel-row">
-    <!-- 7-Day Forecast -->
-    <div class="panel">
-      <div class="panel-header">
-        <span>🌡 NWS 7-Day Forecast — Port Washington, WI (53074)</span>
-        <span id="wx-ts" class="ts"></span>
-        <button class="refresh-btn" onclick="loadWeather()">⟳ Refresh</button>
-      </div>
-      <div id="wx-forecast"></div>
-    </div>
-
-    <!-- Current Conditions -->
-    <div class="panel">
-      <div class="panel-header">📊 Current Conditions — ASOS Station
-        <button class="refresh-btn" onclick="loadWeather(true)">⟳ Refresh</button>
-      </div>
-      <div id="wx-current"></div>
-    </div>
-  </div>
-
-  <!-- SWPC Space Weather row -->
-  <div class="panel-row">
-    <div class="panel">
-      <div class="panel-header">🌌 NOAA SWPC — Space Weather &amp; Geomagnetic Activity
-        <button class="refresh-btn" onclick="loadSWPC()">⟳</button>
-      </div>
-      <div id="swpc-panel" class="loading">Loading space weather...</div>
-    </div>
-
-    <!-- AirNow Quality -->
-    <div class="panel">
-      <div class="panel-header">🌫 Air Quality — Port Washington Area
-        <button class="refresh-btn" onclick="loadAirNow()">⟳</button>
-      </div>
-      <div id="airnow-panel" class="loading">Loading air quality...</div>
-      <div class="panel-sub-header">🔥 Active U.S. Wildfires — NIFC / IRWIN</div>
-      <div id="wildfires-panel" class="loading">Loading wildfire data...</div>
-    </div>
-  </div>
+  <!-- ── MAPS & VISUAL FEEDS (top) ─────────────────────────────────────── -->
 
   <div class="panel-row">
     <!-- NWS Radar + Windy Wind Map stacked -->
@@ -1029,7 +783,7 @@
       <div class="dim" style="text-align:center;font-size:10px;padding:6px;letter-spacing:2px;border-top:1px solid var(--border)">WINDY.COM — LIVE SURFACE WIND — ZOOMABLE & INTERACTIVE</div>
     </div>
 
-    <!-- NWS Graphical Forecast -->
+    <!-- NWS Graphical Forecast + WPC -->
     <div class="panel">
       <div class="panel-header">📈 NWS Graphical Weather Outlook</div>
       <div style="text-align:center;padding:12px">
@@ -1038,13 +792,7 @@
           NWS METEOGRAM — 48HR TEMP/PRECIP/WIND/HUMIDITY FORECAST
         </div>
       </div>
-    </div>
-  </div>
-
-  <div class="panel-row">
-    <!-- Weather Prediction Center -->
-    <div class="panel">
-      <div class="panel-header">🗺 Weather Prediction Center — US Outlook</div>
+      <div class="panel-header" style="border-top:1px solid var(--border)">🗺 Weather Prediction Center — US Outlook</div>
       <div style="text-align:center;padding:12px">
         <img id="wpc-d1" style="max-width:100%;border:1px solid var(--border)" alt="WPC Day 1 Outlook">
         <div class="dim" style="font-size:10px;padding:6px;letter-spacing:2px">
@@ -1052,66 +800,45 @@
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- National Hurricane Center -->
-    <div class="panel">
-      <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center">
-        <span>🌀 National Hurricane Center — Tropical Outlook</span>
-        <div style="display:flex;gap:8px;align-items:center">
-          <button class="refresh-btn" onclick="refreshNHC()" title="Force refresh images">⟳</button>
-          <a href="https://www.nhc.noaa.gov" target="_blank" style="color:var(--accent);font-size:10px;text-decoration:none;letter-spacing:2px;border:1px solid var(--accent);padding:2px 8px">nhc.noaa.gov ↗</a>
-        </div>
-      </div>
-      <div style="padding:10px 12px">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-          <div style="text-align:center">
-            <div style="font-size:9px;letter-spacing:3px;color:var(--accent);margin-bottom:6px">ATLANTIC — 2-DAY</div>
-            <img id="nhc-2d" style="width:100%;border:1px solid var(--border)" alt="NHC Atlantic 2-Day Outlook">
-          </div>
-          <div style="text-align:center">
-            <div style="font-size:9px;letter-spacing:3px;color:var(--accent);margin-bottom:6px">ATLANTIC — 5-DAY</div>
-            <img id="nhc-5d" style="width:100%;border:1px solid var(--border)" alt="NHC Atlantic 5-Day Outlook">
-          </div>
-        </div>
-        <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
-          <a href="https://www.nhc.noaa.gov/#ATL" target="_blank" style="font-size:10px;color:var(--text-dim);text-decoration:none;letter-spacing:1px;padding:3px 10px;border:1px solid var(--border)">Atlantic Basin ↗</a>
-          <a href="https://www.nhc.noaa.gov/cyclones/" target="_blank" style="font-size:10px;color:var(--text-dim);text-decoration:none;letter-spacing:1px;padding:3px 10px;border:1px solid var(--border)">Active Storms ↗</a>
-          <a href="https://www.nhc.noaa.gov/gtwo.php" target="_blank" style="font-size:10px;color:var(--text-dim);text-decoration:none;letter-spacing:1px;padding:3px 10px;border:1px solid var(--border)">Full Outlook ↗</a>
-        </div>
-        <div style="font-size:9px;color:var(--text-dim);letter-spacing:2px;text-align:center;margin-top:8px">
-          ATLANTIC SEASON: JUN 1 – NOV 30 // SOURCE: NOAA NHC
-        </div>
+  <!-- ADSB + AIS side by side -->
+  <div class="panel-row" style="align-items:start">
+    <div class="panel" style="flex:1">
+      <div class="panel-header">✈ Live Air Traffic — adsb.lol (Milwaukee / Lake Michigan)</div>
+      <iframe src="https://adsb.lol/?icao=&lat=43.4&lon=-87.9&zoom=8"
+              style="width:100%;height:480px;border:none;background:#000"
+              title="ADSB.lol Live Flight Tracker" allowfullscreen></iframe>
+      <div class="dim" style="text-align:center;font-size:10px;padding:6px;letter-spacing:2px;border-top:1px solid var(--border)">
+        ADSB.LOL — LIVE ADS-B FLIGHT DATA — MILWAUKEE / LAKE MICHIGAN REGION
       </div>
     </div>
-  </div><!-- end panel-row WPC/NHC -->
-
-  <div class="panel-row">
-    <!-- Active Severe Weather -->
-    <div class="panel">
-      <div class="panel-header">⚠ Active Severe Weather Warnings — Wisconsin
-        <button class="refresh-btn" onclick="loadWeather(true)">⟳</button>
+    <div class="panel" style="flex:1">
+      <div class="panel-header">⚓ AIS Marine Traffic — Lake Michigan</div>
+      <iframe src="https://www.marinetraffic.com/en/ais/embed/maptype:0/shownames:1/mmsi:/ext:0/zoom:8/centery:43.8/centerx:-87.4/showmenu:false/remember:false"
+              style="width:100%;height:480px;border:none;background:#000"
+              title="MarineTraffic AIS Lake Michigan" allowfullscreen></iframe>
+      <div class="dim" style="text-align:center;font-size:10px;padding:6px;letter-spacing:2px;border-top:1px solid var(--border)">
+        MARINETRAFFIC AIS — LIVE VESSEL POSITIONS — LAKE MICHIGAN / PORT WASHINGTON
       </div>
-      <div id="wx-alerts-list" class="wx-alerts-list"></div>
     </div>
+  </div>
 
-    <!-- Earthquakes -->
-    <div class="panel">
-      <div class="panel-header">
-        <span>🌋 USGS — Significant Earthquakes (7 Days)</span>
-        <span id="quake-ts" class="ts"></span>
-        <button class="refresh-btn" onclick="loadEarthquakes(true)">⟳ Refresh</button>
-      </div>
-      <div id="quake-list" class="quake-list"></div>
+  <!-- WI Warnings map -->
+  <div class="panel" style="margin-bottom:16px">
+    <div class="panel-header">⚠ WISCONSIN ACTIVE WARNINGS — NWS
+      <button class="refresh-btn" onclick="loadWIWarnings(true)">⟳</button>
     </div>
-
-    <!-- GDACS Global Disasters -->
-    <div class="panel">
-      <div class="panel-header">
-        <span>🌐 GDACS — Global Disaster Alerts</span>
-        <span id="gdacs-ts" class="ts"></span>
-        <button class="refresh-btn" onclick="loadGDACS(true)">⟳ Refresh</button>
+    <div class="wi-warnings-layout">
+      <div class="wi-warnings-map">
+        <img id="wi-warn-map" src="https://forecast.weather.gov/wwamap/png/WI.png"
+             alt="Wisconsin Warning Map" style="width:100%;border-radius:4px;display:block"
+             onerror="this.style.display='none'">
+        <div style="font-size:9px;color:var(--text-dim);text-align:center;margin-top:4px">
+          NWS WATCH/WARN/ADVISORY MAP — AUTO-REFRESH
+        </div>
       </div>
-      <div id="gdacs-list" class="loading">Loading...</div>
+      <div id="wi-warnings-list" class="wi-warnings-list loading">Loading warnings...</div>
     </div>
   </div>
 
@@ -1190,6 +917,119 @@
     </div>
   </div>
 
+  <!-- National Hurricane Center -->
+  <div class="panel">
+    <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center">
+      <span>🌀 National Hurricane Center — Tropical Outlook</span>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="refresh-btn" onclick="refreshNHC()" title="Force refresh images">⟳</button>
+        <a href="https://www.nhc.noaa.gov" target="_blank" style="color:var(--accent);font-size:10px;text-decoration:none;letter-spacing:2px;border:1px solid var(--accent);padding:2px 8px">nhc.noaa.gov ↗</a>
+      </div>
+    </div>
+    <div style="padding:10px 12px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <div style="text-align:center">
+          <div style="font-size:9px;letter-spacing:3px;color:var(--accent);margin-bottom:6px">ATLANTIC — 2-DAY</div>
+          <img id="nhc-2d" style="width:100%;border:1px solid var(--border)" alt="NHC Atlantic 2-Day Outlook">
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:9px;letter-spacing:3px;color:var(--accent);margin-bottom:6px">ATLANTIC — 5-DAY</div>
+          <img id="nhc-5d" style="width:100%;border:1px solid var(--border)" alt="NHC Atlantic 5-Day Outlook">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+        <a href="https://www.nhc.noaa.gov/#ATL" target="_blank" style="font-size:10px;color:var(--text-dim);text-decoration:none;letter-spacing:1px;padding:3px 10px;border:1px solid var(--border)">Atlantic Basin ↗</a>
+        <a href="https://www.nhc.noaa.gov/cyclones/" target="_blank" style="font-size:10px;color:var(--text-dim);text-decoration:none;letter-spacing:1px;padding:3px 10px;border:1px solid var(--border)">Active Storms ↗</a>
+        <a href="https://www.nhc.noaa.gov/gtwo.php" target="_blank" style="font-size:10px;color:var(--text-dim);text-decoration:none;letter-spacing:1px;padding:3px 10px;border:1px solid var(--border)">Full Outlook ↗</a>
+      </div>
+      <div style="font-size:9px;color:var(--text-dim);letter-spacing:2px;text-align:center;margin-top:8px">
+        ATLANTIC SEASON: JUN 1 – NOV 30 // SOURCE: NOAA NHC
+      </div>
+    </div>
+  </div>
+
+  <!-- ── DETAILED DATA & GRAPHS (bottom) ──────────────────────────────── -->
+
+  <!-- METAR Ticker -->
+  <div class="panel" style="margin-bottom:12px">
+    <div class="panel-header">
+      📻 METAR — KMKE / KETB / KMWC / KSBM
+      <button class="refresh-btn" onclick="loadMETAR()">⟳ Refresh</button>
+      <span id="metar-ts" class="ts"></span>
+    </div>
+    <div id="metar-panel" class="loading">Loading METAR data...</div>
+  </div>
+
+  <div class="panel-row">
+    <!-- 7-Day Forecast -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>🌡 NWS 7-Day Forecast — Port Washington, WI (53074)</span>
+        <span id="wx-ts" class="ts"></span>
+        <button class="refresh-btn" onclick="loadWeather()">⟳ Refresh</button>
+      </div>
+      <div id="wx-forecast"></div>
+    </div>
+
+    <!-- Current Conditions -->
+    <div class="panel">
+      <div class="panel-header">📊 Current Conditions — ASOS Station
+        <button class="refresh-btn" onclick="loadWeather(true)">⟳ Refresh</button>
+      </div>
+      <div id="wx-current"></div>
+    </div>
+  </div>
+
+  <!-- SWPC Space Weather row -->
+  <div class="panel-row">
+    <div class="panel">
+      <div class="panel-header">🌌 NOAA SWPC — Space Weather &amp; Geomagnetic Activity
+        <button class="refresh-btn" onclick="loadSWPC()">⟳</button>
+      </div>
+      <div id="swpc-panel" class="loading">Loading space weather...</div>
+    </div>
+
+    <!-- AirNow Quality -->
+    <div class="panel">
+      <div class="panel-header">🌫 Air Quality — Port Washington Area
+        <button class="refresh-btn" onclick="loadAirNow()">⟳</button>
+      </div>
+      <div id="airnow-panel" class="loading">Loading air quality...</div>
+      <div class="panel-sub-header">🔥 Active U.S. Wildfires — NIFC / IRWIN</div>
+      <div id="wildfires-panel" class="loading">Loading wildfire data...</div>
+    </div>
+  </div>
+
+  <div class="panel-row">
+    <!-- Active Severe Weather -->
+    <div class="panel">
+      <div class="panel-header">⚠ Active Severe Weather Warnings — Wisconsin
+        <button class="refresh-btn" onclick="loadWeather(true)">⟳</button>
+      </div>
+      <div id="wx-alerts-list" class="wx-alerts-list"></div>
+    </div>
+
+    <!-- Earthquakes -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>🌋 USGS — Significant Earthquakes (7 Days)</span>
+        <span id="quake-ts" class="ts"></span>
+        <button class="refresh-btn" onclick="loadEarthquakes(true)">⟳ Refresh</button>
+      </div>
+      <div id="quake-list" class="quake-list"></div>
+    </div>
+
+    <!-- GDACS Global Disasters -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>🌐 GDACS — Global Disaster Alerts</span>
+        <span id="gdacs-ts" class="ts"></span>
+        <button class="refresh-btn" onclick="loadGDACS(true)">⟳ Refresh</button>
+      </div>
+      <div id="gdacs-list" class="loading">Loading...</div>
+    </div>
+  </div>
+
   <!-- Lake Michigan buoy + wind trend (full width) -->
   <div class="panel">
     <div class="panel-header">
@@ -1220,45 +1060,20 @@
     </div>
   </div>
 
-  <!-- ADSB + AIS side by side -->
-  <div class="panel-row" style="align-items:start">
-    <div class="panel" style="flex:1">
-      <div class="panel-header">✈ Live Air Traffic — adsb.lol (Milwaukee / Lake Michigan)</div>
-      <iframe src="https://adsb.lol/?icao=&lat=43.4&lon=-87.9&zoom=8"
-              style="width:100%;height:480px;border:none;background:#000"
-              title="ADSB.lol Live Flight Tracker" allowfullscreen></iframe>
-      <div class="dim" style="text-align:center;font-size:10px;padding:6px;letter-spacing:2px;border-top:1px solid var(--border)">
-        ADSB.LOL — LIVE ADS-B FLIGHT DATA — MILWAUKEE / LAKE MICHIGAN REGION
-      </div>
+  <!-- ── Wisconsin Fire & Burn Ban ──────────────────────────────────── -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>🔥 Wisconsin Fire &amp; Burn Status</span>
+      <span id="burnban-ts" class="ts"></span>
+      <a href="https://apps.dnr.wi.gov/forestryapps/burnrestriction/" target="_blank"
+         class="refresh-btn" style="text-decoration:none">WI DNR ↗</a>
+      <button class="refresh-btn" onclick="loadBurnBan(true)">⟳</button>
     </div>
-    <div class="panel" style="flex:1">
-      <div class="panel-header">⚓ AIS Marine Traffic — Lake Michigan</div>
-      <iframe src="https://www.marinetraffic.com/en/ais/embed/maptype:0/shownames:1/mmsi:/ext:0/zoom:8/centery:43.8/centerx:-87.4/showmenu:false/remember:false"
-              style="width:100%;height:480px;border:none;background:#000"
-              title="MarineTraffic AIS Lake Michigan" allowfullscreen></iframe>
-      <div class="dim" style="text-align:center;font-size:10px;padding:6px;letter-spacing:2px;border-top:1px solid var(--border)">
-        MARINETRAFFIC AIS — LIVE VESSEL POSITIONS — LAKE MICHIGAN / PORT WASHINGTON
-      </div>
-    </div>
+    <div id="burnban-ozaukee" style="padding:12px 16px;border-bottom:1px solid var(--border)"></div>
+    <div class="panel-sub-header">High Danger Counties</div>
+    <div id="burnban-counties" class="loading">Loading burn status...</div>
   </div>
 
-  <!-- WI Warnings & Maritime -->
-  <div class="panel" style="margin-bottom:16px">
-    <div class="panel-header">⚠ WISCONSIN ACTIVE WARNINGS — NWS
-      <button class="refresh-btn" onclick="loadWIWarnings(true)">⟳</button>
-    </div>
-    <div class="wi-warnings-layout">
-      <div class="wi-warnings-map">
-        <img id="wi-warn-map" src="https://forecast.weather.gov/wwamap/png/WI.png"
-             alt="Wisconsin Warning Map" style="width:100%;border-radius:4px;display:block"
-             onerror="this.style.display='none'">
-        <div style="font-size:9px;color:var(--text-dim);text-align:center;margin-top:4px">
-          NWS WATCH/WARN/ADVISORY MAP — AUTO-REFRESH
-        </div>
-      </div>
-      <div id="wi-warnings-list" class="wi-warnings-list loading">Loading warnings...</div>
-    </div>
-  </div>
   <div class="panel-row">
     <div class="panel">
       <div class="panel-header">⚓ USCG LNM — District 9 (Great Lakes)
@@ -1675,87 +1490,14 @@
 
 <!-- ═══════════════════════════════════════════════════ SETTINGS ═══ -->
 <div id="tab-settings" class="tab-content">
-  <!-- 1. Refresh All -->
-  <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
-    <button class="refresh-btn" onclick="refreshAllCommand()" style="padding:6px 14px;font-size:11px;letter-spacing:1px">⟳ REFRESH ALL</button>
+  <!-- Header bar -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding:10px 14px;background:var(--bg3);border:1px solid var(--border2)">
+    <div style="font-family:var(--font-m);font-size:10px;letter-spacing:3px;color:var(--accent)">⚡ OPS CENTER — KEVSEC.COM</div>
+    <button class="refresh-btn" onclick="refreshAllCommand()" style="padding:8px 18px;font-size:11px;letter-spacing:2px;border-color:var(--accent);color:var(--accent)">⟳ REFRESH ALL</button>
   </div>
 
-  <!-- 2. Settings section divider -->
-  <div class="ops-section-label">DASHBOARD CONFIGURATION &amp; STATUS</div>
-
-  <!-- 3. Display Settings -->
-  <div class="settings-panel" style="margin-bottom:14px">
-    <div class="settings-panel-title">◈ DISPLAY SETTINGS</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;flex-wrap:wrap">
-      <!-- Theme selector -->
-      <div>
-        <div style="font-family:var(--font-m);font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:10px">COLOR THEME</div>
-        <div style="display:flex;flex-direction:column;gap:6px" id="theme-selector">
-          <div class="theme-select-row" onclick="setTheme('presidential',null)" data-theme="presidential">
-            <span class="theme-select-swatch" style="background:#0a1628;border-color:#c9a84c"></span>
-            <span class="theme-select-name">PRESIDENTIAL</span>
-            <span class="theme-select-desc">Navy · Gold — default</span>
-          </div>
-          <div class="theme-select-row" onclick="setTheme('phantom',null)" data-theme="phantom">
-            <span class="theme-select-swatch" style="background:#0f0f0f;border-color:#cc2020"></span>
-            <span class="theme-select-name">PHANTOM</span>
-            <span class="theme-select-desc">Black · Red — high contrast</span>
-          </div>
-          <div class="theme-select-row" onclick="setTheme('agency',null)" data-theme="agency">
-            <span class="theme-select-swatch" style="background:#050805;border-color:#39ff14"></span>
-            <span class="theme-select-name">AGENCY</span>
-            <span class="theme-select-desc">Black · Green — terminal</span>
-          </div>
-          <div class="theme-select-row" onclick="setTheme('midnight',null)" data-theme="midnight">
-            <span class="theme-select-swatch" style="background:#0c0818;border-color:#a08cff"></span>
-            <span class="theme-select-name">MIDNIGHT</span>
-            <span class="theme-select-desc">Dark purple · Violet</span>
-          </div>
-          <div class="theme-select-row" onclick="setTheme('kevsec',null)" data-theme="kevsec">
-            <span class="theme-select-swatch" style="background:#04080e;border-color:#e8631c"></span>
-            <span class="theme-select-name">KEVSEC</span>
-            <span class="theme-select-desc">Navy · Orange — brand</span>
-          </div>
-        </div>
-      </div>
-      <!-- Font size -->
-      <div>
-        <div style="font-family:var(--font-m);font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:10px">FONT SIZE</div>
-        <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px">
-          <button onclick="dashSize(-1)" class="log-filter-btn" style="min-width:44px;min-height:44px;font-size:16px;padding:0">A−</button>
-          <span id="font-size-display" style="font-family:var(--font-m);font-size:11px;color:var(--text);min-width:30px;text-align:center">—</span>
-          <button onclick="dashSize(1)"  class="log-filter-btn" style="min-width:44px;min-height:44px;font-size:16px;padding:0">A+</button>
-        </div>
-        <div style="font-family:var(--font-m);font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:10px">LAYOUT MODE</div>
-        <button class="tab desktop-mode-btn" id="desktop-mode-btn-settings" onclick="toggleDesktopMode()" style="font-family:var(--font-m);font-size:10px;letter-spacing:2px;background:var(--bg4);border:1px solid var(--border2);color:var(--text-dim);padding:8px 16px;cursor:pointer;min-height:44px">TOGGLE MOBILE/DESKTOP</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 4. settings-grid: Warm Cache + Active Sessions -->
-  <div class="settings-grid">
-    <!-- Warm Cache -->
-    <div class="settings-panel">
-      <div class="settings-panel-title">◈ WARM CACHE</div>
-      <div id="settings-cache-status" style="margin-bottom:12px;font-family:var(--font-m);font-size:11px;color:var(--text-dim)">Loading…</div>
-      <div style="margin-bottom:12px">
-        <div style="font-family:var(--font-m);font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:8px">CACHE KEYS</div>
-        <div id="settings-cache-keys" class="cache-key-pills"></div>
-      </div>
-      <button id="btn-warm-cache" onclick="triggerWarmCache()"
-        style="font-family:var(--font-m);font-size:10px;letter-spacing:2px;background:var(--bg4);border:1px solid var(--accent);color:var(--accent);padding:6px 16px;cursor:pointer;transition:all .12s">
-        ▶ TRIGGER WARM CACHE
-      </button>
-    </div>
-    <!-- Active Sessions -->
-    <div class="settings-panel">
-      <div class="settings-panel-title">◈ ACTIVE SESSIONS</div>
-      <div id="settings-sessions">Loading…</div>
-    </div>
-  </div>
-
-  <!-- 5. Daily Goals -->
-  <div class="panel">
+  <!-- Daily Goals -->
+  <div class="panel" style="margin-bottom:14px">
     <div class="panel-header">
       <span>🎯 Today's Objectives</span>
       <span class="ts" id="goals-ts"></span>
@@ -1774,7 +1516,10 @@
     </div>
   </div>
 
-  <!-- 6. panel-row: Server Stats + Proxmox + Network/Storage -->
+  <!-- ── INFRASTRUCTURE ──────────────────────────────────────────────── -->
+  <div class="ops-section-label">INFRASTRUCTURE</div>
+
+  <!-- Server Stats + Proxmox + Network/Storage -->
   <div class="panel-row">
 
     <!-- Local Server -->
@@ -1835,7 +1580,111 @@
     </div>
   </div>
 
-  <!-- 7. StorageBox Transfer Queue -->
+  <!-- Server Control -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>⚡ Server Control</span>
+      <span id="svc-feedback" class="ts" style="color:var(--accent)"></span>
+    </div>
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+      <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:10px">SYSTEM</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button class="svc-btn svc-btn-warn" onclick="serverAction('restart',0)">🔁 Restart Now</button>
+        <button class="svc-btn svc-btn-warn" onclick="serverAction('shutdown',0)">⏹ Shutdown</button>
+        <button class="svc-btn" onclick="serverAction('cancel',0)" style="color:var(--text-dim)">✕ Cancel Scheduled</button>
+        <span style="font-size:10px;color:var(--text-dim);margin-left:8px">Restart in</span>
+        <input id="restart-delay" type="number" min="1" max="1440" value="5"
+               autocomplete="off" inputmode="numeric"
+               style="width:52px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);
+                      font-family:var(--font-m);font-size:16px;padding:4px 6px;text-align:center">
+        <span style="font-size:10px;color:var(--text-dim)">min</span>
+        <button class="svc-btn svc-btn-warn" onclick="serverAction('restart', parseInt(document.getElementById('restart-delay').value)||5)">🕐 Schedule</button>
+        <button class="svc-btn svc-btn-warn" onclick="serverAction('update-restart',0)" style="margin-left:8px">📦 Update + Restart</button>
+      </div>
+    </div>
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+      <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:10px">MAINTENANCE</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+        <button class="svc-btn" onclick="cleanupTmp()">🗑 Clean /tmp</button>
+        <span style="font-size:10px;color:var(--text-dim)">Removes Claude Code sandbox dirs that accumulate and fill root disk</span>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button class="svc-btn" onclick="jellyfinScan()" id="jf-scan-btn">📺 Rescan Jellyfin Library</button>
+        <span style="font-size:10px;color:var(--text-dim)">Run after manually adding or deleting files — forces Jellyfin to re-index all media folders</span>
+        <span id="jf-scan-status" style="font-size:10px;color:var(--accent);margin-left:4px"></span>
+      </div>
+    </div>
+    <div style="padding:12px 16px">
+      <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:10px">SERVICES</div>
+      <div id="svc-control-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px"></div>
+    </div>
+  </div>
+
+  <!-- Pending Updates + Uptime monitors -->
+  <div class="panel-row">
+    <div class="panel">
+      <div class="panel-header">
+        <span>📦 Pending System Updates</span>
+        <button class="refresh-btn" onclick="loadUpdates()">⟳ Check Now</button>
+      </div>
+      <div id="updates-list" class="updates-list">
+        <div class="loading">Click "Check Now" to scan for updates</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-header">
+        <span>🚦 Local Service Uptime Monitor</span>
+        <span class="ts" id="local-svc-ts"></span>
+        <button class="refresh-btn" onclick="loadExtServices(true)">⟳</button>
+      </div>
+      <div id="local-services-grid" class="loading">Loading...</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <span>🌐 Internet Service Status</span>
+      <span class="ts" id="ext-svc-ts"></span>
+      <button class="refresh-btn" onclick="loadExtServices(true)">⟳</button>
+    </div>
+    <div id="ext-services-grid" class="loading">Loading service status...</div>
+  </div>
+
+  <!-- ── MEDIA ───────────────────────────────────────────────────────── -->
+  <div class="ops-section-label">MEDIA</div>
+
+  <!-- rtorrent Stats -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>⬇ rtorrent — Live Torrent Stats</span>
+      <span id="rt-ts" class="ts"></span>
+      <button class="refresh-btn" onclick="loadRtorrent(true)">⟳</button>
+    </div>
+    <!-- Global stats bar -->
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;gap:24px;flex-wrap:wrap">
+      <div class="stat-item"><span class="stat-val" id="rt-dl-rate">—</span><span class="stat-label">↓ DL KB/s</span></div>
+      <div class="stat-item"><span class="stat-val" id="rt-ul-rate">—</span><span class="stat-label">↑ UL KB/s</span></div>
+      <div class="stat-item"><span class="stat-val" id="rt-seeding">—</span><span class="stat-label">SEEDING</span></div>
+      <div class="stat-item"><span class="stat-val" id="rt-leeching">—</span><span class="stat-label">LEECHING</span></div>
+      <div class="stat-item"><span class="stat-val" id="rt-paused">—</span><span class="stat-label">PAUSED</span></div>
+      <div class="stat-item"><span class="stat-val" id="rt-total">—</span><span class="stat-label">TOTAL</span></div>
+      <div class="stat-item"><span class="stat-val" id="rt-total-ul">—</span><span class="stat-label">TOTAL UL GB</span></div>
+      <div class="stat-item"><span class="stat-val" id="rt-total-dl">—</span><span class="stat-label">TOTAL DL GB</span></div>
+    </div>
+    <!-- Torrent table -->
+    <div style="overflow-x:auto;max-height:300px;overflow-y:auto">
+      <table class="settings-table" style="min-width:600px">
+        <thead><tr>
+          <th>NAME</th><th>LABEL</th><th>SIZE</th><th>RATIO</th><th>↑ RATE</th><th>↓ RATE</th><th>STATUS</th>
+        </tr></thead>
+        <tbody id="rt-tbody">
+          <tr><td colspan="7" style="text-align:center;color:var(--text-dim);padding:12px">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- StorageBox Transfer Queue -->
   <div class="panel" id="queue-panel">
     <div class="panel-header">
       <span>📦 StorageBox Transfer Queue</span>
@@ -1886,7 +1735,7 @@
     </div>
   </div>
 
-  <!-- 8. StorageBox Library + Run History -->
+  <!-- StorageBox Library + Run History -->
   <div class="panel-row">
     <!-- Library Stats -->
     <div class="panel">
@@ -1930,152 +1779,329 @@
     </div>
   </div>
 
-  <!-- 9. rtorrent Stats -->
+  <!-- ── SECURITY ────────────────────────────────────────────────────── -->
+  <div class="ops-section-label">SECURITY</div>
+
+  <!-- Tarpit & Honeypot -->
   <div class="panel">
     <div class="panel-header">
-      <span>⬇ rtorrent — Live Torrent Stats</span>
-      <span id="rt-ts" class="ts"></span>
-      <button class="refresh-btn" onclick="loadRtorrent(true)">⟳</button>
+      <span>🕳 SSH Tarpit &amp; Honeypot — Active Defense</span>
+      <span id="tarpit-ts" class="ts"></span>
+      <button class="refresh-btn" onclick="loadTarpitStats(true)">⟳ Refresh</button>
     </div>
-    <!-- Global stats bar -->
-    <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;gap:24px;flex-wrap:wrap">
-      <div class="stat-item"><span class="stat-val" id="rt-dl-rate">—</span><span class="stat-label">↓ DL KB/s</span></div>
-      <div class="stat-item"><span class="stat-val" id="rt-ul-rate">—</span><span class="stat-label">↑ UL KB/s</span></div>
-      <div class="stat-item"><span class="stat-val" id="rt-seeding">—</span><span class="stat-label">SEEDING</span></div>
-      <div class="stat-item"><span class="stat-val" id="rt-leeching">—</span><span class="stat-label">LEECHING</span></div>
-      <div class="stat-item"><span class="stat-val" id="rt-paused">—</span><span class="stat-label">PAUSED</span></div>
-      <div class="stat-item"><span class="stat-val" id="rt-total">—</span><span class="stat-label">TOTAL</span></div>
-      <div class="stat-item"><span class="stat-val" id="rt-total-ul">—</span><span class="stat-label">TOTAL UL GB</span></div>
-      <div class="stat-item"><span class="stat-val" id="rt-total-dl">—</span><span class="stat-label">TOTAL DL GB</span></div>
+    <div class="panel-row" style="margin:0;gap:0;border-bottom:1px solid var(--border)">
+      <div style="flex:1;padding:12px 16px">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--accent);margin-bottom:10px">🐢 ENDLESSH — SSH TARPIT</div>
+        <div id="tarpit-ssh-stats" class="stats-grid" style="margin-bottom:8px"></div>
+        <div style="font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:6px">RECENT CATCHES</div>
+        <div id="tarpit-recent-ips" style="font-family:var(--font-m);font-size:11px;line-height:1.8"></div>
+      </div>
+      <div style="flex:1;padding:12px 16px;border-left:1px solid var(--border)">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--accent);margin-bottom:10px">🍯 HONEYPOT — WEB TRAPS</div>
+        <div id="tarpit-honeypot-stats" class="stats-grid" style="margin-bottom:8px"></div>
+        <div style="font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:6px">RECENT PROBES</div>
+        <div id="tarpit-honeypot-log"></div>
+      </div>
     </div>
-    <!-- Torrent table -->
-    <div style="overflow-x:auto;max-height:300px;overflow-y:auto">
-      <table class="settings-table" style="min-width:600px">
+    <div id="tarpit-error" style="display:none;padding:10px 16px;color:var(--red2);font-size:11px;font-family:var(--font-m)"></div>
+  </div>
+
+  <!-- Auth Log -->
+  <div class="settings-panel" style="margin-top:14px">
+    <div class="settings-panel-title">◈ AUTH LOG</div>
+    <div>
+      <button class="log-filter-btn active" onclick="filterAuthLog('all',this)">ALL</button>
+      <button class="log-filter-btn" onclick="filterAuthLog('LOGIN_SUCCESS',this)">SUCCESS</button>
+      <button class="log-filter-btn" onclick="filterAuthLog('LOGIN_FAILED',this)">FAILED</button>
+      <button class="log-filter-btn" onclick="filterAuthLog('HONEYPOT_HIT',this)">HONEYPOT</button>
+      <button class="log-filter-btn" onclick="filterAuthLog('HONEYPOT TRAP_HIT',this)">TRAP</button>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="settings-table">
         <thead><tr>
-          <th>NAME</th><th>LABEL</th><th>SIZE</th><th>RATIO</th><th>↑ RATE</th><th>↓ RATE</th><th>STATUS</th>
+          <th>TIMESTAMP</th><th>EVENT</th><th>USER</th><th>IP</th><th>PATH / UA</th>
         </tr></thead>
-        <tbody id="rt-tbody">
-          <tr><td colspan="7" style="text-align:center;color:var(--text-dim);padding:12px">Loading…</td></tr>
+        <tbody id="settings-log-tbody">
+          <tr><td colspan="5" style="color:var(--text-dim);text-align:center;padding:12px">Loading…</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 
-  <!-- 10. Garden Quick Access -->
-  <div class="panel">
-    <div class="panel-header">
-      <span>GARDEN — Quick Status</span>
-      <button class="refresh-btn" onclick="loadGardenOps()">⟳</button>
-      <button class="refresh-btn" onclick="document.querySelector('[data-tab=garden]').click()" style="color:var(--accent)">Full View →</button>
-    </div>
-    <div class="panel-row" style="margin:0;gap:0">
-      <!-- Mowing status -->
-      <div style="flex:1;padding:12px 16px;border-right:1px solid var(--border)">
-        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:10px">LAWN MOWING</div>
-        <div id="ops-mow-status" style="font-family:var(--font-m);font-size:11px;color:var(--text-dim)">Loading…</div>
-        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
-          <input type="text" id="ops-mow-note" placeholder="Mow note (optional)"
-                 style="flex:1;min-width:120px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);
-                        font-family:var(--font-m);font-size:16px;padding:5px 8px">
-          <button class="svc-btn" onclick="opsLogMow()">+ LOG MOW</button>
-        </div>
-      </div>
-      <!-- Quick water log -->
-      <div style="flex:1;padding:12px 16px">
-        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:10px">QUICK WATER LOG</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-          <select id="ops-wlog-plant" style="background:var(--bg3);border:1px solid var(--border2);color:var(--text);
-                  font-family:var(--font-m);font-size:16px;padding:5px 8px">
-            <option value="lawn">Lawn</option>
-            <option value="azalea">Azaleas</option>
-            <option value="wildflowers">Wildflowers</option>
-            <option value="catnip">Catnip</option>
-          </select>
-          <input type="number" id="ops-wlog-amount" placeholder="Inches" step="0.1" min="0" max="5"
-                 autocomplete="off" inputmode="decimal"
-                 style="width:90px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);
-                        font-family:var(--font-m);font-size:16px;padding:5px 8px;text-align:center">
-          <button class="svc-btn" onclick="opsLogWater()">+ LOG WATER</button>
-        </div>
-        <div id="ops-garden-feedback" style="font-family:var(--font-m);font-size:10px;color:var(--accent);margin-top:8px;min-height:16px"></div>
-      </div>
-    </div>
-  </div>
+  <!-- ── CYBER SECURITY ──────────────────────────────────────────────── -->
+  <div class="ops-section-label" style="margin-top:20px">CYBER SECURITY</div>
 
-  <!-- 11. Server Control -->
-  <div class="panel">
-    <div class="panel-header">
-      <span>⚡ Server Control</span>
-      <span id="svc-feedback" class="ts" style="color:var(--accent)"></span>
-    </div>
-    <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
-      <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:10px">SYSTEM</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-        <button class="svc-btn svc-btn-warn" onclick="serverAction('restart',0)">🔁 Restart Now</button>
-        <button class="svc-btn svc-btn-warn" onclick="serverAction('shutdown',0)">⏹ Shutdown</button>
-        <button class="svc-btn" onclick="serverAction('cancel',0)" style="color:var(--text-dim)">✕ Cancel Scheduled</button>
-        <span style="font-size:10px;color:var(--text-dim);margin-left:8px">Restart in</span>
-        <input id="restart-delay" type="number" min="1" max="1440" value="5"
-               autocomplete="off" inputmode="numeric"
-               style="width:52px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);
-                      font-family:var(--font-m);font-size:16px;padding:4px 6px;text-align:center">
-        <span style="font-size:10px;color:var(--text-dim)">min</span>
-        <button class="svc-btn svc-btn-warn" onclick="serverAction('restart', parseInt(document.getElementById('restart-delay').value)||5)">🕐 Schedule</button>
-        <button class="svc-btn svc-btn-warn" onclick="serverAction('update-restart',0)" style="margin-left:8px">📦 Update + Restart</button>
-      </div>
-    </div>
-    <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
-      <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:10px">MAINTENANCE</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
-        <button class="svc-btn" onclick="cleanupTmp()">🗑 Clean /tmp</button>
-        <span style="font-size:10px;color:var(--text-dim)">Removes Claude Code sandbox dirs that accumulate and fill root disk</span>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-        <button class="svc-btn" onclick="jellyfinScan()" id="jf-scan-btn">📺 Rescan Jellyfin Library</button>
-        <span style="font-size:10px;color:var(--text-dim)">Run after manually adding or deleting files — forces Jellyfin to re-index all media folders</span>
-        <span id="jf-scan-status" style="font-size:10px;color:var(--accent);margin-left:4px"></span>
-      </div>
-    </div>
-    <div style="padding:12px 16px">
-      <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:10px">SERVICES</div>
-      <div id="svc-control-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px"></div>
-    </div>
-  </div>
+  <!-- CVE + Firewall — two-column row -->
+  <div class="panel-row" style="margin-bottom:16px;align-items:start">
 
-  <!-- 12. panel-row: Pending Updates -->
-  <div class="panel-row">
+    <!-- CVE Feed -->
     <div class="panel">
       <div class="panel-header">
-        <span>📦 Pending System Updates</span>
-        <button class="refresh-btn" onclick="loadUpdates()">⟳ Check Now</button>
+        <span>🔴 Live CVE Intelligence</span>
+        <span id="cve-ts" class="ts"></span>
+        <button class="refresh-btn" onclick="loadCVEs(true)">⟳ Refresh</button>
       </div>
-      <div id="updates-list" class="updates-list">
-        <div class="loading">Click "Check Now" to scan for updates</div>
+      <div id="cve-list" class="cve-list"></div>
+    </div>
+
+    <!-- Firewall Drops + Fail2Ban -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>🧱 Firewall &amp; Fail2Ban — Blocked Connections</span>
+        <span id="fw-ts" class="ts"></span>
+        <button class="refresh-btn" onclick="loadFirewallDrops()">⟳ Refresh</button>
+      </div>
+    <div class="panel-sub-header">Honeypot — Recent Probe Catches</div>
+    <div class="fw-table-wrap">
+      <table class="fw-table">
+        <thead><tr><th>Time</th><th>Source IP</th><th>Port</th><th>Type</th></tr></thead>
+        <tbody id="fw-tbody"></tbody>
+      </table>
+    </div>
+    <div class="panel-sub-header">Fail2Ban — Automated Bans</div>
+    <div class="fw-table-wrap">
+      <table class="fw-table">
+        <thead><tr><th>Time</th><th>Banned IP</th><th>Jail (Source)</th></tr></thead>
+        <tbody id="f2b-tbody"></tbody>
+      </table>
+    </div>
+    </div><!-- end firewall panel -->
+
+    <!-- Middle-right: IP Management -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>🚫 IP Management — Ban / Unban</span>
+        <span id="banip-feedback" class="ts" style="color:var(--accent)"></span>
+        <button class="refresh-btn" onclick="loadFirewallDrops()">⟳ Refresh</button>
+      </div>
+      <!-- Manual Ban -->
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">MANUAL BAN</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <input id="ban-ip-input" type="text" placeholder="1.2.3.4 or 1.2.3.0/24"
+                 style="flex:1;min-width:160px;background:var(--bg3);border:1px solid var(--border2);
+                        color:var(--text);font-family:var(--font-m);font-size:11px;padding:6px 10px">
+          <input id="ban-reason-input" type="text" placeholder="Reason (optional)"
+                 style="flex:1;min-width:140px;background:var(--bg3);border:1px solid var(--border2);
+                        color:var(--text);font-family:var(--font-m);font-size:11px;padding:6px 10px">
+          <button class="svc-btn svc-btn-warn" onclick="banIP()">🚫 BAN IP</button>
+        </div>
+      </div>
+      <!-- Unban -->
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">UNBAN FROM ALL JAILS</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <input id="unban-ip-input" type="text" placeholder="1.2.3.4"
+                 style="flex:1;min-width:160px;background:var(--bg3);border:1px solid var(--border2);
+                        color:var(--text);font-family:var(--font-m);font-size:11px;padding:6px 10px">
+          <button class="svc-btn" onclick="unbanIP()" style="color:var(--accent)">✓ UNBAN IP</button>
+        </div>
+      </div>
+      <!-- Blacklist Update -->
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">BLACKLIST SYNC</div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <button class="svc-btn" onclick="runBlacklistUpdate()" style="color:var(--accent)">⟳ Run Blacklist Update Now</button>
+          <button class="svc-btn" onclick="banControl('purge')" style="color:var(--accent)">⌛ Purge Expired</button>
+          <span style="font-size:10px;color:var(--text-dim)">Sources → TTL local list → nftables</span>
+        </div>
+        <pre id="blacklist-output" style="display:none;margin-top:8px;font-size:10px;color:var(--text-dim);
+             background:var(--bg3);padding:8px;max-height:120px;overflow-y:auto;white-space:pre-wrap"></pre>
+      </div>
+      <!-- Ban Control -->
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">BAN CONTROL</div>
+        <div id="ban-control-status" style="font-family:var(--font-m);font-size:11px;color:var(--text-dim);margin-bottom:8px">Loading...</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button class="svc-btn svc-btn-warn" onclick="banControl('suspend')">⏸ Suspend Banning</button>
+          <button class="svc-btn" onclick="banControl('resume')" style="color:var(--accent)">▶ Resume</button>
+          <button class="svc-btn svc-btn-warn" onclick="banControl('open')">🧹 Remove All + Suspend</button>
+        </div>
+      </div>
+      <!-- Jail Summary -->
+      <div style="padding:12px 16px">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">JAIL SUMMARY</div>
+        <div id="jail-summary" style="font-family:var(--font-m);font-size:11px;line-height:1.8"></div>
+      </div>
+      <div style="padding:12px 16px;border-top:1px solid var(--border)">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">LOCAL BAN TTL QUEUE</div>
+        <div id="local-ban-list" style="font-family:var(--font-m);font-size:10px;line-height:1.6;color:var(--text-dim)"></div>
+      </div>
+    </div>
+
+    <!-- Right column: Server Health + Network -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>💻 Server Health &amp; Network</span>
+        <span id="health-ts" class="ts"></span>
+        <button class="refresh-btn" onclick="loadServerHealth(true)">⟳ Refresh</button>
+      </div>
+      <!-- System stats -->
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">SYSTEM</div>
+        <div id="health-stats" class="stats-grid"></div>
+      </div>
+      <!-- Network interfaces -->
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">NETWORK I/O</div>
+        <div id="health-net" style="font-family:var(--font-m);font-size:11px;line-height:1.8"></div>
+      </div>
+      <!-- Top processes -->
+      <div style="padding:12px 16px">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:8px">TOP PROCESSES BY MEM</div>
+        <div class="fw-table-wrap">
+          <table class="fw-table">
+            <thead><tr><th>User</th><th>PID</th><th>CPU%</th><th>MEM%</th><th>Command</th></tr></thead>
+            <tbody id="health-procs"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end cyber panel row -->
+
+  <!-- Threat Maps -->
+  <div class="panel">
+    <div class="panel-header">🌐 Global Cyber Threat Intelligence Maps</div>
+    <div class="threatmap-tabs">
+      <button class="threatmap-tab active" onclick="switchMap('kaspersky',this)">Kaspersky</button>
+      <button class="threatmap-tab" onclick="switchMap('fortinet',this)">FortiGuard</button>
+      <button class="threatmap-tab" onclick="switchMap('bitdefender',this)">Bitdefender</button>
+    </div>
+    <div id="map-kaspersky" class="threatmap-frame active">
+      <iframe src="https://cybermap.kaspersky.com/en/widget/dynamic/dark"
+              style="width:100%;height:520px;border:none;background:#000"
+              allowfullscreen title="Kaspersky Cyber Threat Map"></iframe>
+      <div class="dim" style="text-align:center;padding:6px;font-size:10px;letter-spacing:2px">
+        SOURCE: KASPERSKY SECURITY NETWORK — LIVE GLOBAL ATTACK VECTORS
+      </div>
+    </div>
+    <div id="map-fortinet" class="threatmap-frame">
+      <iframe src="https://threatmap.fortiguard.com/"
+              style="width:100%;height:520px;border:none;background:#000"
+              allowfullscreen title="FortiGuard Threat Map"></iframe>
+      <div class="dim" style="text-align:center;padding:6px;font-size:10px;letter-spacing:2px">
+        SOURCE: FORTIGUARD LABS — REAL-TIME THREAT INTELLIGENCE NETWORK
+      </div>
+    </div>
+    <div id="map-bitdefender" class="threatmap-frame">
+      <iframe src="https://threatmap.bitdefender.com/"
+              style="width:100%;height:520px;border:none;background:#000"
+              allowfullscreen title="Bitdefender Threat Map"></iframe>
+      <div class="dim" style="text-align:center;padding:6px;font-size:10px;letter-spacing:2px">
+        SOURCE: BITDEFENDER THREAT INTELLIGENCE — LIVE ATTACK FEED
       </div>
     </div>
   </div>
 
-  <!-- 13. Local Service Uptime Monitor -->
-  <div class="panel">
-    <div class="panel-header">
-      <span>🚦 Local Service Uptime Monitor</span>
-      <span class="ts" id="local-svc-ts"></span>
-      <button class="refresh-btn" onclick="loadExtServices(true)">⟳</button>
+  <!-- 0-day feeds: BleepingComputer + THN -->
+  <div class="panel-row" style="margin-bottom:16px;align-items:start">
+    <div class="panel">
+      <div class="panel-header">
+        <span>🩸 BleepingComputer — Exploits &amp; 0-Days</span>
+        <button class="refresh-btn" onclick="loadSWPC()">⟳</button>
+      </div>
+      <div id="bleeping-feed" class="loading">Loading...</div>
     </div>
-    <div id="local-services-grid" class="loading">Loading...</div>
+    <div class="panel">
+      <div class="panel-header">
+        <span>🕵 The Hacker News — Latest Threats</span>
+        <button class="refresh-btn" onclick="loadSWPC()">⟳</button>
+      </div>
+      <div id="thn-feed" class="loading">Loading...</div>
+    </div>
   </div>
 
-  <!-- 14. External Service Status -->
-  <div class="panel">
-    <div class="panel-header">
-      <span>🌐 Internet Service Status</span>
-      <span class="ts" id="ext-svc-ts"></span>
-      <button class="refresh-btn" onclick="loadExtServices(true)">⟳</button>
+  <!-- SANS ISC + Krebs -->
+  <div class="panel-row-3">
+    <div class="panel">
+      <div class="panel-header">🌩 SANS Internet Storm Center — Daily Diary
+        <button class="refresh-btn" onclick="loadSWPC()">⟳</button>
+      </div>
+      <div id="sans-isc-feed" class="loading">Loading SANS ISC...</div>
     </div>
-    <div id="ext-services-grid" class="loading">Loading service status...</div>
+    <div class="panel">
+      <div class="panel-header">
+        <span>🔐 Krebs on Security</span>
+        <button class="refresh-btn" onclick="loadSWPC()">⟳</button>
+      </div>
+      <div id="krebs-feed" class="loading">Loading Krebs...</div>
+    </div>
   </div>
 
-  <!-- 15. System Info + RSS Feed -->
+  <!-- ── DASHBOARD CONFIG ────────────────────────────────────────────── -->
+  <div class="ops-section-label">DASHBOARD CONFIGURATION</div>
+
+  <!-- Display Settings -->
+  <div class="settings-panel" style="margin-bottom:14px">
+    <div class="settings-panel-title">◈ DISPLAY SETTINGS</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;flex-wrap:wrap">
+      <!-- Theme selector -->
+      <div>
+        <div style="font-family:var(--font-m);font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:10px">COLOR THEME</div>
+        <div style="display:flex;flex-direction:column;gap:6px" id="theme-selector">
+          <div class="theme-select-row" onclick="setTheme('presidential',null)" data-theme="presidential">
+            <span class="theme-select-swatch" style="background:#0a1628;border-color:#c9a84c"></span>
+            <span class="theme-select-name">PRESIDENTIAL</span>
+            <span class="theme-select-desc">Navy · Gold — default</span>
+          </div>
+          <div class="theme-select-row" onclick="setTheme('phantom',null)" data-theme="phantom">
+            <span class="theme-select-swatch" style="background:#0f0f0f;border-color:#cc2020"></span>
+            <span class="theme-select-name">PHANTOM</span>
+            <span class="theme-select-desc">Black · Red — high contrast</span>
+          </div>
+          <div class="theme-select-row" onclick="setTheme('agency',null)" data-theme="agency">
+            <span class="theme-select-swatch" style="background:#050805;border-color:#39ff14"></span>
+            <span class="theme-select-name">AGENCY</span>
+            <span class="theme-select-desc">Black · Green — terminal</span>
+          </div>
+          <div class="theme-select-row" onclick="setTheme('midnight',null)" data-theme="midnight">
+            <span class="theme-select-swatch" style="background:#0c0818;border-color:#a08cff"></span>
+            <span class="theme-select-name">MIDNIGHT</span>
+            <span class="theme-select-desc">Dark purple · Violet</span>
+          </div>
+          <div class="theme-select-row" onclick="setTheme('kevsec',null)" data-theme="kevsec">
+            <span class="theme-select-swatch" style="background:#04080e;border-color:#e8631c"></span>
+            <span class="theme-select-name">KEVSEC</span>
+            <span class="theme-select-desc">Navy · Orange — brand</span>
+          </div>
+        </div>
+      </div>
+      <!-- Font size -->
+      <div>
+        <div style="font-family:var(--font-m);font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:10px">FONT SIZE</div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px">
+          <button onclick="dashSize(-1)" class="log-filter-btn" style="min-width:44px;min-height:44px;font-size:16px;padding:0">A−</button>
+          <span id="font-size-display" style="font-family:var(--font-m);font-size:11px;color:var(--text);min-width:30px;text-align:center">—</span>
+          <button onclick="dashSize(1)"  class="log-filter-btn" style="min-width:44px;min-height:44px;font-size:16px;padding:0">A+</button>
+        </div>
+        <div style="font-family:var(--font-m);font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:10px">LAYOUT MODE</div>
+        <button class="tab desktop-mode-btn" id="desktop-mode-btn-settings" onclick="toggleDesktopMode()" style="font-family:var(--font-m);font-size:10px;letter-spacing:2px;background:var(--bg4);border:1px solid var(--border2);color:var(--text-dim);padding:8px 16px;cursor:pointer;min-height:44px">TOGGLE MOBILE/DESKTOP</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Warm Cache + Active Sessions -->
+  <div class="settings-grid">
+    <div class="settings-panel">
+      <div class="settings-panel-title">◈ WARM CACHE</div>
+      <div id="settings-cache-status" style="margin-bottom:12px;font-family:var(--font-m);font-size:11px;color:var(--text-dim)">Loading…</div>
+      <div style="margin-bottom:12px">
+        <div style="font-family:var(--font-m);font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:8px">CACHE KEYS</div>
+        <div id="settings-cache-keys" class="cache-key-pills"></div>
+      </div>
+      <button id="btn-warm-cache" onclick="triggerWarmCache()"
+        style="font-family:var(--font-m);font-size:10px;letter-spacing:2px;background:var(--bg4);border:1px solid var(--accent);color:var(--accent);padding:6px 16px;cursor:pointer;transition:all .12s">
+        ▶ TRIGGER WARM CACHE
+      </button>
+    </div>
+    <div class="settings-panel">
+      <div class="settings-panel-title">◈ ACTIVE SESSIONS</div>
+      <div id="settings-sessions">Loading…</div>
+    </div>
+  </div>
+
+  <!-- System Info + RSS Feed -->
   <div class="settings-grid" style="margin-top:14px">
     <div class="settings-panel">
       <div class="settings-panel-title">◈ SYSTEM INFO</div>
@@ -2104,53 +2130,48 @@
     </div>
   </div>
 
-  <!-- 16. Auth Log -->
-  <div class="settings-panel" style="margin-top:14px">
-    <div class="settings-panel-title">◈ AUTH LOG</div>
-    <div>
-      <button class="log-filter-btn active" onclick="filterAuthLog('all',this)">ALL</button>
-      <button class="log-filter-btn" onclick="filterAuthLog('LOGIN_SUCCESS',this)">SUCCESS</button>
-      <button class="log-filter-btn" onclick="filterAuthLog('LOGIN_FAILED',this)">FAILED</button>
-      <button class="log-filter-btn" onclick="filterAuthLog('HONEYPOT_HIT',this)">HONEYPOT</button>
-      <button class="log-filter-btn" onclick="filterAuthLog('HONEYPOT TRAP_HIT',this)">TRAP</button>
-    </div>
-    <div style="overflow-x:auto">
-      <table class="settings-table">
-        <thead><tr>
-          <th>TIMESTAMP</th><th>EVENT</th><th>USER</th><th>IP</th><th>PATH / UA</th>
-        </tr></thead>
-        <tbody id="settings-log-tbody">
-          <tr><td colspan="5" style="color:var(--text-dim);text-align:center;padding:12px">Loading…</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
+  <!-- ── GARDEN ───────────────────────────────────────────────────────── -->
+  <div class="ops-section-label">GARDEN</div>
 
-  <!-- 17. Tarpit & Honeypot -->
   <div class="panel">
     <div class="panel-header">
-      <span>🕳 SSH Tarpit &amp; Honeypot — Active Defense</span>
-      <span id="tarpit-ts" class="ts"></span>
-      <button class="refresh-btn" onclick="loadTarpitStats(true)">⟳ Refresh</button>
+      <span>🌿 Garden — Quick Status</span>
+      <button class="refresh-btn" onclick="loadGardenOps()">⟳</button>
+      <button class="refresh-btn" onclick="document.querySelector('[data-tab=garden]').click()" style="color:var(--accent)">Full View →</button>
     </div>
-    <div class="panel-row" style="margin:0;gap:0;border-bottom:1px solid var(--border)">
+    <div class="panel-row" style="margin:0;gap:0">
+      <div style="flex:1;padding:12px 16px;border-right:1px solid var(--border)">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:10px">LAWN MOWING</div>
+        <div id="ops-mow-status" style="font-family:var(--font-m);font-size:11px;color:var(--text-dim)">Loading…</div>
+        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+          <input type="text" id="ops-mow-note" placeholder="Mow note (optional)"
+                 style="flex:1;min-width:120px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);
+                        font-family:var(--font-m);font-size:16px;padding:5px 8px">
+          <button class="svc-btn" onclick="opsLogMow()">+ LOG MOW</button>
+        </div>
+      </div>
       <div style="flex:1;padding:12px 16px">
-        <div style="font-size:9px;letter-spacing:3px;color:var(--accent);margin-bottom:10px">🐢 ENDLESSH — SSH TARPIT</div>
-        <div id="tarpit-ssh-stats" class="stats-grid" style="margin-bottom:8px"></div>
-        <div style="font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:6px">RECENT CATCHES</div>
-        <div id="tarpit-recent-ips" style="font-family:var(--font-m);font-size:11px;line-height:1.8"></div>
-      </div>
-      <div style="flex:1;padding:12px 16px;border-left:1px solid var(--border)">
-        <div style="font-size:9px;letter-spacing:3px;color:var(--accent);margin-bottom:10px">🍯 HONEYPOT — WEB TRAPS</div>
-        <div id="tarpit-honeypot-stats" class="stats-grid" style="margin-bottom:8px"></div>
-        <div style="font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:6px">RECENT PROBES</div>
-        <div id="tarpit-honeypot-log"></div>
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:10px">QUICK WATER LOG</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <select id="ops-wlog-plant" style="background:var(--bg3);border:1px solid var(--border2);color:var(--text);
+                  font-family:var(--font-m);font-size:16px;padding:5px 8px">
+            <option value="lawn">Lawn</option>
+            <option value="azalea">Azaleas</option>
+            <option value="wildflowers">Wildflowers</option>
+            <option value="catnip">Catnip</option>
+          </select>
+          <input type="number" id="ops-wlog-amount" placeholder="Inches" step="0.1" min="0" max="5"
+                 autocomplete="off" inputmode="decimal"
+                 style="width:90px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);
+                        font-family:var(--font-m);font-size:16px;padding:5px 8px;text-align:center">
+          <button class="svc-btn" onclick="opsLogWater()">+ LOG WATER</button>
+        </div>
+        <div id="ops-garden-feedback" style="font-family:var(--font-m);font-size:10px;color:var(--accent);margin-top:8px;min-height:16px"></div>
       </div>
     </div>
-    <div id="tarpit-error" style="display:none;padding:10px 16px;color:var(--red2);font-size:11px;font-family:var(--font-m)"></div>
   </div>
 
-  <!-- 18. NUKE AUTHORITY -->
+  <!-- NUKE AUTHORITY -->
   <div class="panel" style="margin-top:14px;border:2px solid #7a0000;background:linear-gradient(135deg,#0d0000 0%,#1a0000 100%)">
     <div class="panel-header" style="border-bottom:1px solid #7a0000;background:transparent">
       <span style="color:#ff2200;letter-spacing:4px;font-size:11px">⚛ NUKE AUTHORITY // TIER-OMEGA PROTOCOL</span>

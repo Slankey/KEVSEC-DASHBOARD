@@ -63,7 +63,7 @@ const TZ_LIST = [
   { tz: 'Europe/Berlin',      cls: 'tz-berlin',  std: 'CET',  dst: 'CEDT' },
 ];
 const _tzFmt = TZ_LIST.map(t => new Intl.DateTimeFormat('en-US', {
-  timeZone: t.tz, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
+  timeZone: t.tz, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
 }));
 function _tzIsDST(tz, now) {
   // Compare current UTC offset to the standard (min) offset across Jan + Jul
@@ -133,16 +133,13 @@ function loadTab(tab) {
     loadStocks(false, 'intel');
     // Stagger heavier intel pulls 1 min apart
     setTimeout(() => loadPresidentIntel(),         1*M);
+    setTimeout(() => loadFactbase(),               1*M);
     setTimeout(() => loadCongressStatus(),         2*M);
     setTimeout(() => loadMidtermIntel(),           3*M);
     setTimeout(() => loadPolls(),                  4*M);
     setTimeout(() => loadF1(),                     5*M);
     setTimeout(() => loadPolTweets(),              6*M);
     setTimeout(() => loadGovtIntel(),              7*M);
-  }
-  if (tab === 'cyber') {
-    loadCVEs(); loadFirewallDrops(); loadServerHealth(); loadJailSummary();
-    setTimeout(() => loadSWPC(), 2*M);
   }
   if (tab === 'weather') {
     // All cached by warm cache — load immediately, stagger only to avoid browser request pile-up
@@ -170,6 +167,10 @@ function loadTab(tab) {
   if (tab === 'settings') {
     loadServerStats(); loadQueue(); loadBandwidth(); loadStorageboxDisk(); loadTarpitStats();
     loadRtorrent(); loadSbLibrary(); loadSbRuns(); loadGardenOps();
+    // Cyber security panels — staggered to avoid piling on at tab open
+    setTimeout(() => { loadCVEs(); loadFirewallDrops(); },       2000);
+    setTimeout(() => { loadServerHealth(); loadJailSummary(); }, 4000);
+    setTimeout(() => loadSWPC(),                                  6000);
     setTimeout(() => loadProxmox(),         1*M);
     setTimeout(() => loadGoals(),           2*M);
     setTimeout(() => loadDjStatus(),        3*M);
@@ -1308,6 +1309,113 @@ function loadPresidentIntel(force) {
         </div>`;
       }).join('')}
     </div>`;
+  });
+}
+
+function loadFactbase(force) {
+  const calEl  = document.getElementById('factbase-calendar');
+  const postEl = document.getElementById('factbase-posts');
+  const trEl   = document.getElementById('factbase-transcripts');
+  const tsEl   = document.getElementById('factbase-ts');
+  if (!calEl) return;
+  api(force ? '/api/factbase?force=1' : '/api/factbase', data => {
+    if (tsEl) tsEl.textContent = data.fetched || '';
+
+    // ── Calendar ──────────────────────────────────────────────────────
+    const TYPE_COLOR = {
+      'Official Schedule': '#e8631c',
+      'Pool Call Time':    '#60a5fa',
+      'Pool Report':       '#94a3b8',
+      'Press Briefing':    '#4ade80',
+      '@POTUS_Schedule':   '#f59e0b',
+      'Axios':             '#c084fc',
+    };
+    const calendar = data.calendar || [];
+    if (calEl) {
+      if (!calendar.length) {
+        calEl.innerHTML = `<div style="padding:10px 14px;font-size:11px;color:var(--text-dim)">No schedule data — cron runs at :30 past even hours.</div>`;
+      } else {
+        calEl.innerHTML = calendar.map(day => `
+          <div style="padding:6px 14px;background:var(--bg3);border-bottom:1px solid var(--border);
+                      font-size:9px;letter-spacing:2px;color:var(--accent);text-transform:uppercase;font-family:var(--font-m)">
+            ${day.day}, ${day.date}
+          </div>
+          ${day.events.map(ev => {
+            const col = TYPE_COLOR[ev.type] || '#888';
+            const link = ev.transcript_url
+              ? `<a href="${ev.transcript_url}" target="_blank"
+                    style="font-size:9px;color:var(--accent);margin-left:8px;text-decoration:none">transcript ↗</a>` : '';
+            return `<div style="display:flex;gap:0;border-bottom:1px solid var(--border);align-items:stretch">
+              <div style="width:3px;background:${col};flex-shrink:0"></div>
+              <div style="padding:6px 10px;min-width:72px;flex-shrink:0;border-right:1px solid var(--border)">
+                <div style="font-size:10px;color:${col};font-family:var(--font-m)">${ev.time || '—'}</div>
+                <div style="font-size:8px;color:var(--text-dim);letter-spacing:1px;margin-top:2px">${ev.type}</div>
+              </div>
+              <div style="padding:6px 10px;flex:1">
+                <div style="font-size:11px;color:var(--text-hi);line-height:1.4">${ev.desc}${link}</div>
+                ${ev.location ? `<div style="font-size:10px;color:var(--text-dim);margin-top:2px">📍 ${ev.location}${ev.press ? ' · ' + ev.press : ''}</div>` : ''}
+              </div>
+            </div>`;
+          }).join('')}
+        `).join('');
+      }
+    }
+
+    // ── Truth Social Posts ─────────────────────────────────────────────
+    const posts = data.posts || [];
+    if (postEl) {
+      if (!posts.length) {
+        postEl.innerHTML = `<div style="padding:10px 14px;font-size:11px;color:var(--text-dim)">No posts fetched.</div>`;
+      } else {
+        postEl.innerHTML = `<div style="display:flex;flex-direction:column;gap:0">` +
+          posts.map(p => {
+            const isRT = p.text && p.text.startsWith('RT: https://');
+            const isVideo = p.text === '[Video]';
+            const style = isRT ? 'opacity:0.55;' : (isVideo ? 'opacity:0.65;' : '');
+            return `<div style="padding:8px 14px;border-bottom:1px solid var(--border);${style}">
+              <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+                <div style="font-size:9px;letter-spacing:1px;color:#e8631c;font-family:var(--font-m)">TRUTH SOCIAL</div>
+                <div style="font-size:9px;color:var(--text-dim)">${p.date}</div>
+              </div>
+              <div style="font-size:11px;color:var(--text-hi);line-height:1.5;word-break:break-word">
+                ${isRT
+                  ? `<span style="color:var(--text-dim)">RT</span>
+                     <a href="${p.rt_url||p.post_url||'#'}" target="_blank"
+                        style="color:var(--accent);font-size:10px;margin-left:6px">view post ↗</a>`
+                  : p.text || ''}
+              </div>
+              ${p.post_url && !isRT
+                ? `<a href="${p.post_url}" target="_blank"
+                      style="font-size:9px;color:var(--accent);text-decoration:none;margin-top:4px;display:block">view on Truth Social ↗</a>`
+                : ''}
+            </div>`;
+          }).join('') + `</div>`;
+      }
+    }
+
+    // ── Transcripts ───────────────────────────────────────────────────
+    const transcripts = data.transcripts || [];
+    if (trEl) {
+      if (!transcripts.length) {
+        trEl.innerHTML = `<div style="padding:10px 14px;font-size:11px;color:var(--text-dim)">No transcripts fetched.</div>`;
+      } else {
+        trEl.innerHTML = `<div style="display:flex;flex-direction:column;gap:0">` +
+          transcripts.map(t => `
+            <div style="padding:7px 14px;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:flex-start">
+              <div style="min-width:80px;flex-shrink:0">
+                <div style="font-size:9px;color:var(--accent);font-family:var(--font-m)">${t.source}</div>
+                <div style="font-size:9px;color:var(--text-dim);margin-top:2px">${t.time_ago}</div>
+              </div>
+              <div style="flex:1">
+                ${t.url
+                  ? `<a href="${t.url}" target="_blank"
+                        style="font-size:11px;color:var(--text-hi);text-decoration:none;line-height:1.4">${t.title}</a>`
+                  : `<div style="font-size:11px;color:var(--text-hi);line-height:1.4">${t.title}</div>`}
+              </div>
+            </div>`
+          ).join('') + `</div>`;
+      }
+    }
   });
 }
 
@@ -3923,7 +4031,7 @@ document.getElementById('nuke-modal').addEventListener('click', function(e) {
 
 // ── SSH Copy ───────────────────────────────────────────────
 function copySSH() {
-  navigator.clipboard.writeText('ssh slankey@69.30.236.220').then(() => {
+  navigator.clipboard.writeText('ssh slankey@kevsec.com').then(() => {
     const el = document.getElementById('ssh-btn-sub2');
     if (el) { el.textContent = '✓ Copied!'; setTimeout(() => el.textContent = 'Click to copy', 2000); }
   });

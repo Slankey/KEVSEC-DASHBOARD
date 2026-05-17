@@ -1348,6 +1348,147 @@ footer {
 @keyframes type-in {
   to { max-width: 100%; }
 }
+
+/* ── By the Numbers bar ─────────────────────────────────────────── */
+.numbers-bar {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 40px 0;
+}
+.numbers-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.number-item {
+  text-align: center;
+  flex: 1;
+}
+.number-val {
+  font-family: var(--font-head);
+  font-size: 2.6rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.02em;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.number-label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-mid);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.number-divider {
+  width: 1px;
+  height: 48px;
+  background: var(--border2);
+  flex-shrink: 0;
+}
+@media (max-width: 768px) {
+  .numbers-inner { flex-wrap: wrap; gap: 32px; }
+  .number-divider { display: none; }
+  .number-item { flex: 0 0 40%; }
+}
+
+/* ── Tools & Arsenal ────────────────────────────────────────────── */
+.section-tools { border-top: 1px solid var(--border); }
+.tools-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 28px;
+}
+.tool-category {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 24px;
+}
+.tool-cat-label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--accent);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+.tool-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.tool-badge {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text);
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  padding: 4px 10px;
+  border-radius: 2px;
+  letter-spacing: 0.04em;
+  transition: border-color 0.2s, color 0.2s;
+}
+.tool-badge:hover { border-color: var(--accent); color: var(--accent); }
+@media (max-width: 768px) { .tools-grid { grid-template-columns: 1fr; } }
+
+/* ── What I Bring ───────────────────────────────────────────────── */
+.section-value { border-top: 1px solid var(--border); }
+.section-sub {
+  color: var(--text-mid);
+  font-size: 1rem;
+  margin-top: 8px;
+}
+.value-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-top: 8px;
+}
+.value-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 28px 24px;
+  transition: border-color 0.25s;
+  position: relative;
+}
+.value-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+.value-card:hover { border-color: var(--border2); }
+.value-card:hover::before { opacity: 1; }
+.value-icon {
+  font-size: 1.5rem;
+  margin-bottom: 14px;
+}
+.value-title {
+  font-family: var(--font-head);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 10px;
+}
+.value-desc {
+  font-size: 0.875rem;
+  color: var(--text-mid);
+  line-height: 1.65;
+}
+@media (max-width: 1024px) { .value-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px)  { .value-grid { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -1423,7 +1564,7 @@ footer {
         </div>
         <div class="tp-stat">
           <span class="tp-label">Location</span>
-          <span class="tp-value mono">69.30.236.220</span>
+          <span class="tp-value mono">CLASSIFIED</span>
         </div>
         <div class="tp-feed" id="live-feed">
           <div class="tp-feed-item">
@@ -1433,6 +1574,36 @@ footer {
           </div>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- BY THE NUMBERS -->
+<div class="numbers-bar">
+  <div class="numbers-inner">
+    <div class="number-item reveal rv-1">
+      <div class="number-val" id="stat-ips-blocked">3.4M+</div>
+      <div class="number-label">IPs Actively Blocked</div>
+    </div>
+    <div class="number-divider"></div>
+    <div class="number-item reveal rv-2">
+      <div class="number-val">8+</div>
+      <div class="number-label">Years in IT &amp; Security</div>
+    </div>
+    <div class="number-divider"></div>
+    <div class="number-item reveal rv-3">
+      <div class="number-val">24/7</div>
+      <div class="number-label">Automated Threat Detection</div>
+    </div>
+    <div class="number-divider"></div>
+    <div class="number-item reveal rv-4">
+      <div class="number-val">300+</div>
+      <div class="number-label">Platforms Enumerated</div>
+    </div>
+    <div class="number-divider"></div>
+    <div class="number-item reveal rv-5">
+      <div class="number-val">50+</div>
+      <div class="number-label">Tools &amp; Technologies</div>
     </div>
   </div>
 </div>
@@ -1569,6 +1740,66 @@ footer {
           <span class="skill-pct">70%</span>
         </div>
         <div class="skill-track"><div class="skill-fill" style="--w:70%"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOOLS & ARSENAL -->
+<div class="section section-tools" id="tools">
+  <div class="section-inner">
+    <div class="section-header">
+      <div class="section-eyebrow reveal">Tooling</div>
+      <h2 class="reveal rv-1">Tools &amp; <em>Arsenal</em></h2>
+    </div>
+    <div class="tools-grid">
+      <div class="tool-category reveal rv-1">
+        <div class="tool-cat-label">// OSINT &amp; RECON</div>
+        <div class="tool-badges">
+          <span class="tool-badge">Maltego</span>
+          <span class="tool-badge">Shodan</span>
+          <span class="tool-badge">SpiderFoot</span>
+          <span class="tool-badge">theHarvester</span>
+          <span class="tool-badge">Recon-ng</span>
+          <span class="tool-badge">OSINT Framework</span>
+          <span class="tool-badge">Bellingcat Toolkit</span>
+        </div>
+      </div>
+      <div class="tool-category reveal rv-2">
+        <div class="tool-cat-label">// NETWORK &amp; OFFENSE</div>
+        <div class="tool-badges">
+          <span class="tool-badge">Wireshark</span>
+          <span class="tool-badge">Nmap</span>
+          <span class="tool-badge">Nessus</span>
+          <span class="tool-badge">Burp Suite</span>
+          <span class="tool-badge">Metasploit</span>
+          <span class="tool-badge">Aircrack-ng</span>
+          <span class="tool-badge">tcpdump</span>
+        </div>
+      </div>
+      <div class="tool-category reveal rv-3">
+        <div class="tool-cat-label">// PLATFORM &amp; DEV</div>
+        <div class="tool-badges">
+          <span class="tool-badge">Kali Linux</span>
+          <span class="tool-badge">Ubuntu Server</span>
+          <span class="tool-badge">Python</span>
+          <span class="tool-badge">Bash</span>
+          <span class="tool-badge">Git</span>
+          <span class="tool-badge">Docker</span>
+          <span class="tool-badge">Proxmox</span>
+        </div>
+      </div>
+      <div class="tool-category reveal rv-4">
+        <div class="tool-cat-label">// DEFENSE &amp; INFRA</div>
+        <div class="tool-badges">
+          <span class="tool-badge">fail2ban</span>
+          <span class="tool-badge">nftables</span>
+          <span class="tool-badge">Nginx</span>
+          <span class="tool-badge">Cloudflare</span>
+          <span class="tool-badge">Splunk</span>
+          <span class="tool-badge">Suricata</span>
+          <span class="tool-badge">YARA</span>
+        </div>
       </div>
     </div>
   </div>
@@ -1741,6 +1972,18 @@ footer {
         <div class="project-desc">Public-facing web application at create.kevsec.com. Designed, built, and deployed as part of the broader KEVSEC platform stack on self-hosted Proxmox infrastructure.</div>
         <div class="project-link">create.kevsec.com ↗</div>
       </a>
+      <div class="project-card reveal rv-4">
+        <div class="project-type">Active Defense</div>
+        <div class="project-name">KEVSEC Honeypot &amp; IP Ban System</div>
+        <div class="project-desc">Production honeypot network with 9 fail2ban jails, automated nftables IP blacklist, and a 3.4M+ entry persistent ban list compiled from threat feeds, honeypot telemetry, and endlessh SSH tarpit data. Blocks thousands of probes daily.</div>
+        <div class="project-link">Live on kevsec.com</div>
+      </div>
+      <div class="project-card reveal rv-5">
+        <div class="project-type">Infrastructure Automation</div>
+        <div class="project-name">Automated Media Pipeline</div>
+        <div class="project-desc">Custom Python orchestration layer connecting rtorrent, Sonarr, Radarr, and Jellyfin. Handles torrent completion events, label-based file routing, CIFS NAS transfers, symlink library management, and Discord/email notifications — fully automated end-to-end.</div>
+        <div class="project-link">Self-hosted on Proxmox</div>
+      </div>
     </div>
   </div>
 </div>
@@ -1807,6 +2050,44 @@ footer {
         </div>
       </div>
 
+    </div>
+  </div>
+</div>
+
+<!-- WHAT I BRING -->
+<div class="section section-value" id="value">
+  <div class="section-inner">
+    <div class="section-header">
+      <div class="section-eyebrow reveal">Value Proposition</div>
+      <h2 class="reveal rv-1">What I <em>Bring</em></h2>
+      <p class="section-sub reveal rv-2">Real-world, production-proven capabilities — not just certifications.</p>
+    </div>
+    <div class="value-grid">
+      <div class="value-card reveal rv-1">
+        <div class="value-icon">⚡</div>
+        <div class="value-title">Threat Intelligence</div>
+        <div class="value-desc">Operate a live intelligence platform aggregating CVE feeds, geopolitical threat data, dark web alerts, and honeypot telemetry — turning raw signals into actionable situational awareness.</div>
+      </div>
+      <div class="value-card reveal rv-2">
+        <div class="value-icon">🔍</div>
+        <div class="value-title">OSINT · HUMINT · SIGINT</div>
+        <div class="value-desc">Expert-level intelligence collection across open sources, human networks, and signals. Deep experience enumerating digital identities, mapping infrastructure, and attributing threat actors across surface, deep, and dark web.</div>
+      </div>
+      <div class="value-card reveal rv-3">
+        <div class="value-icon">🕸</div>
+        <div class="value-title">Adversary Tradecraft</div>
+        <div class="value-desc">Firsthand understanding of attacker TTPs, underground forums, crimeware ecosystems, and threat actor behavior patterns. Think like the adversary — because I've studied them where they operate.</div>
+      </div>
+      <div class="value-card reveal rv-4">
+        <div class="value-icon">🌐</div>
+        <div class="value-title">Dark Web Operations</div>
+        <div class="value-desc">Active research and monitoring across Tor-based markets, paste sites, and threat actor infrastructure. Credential exposure detection, data leak identification, and illicit marketplace intelligence for proactive defense.</div>
+      </div>
+      <div class="value-card reveal rv-5">
+        <div class="value-icon">⚙</div>
+        <div class="value-title">Hands-On Infrastructure</div>
+        <div class="value-desc">Self-host and operate 10+ production services on hardened Linux — real engineering under real constraints. No lab-only experience: everything runs in production, with real traffic, real attackers, and real consequences.</div>
+      </div>
     </div>
   </div>
 </div>
@@ -1887,7 +2168,7 @@ footer {
       {% if error %}
       <div class="login-error">⚠ {{ error }}</div>
       {% endif %}
-      <form method="POST" action="/ops">
+      <form method="POST" action="/kev-88f2c91a">
         <div class="login-field">
           <label>Username</label>
           <input type="text" name="username" id="login-user" autocomplete="off" spellcheck="false">
