@@ -3509,6 +3509,8 @@ function loadLakeMichigan() {
     if (ts) ts.textContent = data.fetched || '';
     const pw = data.pwaw3 || {};
     const trend = data.pwaw3_trend || [];
+    const aw = data.atwater || {};
+    const awTrend = data.atwater_trend || [];
 
     // ── PWAW3 current conditions ──────────────────────────
     const bd = document.getElementById('buoy-data');
@@ -3547,7 +3549,36 @@ function loadLakeMichigan() {
           NDBC PWAW3 — PORT WASHINGTON, WI &nbsp;|&nbsp;
           <a href="https://www.ndbc.noaa.gov/station_page.php?station=pwaw3" target="_blank" style="color:var(--accent)">View Full NDBC Station Page ↗</a>
           &nbsp;|&nbsp; <a href="https://www.weather.gov/greatlakes/globs?sort=4&lake=Michigan&kt=f&trends=f&seagull=t&shipsonly=f" target="_blank" style="color:var(--accent)">Great Lakes Obs ↗</a>
-        </div>`;
+        </div>
+        ${Object.keys(aw).length ? `
+        <div style="font-size:9px;letter-spacing:3px;color:var(--accent);padding:8px 14px 4px;border-top:1px solid var(--border)">
+          45013 — ATWATER PARK / MILWAUKEE OFFSHORE
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border)">
+          <div class="stat-box" style="padding:10px 12px">
+            <div class="stat-label">Water Temp</div>
+            <div style="font-size:22px;font-family:var(--font-h);color:var(--blue2)">${aw.water_temp_f != null ? aw.water_temp_f + '°F' : '---'}</div>
+          </div>
+          <div class="stat-box" style="padding:10px 12px">
+            <div class="stat-label">Wave Height</div>
+            <div style="font-size:22px;font-family:var(--font-h);color:var(--text-hi)">${aw.wave_height_ft != null ? aw.wave_height_ft + ' ft' : '---'}</div>
+            <div class="stat-sub">${aw.wave_period_s && aw.wave_period_s !== 'MM' ? aw.wave_period_s + 's period' : ''}</div>
+          </div>
+          <div class="stat-box" style="padding:10px 12px">
+            <div class="stat-label">Wave Direction</div>
+            <div style="font-size:18px;color:var(--accent)">${aw.wave_dir || '---'}</div>
+            <div class="stat-sub">${aw.wave_dir_deg && aw.wave_dir_deg !== 'MM' ? aw.wave_dir_deg + '°' : ''}</div>
+          </div>
+          <div class="stat-box" style="padding:10px 12px">
+            <div class="stat-label">Wind (Buoy)</div>
+            <div style="font-size:18px;font-family:var(--font-h);color:var(--text-hi)">${aw.wind_speed_mph != null ? aw.wind_speed_mph + ' mph' : '---'}</div>
+            <div class="stat-sub">${aw.wind_dir || ''} ${aw.wind_gust_mph != null ? '· gust ' + aw.wind_gust_mph + ' mph' : ''}</div>
+          </div>
+        </div>
+        <div class="dim" style="font-size:10px;padding:4px 10px 6px;letter-spacing:1px">
+          NDBC 45013 — MILWAUKEE, WI (ATWATER PARK) &nbsp;|&nbsp;
+          <a href="https://www.ndbc.noaa.gov/station_page.php?station=45013" target="_blank" style="color:var(--accent)">Full Station ↗</a>
+        </div>` : ''}`;
 
       // Trend table
       const tt = document.getElementById('pwaw3-trend');

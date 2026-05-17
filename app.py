@@ -1012,26 +1012,31 @@ def _monitor_flights():
         except Exception as e:
             app.logger.warning("Flight monitor loop error: %s", e)
 
-# Home airports — ONLY deals mentioning these pass the filter
-_HOME_TERMS = {"MKE", "ORD", "MDW", "ATW", "MILWAUKEE", "APPLETON", "CHICAGO", "O'HARE", "MIDWAY"}
+# Home airports — filter for generic deal feeds (TheFlightDeal etc.)
+_HOME_TERMS = {"MKE", "ORD", "MDW", "ATW", "MILWAUKEE", "APPLETON",
+               "CHICAGO", "O'HARE", "MIDWAY", "ILLINOIS", "WISCONSIN"}
 
-# Feeds: curated deal sites + Google News airport-specific queries
-# ALL results are filtered — only items mentioning home airports are kept
+# Feeds: "local" kind = airport-targeted query, bypass HOME_TERMS filter.
+#         "deals" kind = generic feed, must mention home airport to pass.
+#         "inspire" kind = editorial content, always included.
 import urllib.parse as _ulp_travel
 _GN = "https://news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q="
 _DEAL_FEEDS = [
-    # Best curated deal aggregator — covers ORD/MDW deals regularly
+    # Curated deal aggregators — filtered by HOME_TERMS
     ("The Flight Deal",  "deals", "https://theflightdeal.com/feed/"),
-    # Google News: airport-specific deal & route queries (deduplicated below)
-    ("MKE / Routes",  "deals", _GN + _ulp_travel.quote('"Milwaukee" (flight OR flights OR nonstop) (deal OR cheap OR sale OR nonstop OR route) 2026')),
-    ("ORD / Routes",  "deals", _GN + _ulp_travel.quote('"O\'Hare" OR "ORD" (flight OR flights) (deal OR cheap OR sale OR nonstop OR route) 2026')),
-    ("MDW / Routes",  "deals", _GN + _ulp_travel.quote('"Midway" OR "MDW" (flight OR flights) (deal OR cheap OR sale OR nonstop OR route) 2026')),
-    ("ATW / Routes",  "deals", _GN + _ulp_travel.quote('"Appleton" (airport OR flight OR nonstop) 2026')),
-    ("Southwest MKE", "deals", _GN + _ulp_travel.quote('Southwest Airlines Milwaukee nonstop route sale 2026')),
-    ("Frontier MDW",  "deals", _GN + _ulp_travel.quote('Frontier Airlines Chicago Midway nonstop route sale 2026')),
-    ("United ORD",    "deals", _GN + _ulp_travel.quote('United Airlines "O\'Hare" ORD nonstop route sale 2026')),
-    ("American MDW",  "deals", _GN + _ulp_travel.quote('American Airlines Chicago "O\'Hare" OR "Midway" nonstop route 2026')),
-    # Editorial inspiration (not filtered — any travel content OK here)
+    ("Secret Flying",    "deals", "https://secretflying.com/feed/"),
+    ("Upgraded Points",  "deals", "https://upgradedpoints.com/feed/"),
+    # Airport-targeted Google News — tagged "local", trusted, skip HOME_TERMS
+    ("MKE Deals",     "local", _GN + _ulp_travel.quote('"Milwaukee" (flight OR nonstop OR route) (deal OR cheap OR sale OR nonstop OR new)')),
+    ("MKE Southwest", "local", _GN + _ulp_travel.quote('Southwest Airlines Milwaukee MKE nonstop route')),
+    ("ORD Deals",     "local", _GN + _ulp_travel.quote('"O\'Hare" OR "ORD" (flight OR nonstop OR route) (deal OR cheap OR sale OR new)')),
+    ("ORD United",    "local", _GN + _ulp_travel.quote('United Airlines "O\'Hare" ORD nonstop new route')),
+    ("MDW Deals",     "local", _GN + _ulp_travel.quote('"Midway" OR "MDW" (flight OR nonstop OR route) (deal OR cheap OR sale OR new)')),
+    ("MDW Southwest", "local", _GN + _ulp_travel.quote('Southwest Airlines Chicago Midway MDW nonstop route sale')),
+    ("MDW Frontier",  "local", _GN + _ulp_travel.quote('Frontier Airlines Chicago Midway MDW nonstop')),
+    ("ATW Deals",     "local", _GN + _ulp_travel.quote('"Appleton" airport (flight OR nonstop OR route OR airline)')),
+    ("Chicago Air",   "local", _GN + _ulp_travel.quote('Chicago airport (nonstop OR new route OR flight deal OR cheap flight) airline')),
+    # Editorial inspiration — always included, not filtered
     ("NYT Travel",       "inspire", "https://feeds.nytimes.com/nyt/rss/Travel"),
     ("Travel + Leisure", "inspire", "https://www.travelandleisure.com/feeds/all.rss"),
     ("Condé Nast",       "inspire", "https://www.cntraveler.com/feed/rss"),
@@ -1053,7 +1058,7 @@ def api_flight_deals():
         try:
             feed = feedparser.parse(url)
             out = []
-            for e in feed.entries[:8]:
+            for e in feed.entries[:15]:
                 pub = getattr(e, "published", None) or getattr(e, "updated", None) or ""
                 raw_summary = e.get("summary", "") or ""
                 summary = re.sub(r"<[^>]+>", " ", raw_summary)
@@ -1085,20 +1090,25 @@ def api_flight_deals():
         for fut in as_completed(futs):
             all_rows.extend(fut.result())
 
-    # Deals: ONLY items mentioning home airports — deduplicated by title
+    # Deals: filter and deduplicate
+    # "local" = airport-targeted query, trusted — pass through without HOME_TERMS check
+    # "deals" = generic feed — must mention a home airport in title/summary
+    # "inspire" = editorial content — always included
     deals, inspire = [], []
     seen_titles = set()
     for r in all_rows:
         if r["kind"] == "inspire":
             inspire.append(r)
             continue
-        text = (r.get("title","") + " " + r.get("summary","")).upper()
-        if any(t in text for t in _HOME_TERMS):
-            key = r["title"][:60].lower().strip()
-            if key not in seen_titles:
-                seen_titles.add(key)
-                r["local"] = True
-                deals.append(r)
+        if r["kind"] == "deals":
+            text = (r.get("title","") + " " + r.get("summary","")).upper()
+            if not any(t in text for t in _HOME_TERMS):
+                continue
+        key = r["title"][:60].lower().strip()
+        if key not in seen_titles:
+            seen_titles.add(key)
+            r["local"] = True
+            deals.append(r)
 
     # Sort: items with prices first, then by date
     deals.sort(key=lambda r: (0 if r.get("price") else 1, r.get("pub","") or ""), reverse=False)
@@ -2981,6 +2991,8 @@ def api_lake_michigan():
     result = {
         "pwaw3": {},
         "pwaw3_trend": [],
+        "atwater": {},
+        "atwater_trend": [],
         "marine_text": "",
         "marine_sections": [],
         "afd_text": "",
@@ -3036,6 +3048,46 @@ def api_lake_michigan():
             result["pwaw3_trend"] = trend
     except Exception as e:
         result["pwaw3_error"] = str(e)
+
+    # ── 45013 — Atwater Park / Milwaukee offshore buoy ───────────────────
+    try:
+        r45 = requests.get("https://www.ndbc.noaa.gov/data/realtime2/45013.txt",
+                           headers=hdrs, timeout=10)
+        rows45 = ndbc_parse(r45.text, n_rows=12)
+        if rows45:
+            cur45 = next((r for r in rows45 if r.get("WTMP","MM") != "MM" or r.get("WVHT","MM") != "MM"), rows45[0])
+            wtmp  = cur45.get("WTMP","MM")
+            wvht  = cur45.get("WVHT","MM")
+            dpd   = cur45.get("DPD","MM")
+            mwd   = cur45.get("MWD","MM")
+            wspd  = cur45.get("WSPD","MM")
+            gst   = cur45.get("GST","MM")
+            wdir  = cur45.get("WDIR","MM")
+            result["atwater"] = {
+                "obs_time": f"{cur45.get('YY','')} {cur45.get('MM','')} {cur45.get('DD','')} {cur45.get('hh','')}:{cur45.get('mm','')} UTC",
+                "water_temp_f":  c_to_f(wtmp) if wtmp != "MM" else None,
+                "wave_height_ft": round(float(wvht) * 3.28084, 1) if wvht not in ("MM", None) else None,
+                "wave_period_s": dpd if dpd != "MM" else None,
+                "wave_dir":  deg_to_compass(mwd) if mwd not in ("MM", None) else None,
+                "wave_dir_deg": mwd if mwd != "MM" else None,
+                "wind_speed_mph": ms_to_mph(wspd) if wspd != "MM" else None,
+                "wind_gust_mph":  ms_to_mph(gst)  if gst  != "MM" else None,
+                "wind_dir": deg_to_compass(wdir) if wdir not in ("MM", None) else None,
+                "wind_dir_deg": wdir if wdir != "MM" else None,
+            }
+            trend45 = []
+            for row in rows45:
+                wt = row.get("WTMP","MM"); wh = row.get("WVHT","MM")
+                ws = row.get("WSPD","MM")
+                trend45.append({
+                    "t":    f"{row.get('hh','?')}:{row.get('mm','?')}",
+                    "wtmp": c_to_f(wt) if wt != "MM" else None,
+                    "wvht": round(float(wh) * 3.28084, 1) if wh not in ("MM", None) else None,
+                    "wspd": ms_to_mph(ws) if ws != "MM" else None,
+                })
+            result["atwater_trend"] = trend45
+    except Exception as e:
+        result["atwater_error"] = str(e)
 
     # ── NWS Nearshore Marine Forecast (NSH) — Full MKX text ──────────────────
     try:
