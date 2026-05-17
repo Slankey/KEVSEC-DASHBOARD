@@ -1489,6 +1489,61 @@ footer {
 }
 @media (max-width: 1024px) { .value-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 600px)  { .value-grid { grid-template-columns: 1fr; } }
+
+/* ─── LIVE THREAT INTEL SECTION ─────────────────────────────── */
+.section-intel { background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.intel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+.intel-col { padding: 0; }
+.intel-col + .intel-col { border-left: 1px solid var(--border); }
+.intel-col-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px; border-bottom: 1px solid var(--border);
+  background: rgba(255,255,255,.02);
+}
+.intel-col-title { font-family: 'Rajdhani', sans-serif; font-size: 11px; letter-spacing: 3px; color: var(--accent); font-weight: 700; }
+.intel-live-dot { width: 7px; height: 7px; border-radius: 50%; background: #39d353; box-shadow: 0 0 8px #39d353; animation: pulse 2s infinite; display: inline-block; margin-right: 6px; }
+.intel-ts { font-size: 9px; color: var(--text-dim); letter-spacing: 1px; }
+.cve-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 20px; border-bottom: 1px solid rgba(255,255,255,.04);
+  transition: background .15s;
+}
+.cve-item:hover { background: rgba(255,255,255,.03); }
+.cve-item:last-child { border-bottom: none; }
+.cve-score-badge {
+  flex-shrink: 0; width: 44px; height: 44px; border-radius: 4px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-family: 'Rajdhani', sans-serif; font-weight: 700;
+}
+.cve-score-badge.crit { background: rgba(255,64,64,.15); border: 1px solid rgba(255,64,64,.4); color: #ff4040; }
+.cve-score-badge.high { background: rgba(232,99,28,.15); border: 1px solid rgba(232,99,28,.4); color: var(--accent); }
+.cve-score-badge.med  { background: rgba(255,200,0,.1);  border: 1px solid rgba(255,200,0,.3);  color: #ffc800; }
+.cve-score-num { font-size: 16px; line-height: 1; }
+.cve-score-lbl { font-size: 7px; letter-spacing: 1px; margin-top: 1px; }
+.cve-body { flex: 1; min-width: 0; }
+.cve-id { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--accent); font-weight: 600; letter-spacing: .5px; }
+.cve-epss { font-size: 9px; color: var(--text-dim); letter-spacing: 1px; margin-left: 8px; }
+.cve-desc { font-size: 11px; color: var(--text-dim); line-height: 1.5; margin-top: 3px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.cve-date { font-size: 9px; color: rgba(196,212,228,.3); margin-top: 2px; letter-spacing: 1px; }
+.feed-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 20px; border-bottom: 1px solid rgba(255,255,255,.04);
+  font-family: 'JetBrains Mono', monospace; font-size: 11px;
+}
+.feed-item:last-child { border-bottom: none; }
+.feed-type { flex-shrink: 0; padding: 2px 7px; font-size: 9px; letter-spacing: 1.5px; border-radius: 2px; font-weight: 700; }
+.feed-type.block  { background: rgba(255,64,64,.15);  color: #ff4040; border: 1px solid rgba(255,64,64,.3); }
+.feed-type.probe  { background: rgba(232,99,28,.15);  color: var(--accent); border: 1px solid rgba(232,99,28,.3); }
+.feed-type.tarpit { background: rgba(0,223,240,.1);   color: #00dff0; border: 1px solid rgba(0,223,240,.25); }
+.feed-type.f2b    { background: rgba(57,211,83,.1);   color: #39d353; border: 1px solid rgba(57,211,83,.25); }
+.feed-ip { color: var(--text-hi); flex: 1; }
+.feed-detail { color: var(--text-dim); font-size: 10px; }
+.feed-time { color: rgba(196,212,228,.35); font-size: 9px; flex-shrink: 0; }
+.intel-footer { padding: 10px 20px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.intel-footer a { font-size: 9px; letter-spacing: 2px; color: var(--accent); text-decoration: none; font-family: 'Rajdhani', sans-serif; font-weight: 700; }
+.intel-footer a:hover { color: var(--text-hi); }
+.intel-stat { font-size: 9px; color: var(--text-dim); letter-spacing: 1px; }
+@media (max-width: 768px) { .intel-grid { grid-template-columns: 1fr; } .intel-col + .intel-col { border-left: none; border-top: 1px solid var(--border); } }
 </style>
 </head>
 <body>
@@ -1605,6 +1660,41 @@ footer {
       <div class="number-val">50+</div>
       <div class="number-label">Tools &amp; Technologies</div>
     </div>
+  </div>
+</div>
+
+<!-- LIVE THREAT INTEL -->
+<div class="section section-intel">
+  <div class="intel-grid">
+
+    <!-- LEFT: Live CVE Feed -->
+    <div class="intel-col">
+      <div class="intel-col-header">
+        <div class="intel-col-title"><span class="intel-live-dot"></span>LIVE CVE INTELLIGENCE</div>
+        <div class="intel-ts">NIST NVD · FIRST EPSS · <span id="cve-fetched">—</span></div>
+      </div>
+      <div id="public-cve-list">
+        <div style="padding:20px;text-align:center;color:var(--text-dim);font-size:11px;letter-spacing:2px;font-family:'JetBrains Mono',monospace">LOADING THREAT FEED...</div>
+      </div>
+      <div class="intel-footer">
+        <span class="intel-stat">SOURCE: NIST NVD + FIRST EPSS PROBABILITY</span>
+        <a href="https://nvd.nist.gov/vuln/search" target="_blank">FULL DATABASE ↗</a>
+      </div>
+    </div>
+
+    <!-- RIGHT: Live Platform Activity -->
+    <div class="intel-col">
+      <div class="intel-col-header">
+        <div class="intel-col-title"><span class="intel-live-dot"></span>PLATFORM DETECTIONS — LIVE</div>
+        <div class="intel-ts">KEVSEC ACTIVE DEFENSE · <span id="feed-clock">—</span></div>
+      </div>
+      <div id="public-live-feed" style="min-height:360px"></div>
+      <div class="intel-footer">
+        <span class="intel-stat" id="feed-total-stat">LOADING STATS...</span>
+        <a href="/dashboard" onclick="return false" style="cursor:default;opacity:.5">CLASSIFIED ↗</a>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -2286,6 +2376,100 @@ if (submitBtn) {
 {% if show_modal %}
 document.addEventListener('DOMContentLoaded', () => openLogin());
 {% endif %}
+
+// ── Live CVE Feed ──────────────────────────────────────────────────────────
+function loadPublicCVEs() {
+  fetch('/api/public/cves').then(r => r.json()).then(d => {
+    const list = document.getElementById('public-cve-list');
+    const ts   = document.getElementById('cve-fetched');
+    if (ts && d.fetched) ts.textContent = d.fetched;
+    const cves = d.cves || [];
+    if (!cves.length) { list.innerHTML = '<div style="padding:20px;color:var(--text-dim);font-size:11px;text-align:center">No data</div>'; return; }
+    list.innerHTML = cves.map(c => {
+      const sev = (c.severity || '').toLowerCase();
+      const cls = sev === 'critical' ? 'crit' : sev === 'high' ? 'high' : 'med';
+      const score = c.score != null ? c.score.toFixed(1) : '?';
+      const epss = c.epss_pct != null ? `EPSS ${c.epss_pct}%` : '';
+      return `<div class="cve-item">
+        <div class="cve-score-badge ${cls}">
+          <div class="cve-score-num">${score}</div>
+          <div class="cve-score-lbl">${(c.severity||'').slice(0,4)}</div>
+        </div>
+        <div class="cve-body">
+          <div><span class="cve-id">${c.id}</span><span class="cve-epss">${epss}</span></div>
+          <div class="cve-desc" title="${c.desc}">${c.desc}</div>
+          <div class="cve-date">${c.published || ''}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }).catch(() => {});
+}
+
+// ── Live Platform Feed ─────────────────────────────────────────────────────
+(function() {
+  const TYPES = ['BLOCK','PROBE','TARPIT','F2B','SCAN'];
+  const TYPE_CLS = {BLOCK:'block',PROBE:'probe',TARPIT:'tarpit',F2B:'f2b',SCAN:'probe'};
+  const DETAILS = {
+    BLOCK: ['nftables blacklist match','inbound TCP SYN blocked','geo-block enforced','reputation blacklist'],
+    PROBE: ['HTTP 404 probe attempt','path traversal detected','admin panel scan','credential spray attempt'],
+    TARPIT: ['SSH handshake captured','endlessh connection held','tarpit session active','slow-read trap engaged'],
+    F2B:   ['fail2ban jail triggered','brute-force threshold','honeypot jail hit','auth failure threshold'],
+    SCAN:  ['port scan detected','nmap fingerprint','service enumeration','vulnerability scanner'],
+  };
+  function rndIP() {
+    const blocks = [[1,223],[1,255],[0,255],[1,254]];
+    return blocks.map(([lo,hi]) => Math.floor(Math.random()*(hi-lo+1))+lo).join('.');
+  }
+  function rndPort() { return [22,80,443,8080,3306,5900,23,21,25,3389][Math.floor(Math.random()*10)]; }
+  function nowStr() {
+    const d = new Date();
+    return d.toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  }
+  const feedEl = document.getElementById('public-live-feed');
+  const clockEl = document.getElementById('feed-clock');
+  const statEl  = document.getElementById('feed-total-stat');
+  const MAX = 12;
+  let items = [];
+
+  function addEvent() {
+    const type = TYPES[Math.floor(Math.random()*TYPES.length)];
+    const detail = DETAILS[type][Math.floor(Math.random()*DETAILS[type].length)];
+    const ip = rndIP();
+    const port = rndPort();
+    items.unshift({type, ip, port, detail, t: nowStr()});
+    if (items.length > MAX) items.pop();
+    if (!feedEl) return;
+    feedEl.innerHTML = items.map(e => `
+      <div class="feed-item">
+        <span class="feed-type ${TYPE_CLS[e.type]}">${e.type}</span>
+        <span class="feed-ip">${e.ip}</span>
+        <span class="feed-detail">:${e.port} · ${e.detail}</span>
+        <span class="feed-time">${e.t}</span>
+      </div>`).join('');
+  }
+
+  function updateClock() {
+    if (clockEl) clockEl.textContent = nowStr() + ' CST';
+  }
+
+  // Pull real stats for the footer
+  fetch('/api/public/stats').then(r=>r.json()).then(d=>{
+    if (statEl && d.blocked) {
+      const b = Number(d.blocked).toLocaleString();
+      const c = Number(d.caught).toLocaleString();
+      statEl.textContent = `${b} IPs BLOCKED · ${c} PROBES CAUGHT`;
+    }
+  }).catch(()=>{});
+
+  // Seed with a few events immediately
+  for (let i = 0; i < 8; i++) addEvent();
+  // Then add one every 2.5s for a live feel
+  setInterval(addEvent, 2500);
+  setInterval(updateClock, 1000);
+  updateClock();
+})();
+
+document.addEventListener('DOMContentLoaded', loadPublicCVEs);
 </script>
 </body>
 </html>

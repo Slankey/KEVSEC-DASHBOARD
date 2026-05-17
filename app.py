@@ -388,6 +388,19 @@ def api_public_feed():
     except Exception:
         return jsonify({"feed": []})
 
+@app.route("/api/public/cves")
+def api_public_cves():
+    """Public — recent high/critical CVEs from cached NIST NVD data."""
+    cached = cache_get("cves", ttl=21600)
+    cves = (cached or {}).get("cves", [])
+    # Return top 8 by severity score, public-safe fields only
+    top = sorted(cves, key=lambda c: c.get("_sort_score", 0), reverse=True)[:8]
+    out = [{"id": c["id"], "desc": c.get("desc","")[:160],
+            "score": c.get("score"), "severity": c.get("severity",""),
+            "published": c.get("published",""), "epss_pct": c.get("epss_pct")} for c in top]
+    fetched = (cached or {}).get("fetched", "")
+    return jsonify({"cves": out, "fetched": fetched})
+
 _HP_LOG = "/mnt/hdd/logs/honeypot/access.log"
 _hp_log_lock = threading.Lock()
 
